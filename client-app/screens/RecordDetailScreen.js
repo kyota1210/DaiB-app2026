@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRecordsApi } from '../api/records';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -12,6 +13,7 @@ export default function RecordDetailScreen({ route, navigation }) {
     const [record, setRecord] = useState(initialRecord);
     const [loading, setLoading] = useState(false);
     const [imageAspectRatio, setImageAspectRatio] = useState(1);
+    const [showMenu, setShowMenu] = useState(false);
     const { deleteRecord, fetchRecordById } = useRecordsApi();
     const { theme } = useTheme();
     const { t } = useLanguage();
@@ -50,9 +52,10 @@ export default function RecordDetailScreen({ route, navigation }) {
     }, [imageUrl]);
 
     const handleDelete = () => {
+        setShowMenu(false);
         Alert.alert(
             t('deleteConfirm'),
-            t('deleteConfirmMessage'),
+            t('削除します。よろしいですか？'),
             [
                 { text: t('cancel') },
                 {
@@ -72,6 +75,7 @@ export default function RecordDetailScreen({ route, navigation }) {
     };
 
     const handleEdit = () => {
+        setShowMenu(false);
         navigation.navigate('EditRecord', { record });
     };
 
@@ -80,7 +84,27 @@ export default function RecordDetailScreen({ route, navigation }) {
     const dateString = date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            {/* ヘッダー */}
+            <View style={[styles.header, { 
+                backgroundColor: theme.colors.background,
+                borderBottomColor: theme.colors.border 
+            }]}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
+                </TouchableOpacity>
+                <Text 
+                    style={[styles.headerTitle, { color: theme.colors.text }]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                >
+                    {record.title || ''}
+                </Text>
+                <TouchableOpacity onPress={() => setShowMenu(true)} style={styles.menuButton}>
+                    <Ionicons name="ellipsis-horizontal" size={24} color={theme.colors.icon} />
+                </TouchableOpacity>
+            </View>
+
             <ScrollView contentContainerStyle={styles.content}>
                 {/* 画像があれば表示、なければプレースホルダー */}
                 {imageUrl ? (
@@ -98,7 +122,6 @@ export default function RecordDetailScreen({ route, navigation }) {
 
                 <View style={styles.infoContainer}>
                     <Text style={[styles.date, { color: theme.colors.secondaryText }]}>{dateString}</Text>
-                    <Text style={[styles.title, { color: theme.colors.text }]}>{record.title}</Text>
                     {record.description && (
                         <Text style={[styles.description, { color: theme.colors.secondaryText }]}>
                             {record.description}
@@ -107,21 +130,41 @@ export default function RecordDetailScreen({ route, navigation }) {
                 </View>
             </ScrollView>
 
-            <View style={[styles.footer, { 
-                backgroundColor: theme.colors.background,
-                borderTopColor: theme.colors.border 
-            }]}>
-                <TouchableOpacity style={styles.footerButton} onPress={handleEdit}>
-                    <Ionicons name="create-outline" size={24} color={theme.colors.primary} />
-                    <Text style={[styles.footerButtonText, { color: theme.colors.primary }]}>
-                        {t('edit')}
-                    </Text>
+            {/* メニューモーダル */}
+            <Modal
+                visible={showMenu}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowMenu(false)}
+            >
+                <TouchableOpacity 
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowMenu(false)}
+                >
+                    <View style={[styles.menuContainer, { backgroundColor: theme.colors.card }]}>
+                        <TouchableOpacity 
+                            style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
+                            onPress={handleEdit}
+                        >
+                            <Ionicons name="pencil" size={22} color={theme.colors.primary} />
+                            <Text style={[styles.menuItemText, { color: theme.colors.text }]}>
+                                {t('edit')}
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                            style={styles.menuItem}
+                            onPress={handleDelete}
+                        >
+                            <Ionicons name="trash-outline" size={22} color="#FF3B30" />
+                            <Text style={[styles.menuItemText, { color: '#FF3B30' }]}>
+                                {t('delete')}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-                    <Ionicons name="trash-outline" size={24} color="#FF3B30" />
-                </TouchableOpacity>
-            </View>
-        </View>
+            </Modal>
+        </SafeAreaView>
     );
 }
 
@@ -129,7 +172,30 @@ const styles = StyleSheet.create({
     container: { 
         flex: 1,
     },
-    content: { paddingBottom: 80 },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+    },
+    backButton: {
+        padding: 4,
+    },
+    headerTitle: {
+        flex: 1,
+        fontSize: 18,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginHorizontal: 12,
+    },
+    menuButton: {
+        padding: 4,
+    },
+    content: { 
+        paddingBottom: 20 
+    },
     imageContainer: {
         width: '100%',
         backgroundColor: '#000',
@@ -162,26 +228,34 @@ const styles = StyleSheet.create({
         fontSize: 16, 
         lineHeight: 24 
     },
-    footer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 80,
-        borderTopWidth: 1,
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'flex-start',
+        alignItems: 'flex-end',
+        paddingTop: 60,
+        paddingRight: 16,
+    },
+    menuContainer: {
+        borderRadius: 12,
+        overflow: 'hidden',
+        minWidth: 150,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    menuItem: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 30,
-        paddingBottom: 20, // iPhoneの下部バー領域用
+        paddingVertical: 16,
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
     },
-    footerButton: { 
-        flexDirection: 'row', 
-        alignItems: 'center' 
-    },
-    footerButtonText: { 
-        marginLeft: 8, 
+    menuItemText: {
         fontSize: 16,
+        marginLeft: 12,
+        fontWeight: '500',
     },
-    deleteButton: { padding: 10 },
 });

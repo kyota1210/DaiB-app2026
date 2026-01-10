@@ -133,23 +133,10 @@ const AppNavigator = () => {
           <Stack.Screen 
             name="RecordDetail" 
             component={RecordDetailScreen} 
-            options={({ navigation }) => ({ 
-              headerShown: true, 
-              title: t('detail'),
-              headerBackTitleVisible: false,
-              headerStyle: {
-                backgroundColor: theme.colors.background,
-              },
-              headerTintColor: theme.colors.text,
-              headerLeft: () => (
-                <TouchableOpacity 
-                  onPress={() => navigation.goBack()}
-                  style={{ marginLeft: 8 }}
-                >
-                  <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
-                </TouchableOpacity>
-              )
-            })} 
+            options={{ 
+              headerShown: false,
+              presentation: 'card'
+            }} 
           />
           {/* ↓ 追加: インサイト画面 */}
           <Stack.Screen 
