@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { StyleSheet, View, TextInput, Alert, Text, ScrollView, Image, TouchableOpacity, Platform, Modal, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useContext, useRef } from 'react';
+import { StyleSheet, View, TextInput, Alert, Text, ScrollView, Image, TouchableOpacity, Platform, Modal, KeyboardAvoidingView, ActivityIndicator, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useRecordsApi } from '../api/records';
 import { fetchCategories } from '../api/categories';
 import * as ImagePicker from 'expo-image-picker';
@@ -36,6 +36,11 @@ export default function CreateRecordScreen({ navigation, route }) {
     const [selectedCategoryId, setSelectedCategoryId] = useState(editRecord?.category_id || null);
     const [categoriesLoading, setCategoriesLoading] = useState(true);
 
+    // キーボード管理
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
+    const scrollViewRef = useRef(null);
+    const commentInputRef = useRef(null);
+
     const { createRecord, updateRecord } = useRecordsApi();
 
     // カテゴリーを取得
@@ -52,6 +57,23 @@ export default function CreateRecordScreen({ navigation, route }) {
         };
         loadCategories();
     }, [userToken, t]);
+
+    // キーボードイベントリスナー
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener(
+            'keyboardDidShow',
+            () => setKeyboardVisible(true)
+        );
+        const keyboardDidHideListener = Keyboard.addListener(
+            'keyboardDidHide',
+            () => setKeyboardVisible(false)
+        );
+
+        return () => {
+            keyboardDidShowListener.remove();
+            keyboardDidHideListener.remove();
+        };
+    }, []);
 
     // 日付変更ハンドラ
     const onChangeDate = (event, selectedDate) => {
@@ -129,13 +151,21 @@ export default function CreateRecordScreen({ navigation, route }) {
         day: 'numeric'
     });
 
+    // コメント入力欄にフォーカスしたときのスクロール処理
+    const handleCommentFocus = () => {
+        setTimeout(() => {
+            scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+    };
+
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={isEditMode ? ['bottom'] : ['top']}>
-            <KeyboardAvoidingView 
-                style={[styles.container, { backgroundColor: theme.colors.background }]} 
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
-            >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={isEditMode ? ['bottom'] : ['top']}>
+                <KeyboardAvoidingView 
+                    style={[styles.container, { backgroundColor: theme.colors.background }]} 
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+                >
                 {isEditMode && (
                     <View style={[styles.header, { 
                         backgroundColor: theme.colors.background,
@@ -160,7 +190,11 @@ export default function CreateRecordScreen({ navigation, route }) {
                 )}
                 
                 <ScrollView 
-                    contentContainerStyle={styles.scrollContent}
+                    ref={scrollViewRef}
+                    contentContainerStyle={[
+                        styles.scrollContent,
+                        keyboardVisible && { paddingBottom: 50 }
+                    ]}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
@@ -192,9 +226,6 @@ export default function CreateRecordScreen({ navigation, route }) {
                     {/* 入力フォームエリア */}
                     <View style={styles.formSection}>
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, { color: theme.colors.secondaryText }]}>
-                                {t('date')} <Text style={styles.required}>*</Text>
-                            </Text>
                             <TouchableOpacity 
                                 style={[styles.dateInputContainer, { 
                                     backgroundColor: theme.colors.secondaryBackground,
@@ -272,11 +303,18 @@ export default function CreateRecordScreen({ navigation, route }) {
                                             ]}
                                             onPress={() => setSelectedCategoryId(category.id === selectedCategoryId ? null : category.id)}
                                         >
-                                            <Ionicons 
-                                                name={category.icon || 'folder-outline'} 
-                                                size={18} 
-                                                color={selectedCategoryId === category.id ? (category.color || theme.colors.primary) : theme.colors.secondaryText} 
-                                            />
+                                            {category.image_url ? (
+                                                <Image 
+                                                    source={{ uri: getImageUrl(category.image_url) }} 
+                                                    style={styles.categoryImage}
+                                                />
+                                            ) : (
+                                                <Ionicons 
+                                                    name={category.icon || 'folder-outline'} 
+                                                    size={18} 
+                                                    color={selectedCategoryId === category.id ? (category.color || theme.colors.primary) : theme.colors.secondaryText} 
+                                                />
+                                            )}
                                             <Text style={[
                                                 styles.categoryOptionText,
                                                 { color: theme.colors.secondaryText },
@@ -312,19 +350,16 @@ export default function CreateRecordScreen({ navigation, route }) {
 
                         {/* コメントエリア */}
                         <View style={styles.commentGroup}>
-                            <Text style={[styles.label, { color: theme.colors.secondaryText }]}>
-                                {t('comment')}
-                            </Text>
                             <TextInput
-                                style={[styles.input, styles.textArea, { 
-                                    backgroundColor: theme.colors.secondaryBackground,
-                                    borderColor: theme.colors.border,
+                                ref={commentInputRef}
+                                style={[styles.commentInput, { 
                                     color: theme.colors.text 
                                 }]}
                                 placeholder={t('commentPlaceholder')}
                                 placeholderTextColor={theme.colors.inactive}
                                 value={description}
                                 onChangeText={setDescription}
+                                onFocus={handleCommentFocus}
                                 multiline
                             />
                         </View>
@@ -344,12 +379,12 @@ export default function CreateRecordScreen({ navigation, route }) {
                             <Text style={styles.createButtonText}>
                                 {loading ? t('creating') : t('create')}
                             </Text>
-                            {!loading && <Ionicons name="checkmark-circle-outline" size={24} color="#fff" style={{ marginLeft: 8 }} />}
                         </TouchableOpacity>
                     )}
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
+        </TouchableWithoutFeedback>
     );
 }
 
@@ -393,14 +428,12 @@ const styles = StyleSheet.create({
     },
     commentGroup: {
         marginBottom: 12,
+        marginTop: 8,
     },
     label: {
         fontSize: 13,
         fontWeight: '600',
         marginBottom: 4,
-    },
-    required: {
-        color: '#FF3B30',
     },
     input: {
         borderWidth: 1,
@@ -408,9 +441,12 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         fontSize: 15,
     },
-    textArea: {
+    commentInput: {
+        fontSize: 16,
+        lineHeight: 24,
+        minHeight: 200,
         textAlignVertical: 'top',
-        minHeight: 80,
+        paddingVertical: 12,
     },
     imageSection: {
         width: '100%',
@@ -505,14 +541,19 @@ const styles = StyleSheet.create({
     categoryOption: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 6,
         borderRadius: 20,
         borderWidth: 1,
         marginRight: 10,
     },
     categoryOptionSelected: {
         // 選択時のスタイルは動的に適用
+    },
+    categoryImage: {
+        width: 18,
+        height: 18,
+        borderRadius: 9,
     },
     categoryOptionText: {
         marginLeft: 6,

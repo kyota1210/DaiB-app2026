@@ -54,7 +54,7 @@ const translations = {
         date: '日付',
         category: 'カテゴリー',
         comment: 'コメント',
-        commentPlaceholder: 'コメントを入力...',
+        commentPlaceholder: 'キャプションを入力...',
         addPhoto: '写真を追加',
         createRecord: '作成する',
         editRecord: '記録を編集',
