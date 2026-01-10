@@ -26,13 +26,16 @@ const formatFloatingDate = (dateString) => {
 };
 
 // ギャラリーアイテムコンポーネント
-const GalleryItem = ({ item, navigation }) => {
+const GalleryItem = ({ item, navigation, allRecords, itemIndex }) => {
     const imageUrl = getImageUrl(item.image_url);
 
     return (
         <TouchableOpacity 
             style={styles.galleryCard} 
-            onPress={() => navigation.navigate('RecordDetail', { record: item })}
+            onPress={() => navigation.navigate('RecordDetail', { 
+                records: allRecords,
+                initialIndex: itemIndex
+            })}
             activeOpacity={0.9}
         >
             <View style={styles.imageContainer}>
@@ -104,11 +107,13 @@ export default function RecordListScreen({ navigation }) {
             const rowItems = records.slice(i, i + 3);
             rows.push(
                 <View key={`row-${i}`} style={styles.rowContainer}>
-                    {rowItems.map((item) => (
+                    {rowItems.map((item, index) => (
                         <GalleryItem 
                             key={item.id} 
                             item={item} 
                             navigation={navigation}
+                            allRecords={records}
+                            itemIndex={i + index}
                         />
                     ))}
                 </View>

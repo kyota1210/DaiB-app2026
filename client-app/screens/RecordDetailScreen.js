@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, Modal } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Alert, ActivityIndicator, Modal, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRecordsApi } from '../api/records';
@@ -8,34 +8,15 @@ import { useLanguage } from '../context/LanguageContext';
 import { getImageUrl } from '../utils/imageHelper';
 import { useFocusEffect } from '@react-navigation/native';
 
-export default function RecordDetailScreen({ route, navigation }) {
-    const { record: initialRecord } = route.params;
-    const [record, setRecord] = useState(initialRecord);
-    const [loading, setLoading] = useState(false);
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+
+// 各レコードアイテムコンポーネント
+const RecordItem = ({ item, theme, t }) => {
     const [imageAspectRatio, setImageAspectRatio] = useState(1);
-    const [showMenu, setShowMenu] = useState(false);
-    const { deleteRecord, fetchRecordById } = useRecordsApi();
-    const { theme } = useTheme();
-    const { t } = useLanguage();
+    const imageUrl = getImageUrl(item.image_url);
+    const date = new Date(item.date_logged);
+    const dateString = date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    // 画面が表示されるたびに最新データを取得
-    useFocusEffect(
-        useCallback(() => {
-            const loadRecord = async () => {
-                try {
-                    const updatedRecord = await fetchRecordById(initialRecord.id);
-                    setRecord(updatedRecord);
-                } catch (error) {
-                    console.error(t('recordFetchFailed'), error);
-                }
-            };
-            loadRecord();
-        }, [initialRecord.id, fetchRecordById, t])
-    );
-
-    // 画像の縦横比を取得
-    const imageUrl = getImageUrl(record.image_url);
-    
     React.useEffect(() => {
         if (imageUrl) {
             Image.getSize(
@@ -44,12 +25,76 @@ export default function RecordDetailScreen({ route, navigation }) {
                     setImageAspectRatio(width / height);
                 },
                 (error) => {
-                    console.error(t('imageSizeFetchFailed'), error);
-                    setImageAspectRatio(16 / 9); // デフォルト値
+                    console.error('Image size fetch failed', error);
+                    setImageAspectRatio(16 / 9);
                 }
             );
         }
     }, [imageUrl]);
+
+    return (
+        <View style={styles.recordItem}>
+            {/* タイトル */}
+            {item.title && (
+                <View style={styles.titleContainer}>
+                    <Text 
+                        style={[styles.title, { color: theme.colors.text }]}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                    >
+                        {item.title}
+                    </Text>
+                </View>
+            )}
+
+            {imageUrl ? (
+                <View style={[styles.imageContainer, { aspectRatio: imageAspectRatio }]}>
+                    <Image source={{ uri: imageUrl }} style={styles.image} />
+                </View>
+            ) : (
+                <View style={[styles.placeholderImageContainer, { backgroundColor: theme.colors.border }]}>
+                    <Ionicons name="image-outline" size={80} color={theme.colors.inactive} />
+                    <Text style={[styles.placeholderText, { color: theme.colors.inactive }]}>
+                        {t('noImage')}
+                    </Text>
+                </View>
+            )}
+
+            <View style={styles.infoContainer}>
+                <Text style={[styles.date, { color: theme.colors.secondaryText }]}>{dateString}</Text>
+                {item.description && (
+                    <Text style={[styles.description, { color: theme.colors.secondaryText }]}>
+                        {item.description}
+                    </Text>
+                )}
+            </View>
+        </View>
+    );
+};
+
+export default function RecordDetailScreen({ route, navigation }) {
+    const { records, initialIndex } = route.params;
+    const [currentIndex, setCurrentIndex] = useState(initialIndex);
+    const [showMenu, setShowMenu] = useState(false);
+    const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+    const flatListRef = useRef(null);
+    const menuButtonRef = useRef(null);
+    const { deleteRecord } = useRecordsApi();
+    const { theme } = useTheme();
+    const { t } = useLanguage();
+
+    const currentRecord = records[currentIndex];
+
+    // スクロール時に現在のインデックスを更新
+    const onViewableItemsChanged = useRef(({ viewableItems }) => {
+        if (viewableItems.length > 0) {
+            setCurrentIndex(viewableItems[0].index);
+        }
+    }).current;
+
+    const viewabilityConfig = useRef({
+        itemVisiblePercentThreshold: 50
+    }).current;
 
     const handleDelete = () => {
         setShowMenu(false);
@@ -62,8 +107,8 @@ export default function RecordDetailScreen({ route, navigation }) {
                     text: t('delete'),
                     onPress: async () => {
                         try {
-                            await deleteRecord(record.id);
-                            navigation.goBack(); // 削除後に前の画面に戻る
+                            await deleteRecord(currentRecord.id);
+                            navigation.goBack();
                         } catch (error) {
                             Alert.alert(t('deleteFailed'), error.message);
                         }
@@ -76,12 +121,22 @@ export default function RecordDetailScreen({ route, navigation }) {
 
     const handleEdit = () => {
         setShowMenu(false);
-        navigation.navigate('EditRecord', { record });
+        navigation.navigate('EditRecord', { record: currentRecord });
     };
 
-    // 日付の表示形式を調整
-    const date = new Date(record.date_logged);
-    const dateString = date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+    const handleMenuPress = () => {
+        if (menuButtonRef.current) {
+            menuButtonRef.current.measure((x, y, width, height, pageX, pageY) => {
+                setMenuPosition({ x: pageX, y: pageY, width, height });
+                setShowMenu(true);
+            });
+        }
+    };
+
+    // 各レコードのレンダリング
+    const renderRecordItem = ({ item }) => {
+        return <RecordItem item={item} theme={theme} t={t} />;
+    };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
@@ -93,42 +148,35 @@ export default function RecordDetailScreen({ route, navigation }) {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
                 </TouchableOpacity>
-                <Text 
-                    style={[styles.headerTitle, { color: theme.colors.text }]}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
+                <View style={styles.headerSpacer} />
+                <TouchableOpacity 
+                    ref={menuButtonRef}
+                    onPress={handleMenuPress} 
+                    style={styles.menuButton}
                 >
-                    {record.title || ''}
-                </Text>
-                <TouchableOpacity onPress={() => setShowMenu(true)} style={styles.menuButton}>
                     <Ionicons name="ellipsis-horizontal" size={24} color={theme.colors.icon} />
                 </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.content}>
-                {/* 画像があれば表示、なければプレースホルダー */}
-                {imageUrl ? (
-                    <View style={[styles.imageContainer, { aspectRatio: imageAspectRatio }]}>
-                        <Image source={{ uri: imageUrl }} style={styles.image} />
-                    </View>
-                ) : (
-                    <View style={[styles.placeholderImageContainer, { backgroundColor: theme.colors.border }]}>
-                        <Ionicons name="image-outline" size={80} color={theme.colors.inactive} />
-                        <Text style={[styles.placeholderText, { color: theme.colors.inactive }]}>
-                            {t('noImage')}
-                        </Text>
-                    </View>
-                )}
-
-                <View style={styles.infoContainer}>
-                    <Text style={[styles.date, { color: theme.colors.secondaryText }]}>{dateString}</Text>
-                    {record.description && (
-                        <Text style={[styles.description, { color: theme.colors.secondaryText }]}>
-                            {record.description}
-                        </Text>
-                    )}
-                </View>
-            </ScrollView>
+            <FlatList
+                ref={flatListRef}
+                data={records}
+                renderItem={renderRecordItem}
+                keyExtractor={(item) => item.id.toString()}
+                initialScrollIndex={initialIndex}
+                onViewableItemsChanged={onViewableItemsChanged}
+                viewabilityConfig={viewabilityConfig}
+                getItemLayout={(data, index) => ({
+                    length: SCREEN_HEIGHT - 100, // ヘッダー分を引いた画面の高さ
+                    offset: (SCREEN_HEIGHT - 100) * index,
+                    index,
+                })}
+                showsVerticalScrollIndicator={true}
+                pagingEnabled={true}
+                decelerationRate="fast"
+                snapToInterval={SCREEN_HEIGHT - 100}
+                snapToAlignment="start"
+            />
 
             {/* メニューモーダル */}
             <Modal
@@ -142,7 +190,15 @@ export default function RecordDetailScreen({ route, navigation }) {
                     activeOpacity={1}
                     onPress={() => setShowMenu(false)}
                 >
-                    <View style={[styles.menuContainer, { backgroundColor: theme.colors.card }]}>
+                    <View style={[
+                        styles.menuContainer, 
+                        { 
+                            backgroundColor: theme.colors.card,
+                            position: 'absolute',
+                            top: menuPosition.y + menuPosition.height,
+                            right: 16,
+                        }
+                    ]}>
                         <TouchableOpacity 
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
                             onPress={handleEdit}
@@ -177,24 +233,28 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingVertical: 8,
         borderBottomWidth: 1,
     },
     backButton: {
         padding: 4,
     },
-    headerTitle: {
+    headerSpacer: {
         flex: 1,
-        fontSize: 18,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginHorizontal: 12,
     },
     menuButton: {
         padding: 4,
     },
-    content: { 
-        paddingBottom: 20 
+    recordItem: {
+        height: SCREEN_HEIGHT - 100, // ヘッダー分を引いた画面の高さ
+    },
+    titleContainer: {
+        paddingHorizontal: 6,
+        paddingTop: 12,
+    },
+    title: {
+        flex: 1,
+        fontSize: 10,
     },
     imageContainer: {
         width: '100%',
@@ -214,15 +274,17 @@ const styles = StyleSheet.create({
     placeholderText: { 
         marginTop: 10 
     },
-    infoContainer: { padding: 20 },
+    infoContainer: { 
+        padding: 10,
+        minHeight: 100,
+    },
     date: { 
         fontSize: 14, 
         marginBottom: 8 
     },
     title: { 
-        fontSize: 24, 
-        fontWeight: 'bold', 
-        marginBottom: 16 
+        fontSize: 18, 
+        marginBottom: 12 
     },
     description: { 
         fontSize: 16, 
@@ -231,10 +293,6 @@ const styles = StyleSheet.create({
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'flex-start',
-        alignItems: 'flex-end',
-        paddingTop: 60,
-        paddingRight: 16,
     },
     menuContainer: {
         borderRadius: 12,
