@@ -6,10 +6,12 @@ class CategoryModel {
      */
     static async findAllByUserId(userId) {
         const sql = `
-            SELECT id, name, icon, color, created_at, updated_at 
-            FROM categories 
-            WHERE user_id = ? 
-            ORDER BY created_at ASC
+            SELECT c.id, c.name, c.icon, c.color, c.created_at, c.updated_at,
+                   ci.image_url
+            FROM categories c
+            LEFT JOIN category_images ci ON c.id = ci.category_id
+            WHERE c.user_id = ? 
+            ORDER BY c.created_at ASC
         `;
         const [rows] = await db.query(sql, [userId]);
         return rows;
@@ -20,9 +22,11 @@ class CategoryModel {
      */
     static async findById(id, userId) {
         const sql = `
-            SELECT id, name, icon, color, created_at, updated_at 
-            FROM categories 
-            WHERE id = ? AND user_id = ?
+            SELECT c.id, c.name, c.icon, c.color, c.created_at, c.updated_at,
+                   ci.image_url
+            FROM categories c
+            LEFT JOIN category_images ci ON c.id = ci.category_id
+            WHERE c.id = ? AND c.user_id = ?
         `;
         const [rows] = await db.query(sql, [id, userId]);
         return rows[0];

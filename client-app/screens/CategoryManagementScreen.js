@@ -1,11 +1,13 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput, Modal, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { fetchCategories, createCategory, updateCategory, deleteCategory } from '../api/categories';
+import { fetchCategories, createCategory, updateCategory, deleteCategory, uploadCategoryImage, deleteCategoryImage } from '../api/categories';
+import { getImageUrl } from '../utils/imageHelper';
 
 const CategoryManagementScreen = ({ navigation }) => {
     const { userToken } = useContext(AuthContext);
@@ -25,6 +27,8 @@ const CategoryManagementScreen = ({ navigation }) => {
     const [categoryName, setCategoryName] = useState('');
     const [selectedIcon, setSelectedIcon] = useState('bookmark');
     const [selectedColor, setSelectedColor] = useState(theme.colors.primary);
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [imageToDelete, setImageToDelete] = useState(false);
 
     // カテゴリーを読み込む関数
     const loadCategories = React.useCallback(async () => {
@@ -62,6 +66,33 @@ const CategoryManagementScreen = ({ navigation }) => {
         '#000000'
     ];
 
+    // 画像を選択
+    const pickImage = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('エラー', '画像ライブラリへのアクセス許可が必要です');
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets && result.assets[0]) {
+            setSelectedImage(result.assets[0].uri);
+            setImageToDelete(false);
+        }
+    };
+
+    // 画像を削除
+    const removeImage = () => {
+        setSelectedImage(null);
+        setImageToDelete(true);
+    };
+
     const handleAddCategory = async () => {
         if (!categoryName.trim()) {
             Alert.alert('エラー', 'カテゴリー名を入力してください');
@@ -70,12 +101,17 @@ const CategoryManagementScreen = ({ navigation }) => {
 
         setLoading(true);
         try {
-            await createCategory(userToken, {
+            const newCategory = await createCategory(userToken, {
                 name: categoryName.trim(),
                 icon: selectedIcon,
                 color: selectedColor,
             });
             
+            // 画像がある場合はアップロード
+            if (selectedImage) {
+                await uploadCategoryImage(userToken, newCategory.id, selectedImage);
+            }
+
             await loadCategories(); // カテゴリー一覧を再取得
             resetForm();
             Alert.alert('完了', 'カテゴリーを追加しました');
@@ -101,6 +137,15 @@ const CategoryManagementScreen = ({ navigation }) => {
                 color: selectedColor,
             });
             
+            // 画像の変更処理
+            if (imageToDelete && editingCategory.image_url) {
+                // 画像を削除
+                await deleteCategoryImage(userToken, editingCategory.id);
+            } else if (selectedImage && selectedImage !== editingCategory.image_url) {
+                // 新しい画像をアップロード
+                await uploadCategoryImage(userToken, editingCategory.id, selectedImage);
+            }
+
             await loadCategories(); // カテゴリー一覧を再取得
             resetForm();
             Alert.alert('完了', 'カテゴリーを更新しました');
@@ -144,6 +189,8 @@ const CategoryManagementScreen = ({ navigation }) => {
         setCategoryName(category.name);
         setSelectedIcon(category.icon);
         setSelectedColor(category.color);
+        setSelectedImage(category.image_url ? getImageUrl(category.image_url) : null);
+        setImageToDelete(false);
         setShowAddModal(true);
     };
 
@@ -153,6 +200,8 @@ const CategoryManagementScreen = ({ navigation }) => {
         setCategoryName('');
         setSelectedIcon('bookmark');
         setSelectedColor(theme.colors.primary);
+        setSelectedImage(null);
+        setImageToDelete(false);
     };
 
     const allCategories = [...defaultCategories, ...customCategories];
@@ -189,7 +238,14 @@ const CategoryManagementScreen = ({ navigation }) => {
                                             { backgroundColor: category.color }
                                         ]}
                                     >
-                                        <Ionicons name={category.icon} size={24} color="#fff" />
+                                        {category.image_url ? (
+                                            <Image 
+                                                source={{ uri: getImageUrl(category.image_url) }} 
+                                                style={styles.categoryImage}
+                                            />
+                                        ) : (
+                                            <Ionicons name={category.icon} size={24} color="#fff" />
+                                        )}
                                     </View>
                                     <Text style={[styles.categoryNameText, { color: theme.colors.text }]}>
                                         {category.name}
@@ -247,6 +303,40 @@ const CategoryManagementScreen = ({ navigation }) => {
                         </View>
 
                         <ScrollView style={styles.modalBody}>
+                            {/* 画像選択 */}
+                            <View style={styles.inputGroup}>
+                                <Text style={[styles.label, { color: theme.colors.text }]}>カテゴリー画像</Text>
+                                <View style={styles.imagePickerContainer}>
+                                    {(selectedImage && !imageToDelete) ? (
+                                        <View style={styles.imagePreviewContainer}>
+                                            <Image 
+                                                source={{ uri: selectedImage }} 
+                                                style={styles.selectedImagePreview}
+                                            />
+                                            <TouchableOpacity 
+                                                style={styles.removeImageButton}
+                                                onPress={removeImage}
+                                            >
+                                                <Ionicons name="close-circle" size={24} color="#FF3B30" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    ) : (
+                                        <TouchableOpacity 
+                                            style={[styles.imagePickerButton, {
+                                                backgroundColor: theme.colors.secondaryBackground,
+                                                borderColor: theme.colors.border
+                                            }]}
+                                            onPress={pickImage}
+                                        >
+                                            <Ionicons name="image" size={32} color={theme.colors.secondaryText} />
+                                            <Text style={[styles.imagePickerText, { color: theme.colors.secondaryText }]}>
+                                                画像を選択
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            </View>
+
                             {/* カテゴリー名 */}
                             <View style={styles.inputGroup}>
                                 <Text style={[styles.label, { color: theme.colors.text }]}>カテゴリー名</Text>
@@ -331,7 +421,14 @@ const CategoryManagementScreen = ({ navigation }) => {
                                             { backgroundColor: selectedColor }
                                         ]}
                                     >
-                                        <Ionicons name={selectedIcon} size={32} color="#fff" />
+                                        {(selectedImage && !imageToDelete) ? (
+                                            <Image 
+                                                source={{ uri: selectedImage }} 
+                                                style={styles.previewImageStyle}
+                                            />
+                                        ) : (
+                                            <Ionicons name={selectedIcon} size={32} color="#fff" />
+                                        )}
                                     </View>
                                     <Text style={[styles.previewText, { color: theme.colors.text }]}>
                                         {categoryName || 'カテゴリー名'}
@@ -426,6 +523,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
+        overflow: 'hidden',
+    },
+    categoryImage: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
     },
     categoryNameText: {
         fontSize: 16,
@@ -509,6 +612,37 @@ const styles = StyleSheet.create({
         marginBottom: 6,
         letterSpacing: 0.2,
     },
+    imagePickerContainer: {
+        marginTop: 4,
+    },
+    imagePickerButton: {
+        height: 120,
+        borderRadius: 12,
+        borderWidth: 2,
+        borderStyle: 'dashed',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    imagePickerText: {
+        marginTop: 8,
+        fontSize: 14,
+    },
+    imagePreviewContainer: {
+        position: 'relative',
+        alignItems: 'center',
+    },
+    selectedImagePreview: {
+        width: 120,
+        height: 120,
+        borderRadius: 12,
+    },
+    removeImageButton: {
+        position: 'absolute',
+        top: -8,
+        right: '35%',
+        backgroundColor: '#fff',
+        borderRadius: 12,
+    },
     input: {
         borderRadius: 12,
         paddingHorizontal: 16,
@@ -584,6 +718,12 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.15,
         shadowRadius: 8,
         elevation: 4,
+        overflow: 'hidden',
+    },
+    previewImageStyle: {
+        width: 88,
+        height: 88,
+        borderRadius: 44,
     },
     previewText: {
         fontSize: 19,

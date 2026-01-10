@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useContext, useRef } from 'react';
-import { StyleSheet, Text, View, Alert, ActivityIndicator, TouchableOpacity, Image, ScrollView, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, Alert, ActivityIndicator, TouchableOpacity, Image, ScrollView, Dimensions, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useRecordsApi } from '../api/records';
-import { fetchCategories } from '../api/categories';
+import { fetchCategories, uploadCategoryImage, deleteCategoryImage } from '../api/categories';
 import { useFocusEffect } from '@react-navigation/native';
 import { getImageUrl } from '../utils/imageHelper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,7 +13,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { SERVER_URL } from '../config';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const COLUMN_WIDTH = SCREEN_WIDTH / 3; // 3列
+const IMAGE_PADDING = 1; // 画像間の余白
+const COLUMN_WIDTH = (SCREEN_WIDTH - IMAGE_PADDING * 4) / 3; // 3列
 
 // 日付を "2024 October" 形式にフォーマットするヘルパー
 const formatFloatingDate = (dateString) => {
@@ -24,21 +26,21 @@ const formatFloatingDate = (dateString) => {
 };
 
 // ギャラリーアイテムコンポーネント
-const GalleryItem = ({ item, navigation, itemWidth, aspectRatio }) => {
+const GalleryItem = ({ item, navigation }) => {
     const imageUrl = getImageUrl(item.image_url);
 
     return (
         <TouchableOpacity 
-            style={[styles.galleryCard, { width: itemWidth }]} 
+            style={styles.galleryCard} 
             onPress={() => navigation.navigate('RecordDetail', { record: item })}
             activeOpacity={0.9}
         >
-            <View style={[styles.imageContainer, { aspectRatio }]}>
+            <View style={styles.imageContainer}>
                 {imageUrl ? (
                     <Image source={{ uri: imageUrl }} style={styles.galleryImage} />
                 ) : (
                     <View style={styles.placeholderGalleryImage}>
-                        <Ionicons name="image" size={20} color="#fff" />
+                        <Ionicons name="image" size={30} color="#ccc" />
                     </View>
                 )}
             </View>
@@ -53,6 +55,8 @@ export default function RecordListScreen({ navigation }) {
     const [categories, setCategories] = useState([]);
     const [currentDateLabel, setCurrentDateLabel] = useState('');
     const [showDateLabel, setShowDateLabel] = useState(false);
+    const [showImageModal, setShowImageModal] = useState(false);
+    const [editingCategory, setEditingCategory] = useState(null);
     
     const { fetchRecords } = useRecordsApi();
     const { userInfo, userToken } = useContext(AuthContext);
@@ -94,50 +98,79 @@ export default function RecordListScreen({ navigation }) {
         }
     }, [fetchRecords, selectedCategory]);
 
-    const renderPackedGrid = () => {
+    const renderGrid = () => {
         const rows = [];
-        let i = 0;
-        const patterns = [
-            [100],               // 1枚 (100%)
-            [50, 50],            // 2枚 (50%ずつ)
-            [66.6, 33.3],        // 2枚 (大・小)
-            [33.3, 66.6],        // 2枚 (小・大)
-            [33.3, 33.3, 33.3],  // 3枚 (33%ずつ)
-        ];
-
-        while (i < records.length) {
-            // IDをシードにしてパターンを決定
-            const patternIndex = (records[i].id) % patterns.length;
-            const pattern = patterns[patternIndex];
-            const rowItems = records.slice(i, i + pattern.length);
-            
-            if (rowItems.length > 0) {
-                // その行のベースとなるアスペクト比を決定
-                const rowAspectRatio = 1 + ((records[i].id % 5) / 10); // 1.0 〜 1.4 の間で変動
-
-                rows.push(
-                    <View key={`row-${i}`} style={styles.rowContainer}>
-                        {rowItems.map((item, index) => {
-                            const widthPercent = pattern[index] || (100 / rowItems.length);
-                            // 行内で高さを揃えるため、アスペクト比を幅に合わせて調整
-                            const itemAspectRatio = rowAspectRatio * (widthPercent / 100) * rowItems.length;
-                            
-                            return (
-                                <GalleryItem 
-                                    key={item.id} 
-                                    item={item} 
-                                    navigation={navigation} 
-                                    itemWidth={`${widthPercent}%`}
-                                    aspectRatio={itemAspectRatio}
-                                />
-                            );
-                        })}
-                    </View>
-                );
-            }
-            i += pattern.length;
+        for (let i = 0; i < records.length; i += 3) {
+            const rowItems = records.slice(i, i + 3);
+            rows.push(
+                <View key={`row-${i}`} style={styles.rowContainer}>
+                    {rowItems.map((item) => (
+                        <GalleryItem 
+                            key={item.id} 
+                            item={item} 
+                            navigation={navigation}
+                        />
+                    ))}
+                </View>
+            );
         }
         return rows;
+    };
+
+    // 画像を選択してアップロード
+    const pickImageForCategory = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('エラー', '画像ライブラリへのアクセス許可が必要です');
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets && result.assets[0]) {
+            try {
+                setLoading(true);
+                await uploadCategoryImage(userToken, editingCategory.id, result.assets[0].uri);
+                await loadCategories();
+                setShowImageModal(false);
+                setEditingCategory(null);
+                Alert.alert('完了', 'カテゴリー画像を更新しました');
+            } catch (error) {
+                console.error('画像アップロードエラー:', error);
+                Alert.alert('エラー', error.message || '画像のアップロードに失敗しました');
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
+    // 画像を削除
+    const removeImageFromCategory = async () => {
+        try {
+            setLoading(true);
+            await deleteCategoryImage(userToken, editingCategory.id);
+            await loadCategories();
+            setShowImageModal(false);
+            setEditingCategory(null);
+            Alert.alert('完了', 'カテゴリー画像を削除しました');
+        } catch (error) {
+            console.error('画像削除エラー:', error);
+            Alert.alert('エラー', error.message || '画像の削除に失敗しました');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 長押しでモーダルを表示
+    const handleLongPressCategory = (category) => {
+        if (category.id === 'all') return; // Allカテゴリは編集不可
+        setEditingCategory(category);
+        setShowImageModal(true);
     };
 
     // スクロール時の処理
@@ -188,9 +221,10 @@ export default function RecordListScreen({ navigation }) {
     }
 
     // データを3カラムに分割
-    const leftColumnData = records.filter((_, i) => i % 3 === 0);
-    const midColumnData = records.filter((_, i) => i % 3 === 1);
-    const rightColumnData = records.filter((_, i) => i % 3 === 2);
+    // (この部分は不要になりましたが、削除することで他のコードに影響を与えないようコメントアウトします)
+    // const leftColumnData = records.filter((_, i) => i % 3 === 0);
+    // const midColumnData = records.filter((_, i) => i % 3 === 1);
+    // const rightColumnData = records.filter((_, i) => i % 3 === 2);
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
@@ -211,77 +245,94 @@ export default function RecordListScreen({ navigation }) {
             </View>
 
             {/* ユーザー情報ヘッダー */}
-            <View style={[styles.userHeader, { 
+            <View style={[styles.userHeaderContainer, { 
                 backgroundColor: theme.colors.background,
                 borderBottomColor: theme.colors.border 
             }]}>
-                <TouchableOpacity 
-                    style={[styles.userIconContainer, { backgroundColor: theme.colors.secondaryBackground }]}
-                    onPress={() => navigation.navigate('ProfileEdit')}
-                    activeOpacity={0.7}
+                {/* アイコン横一列エリア */}
+                <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.iconScrollContainer}
+                    contentContainerStyle={styles.iconScrollContent}
                 >
-                    {userInfo?.avatar_url ? (
-                        <Image 
-                            source={{ uri: `${SERVER_URL}/${userInfo.avatar_url}` }} 
-                            style={styles.userAvatar}
-                        />
-                    ) : (
-                        <Ionicons name="person-circle-outline" size={70} color={theme.colors.icon} />
-                    )}
-                </TouchableOpacity>
-                <View style={styles.userInfoText}>
+                    {/* ユーザーアイコン */}
+                    <TouchableOpacity 
+                        style={styles.iconItem}
+                        onPress={() => navigation.navigate('ProfileEdit')}
+                        activeOpacity={0.7}
+                    >
+                        <View style={[styles.userIconContainer, { 
+                            backgroundColor: theme.colors.secondaryBackground,
+                            borderColor: theme.colors.border 
+                        }]}>
+                            {userInfo?.avatar_url ? (
+                                <Image 
+                                    source={{ uri: `${SERVER_URL}/${userInfo.avatar_url}` }} 
+                                    style={styles.userAvatar}
+                                />
+                            ) : (
+                                <Ionicons name="person-circle-outline" size={68} color={theme.colors.icon} />
+                            )}
+                        </View>
+                        <Text style={[styles.iconLabel, { color: theme.colors.secondaryText }]}>
+                            Profile
+                        </Text>
+                    </TouchableOpacity>
+
+                    {/* カテゴリアイコン */}
+                    {categories.length > 0 && categories.map((category) => (
+                        <TouchableOpacity
+                            key={category.id}
+                            style={styles.iconItem}
+                            onPress={() => setSelectedCategory(category.id)}
+                            onLongPress={() => handleLongPressCategory(category)}
+                            activeOpacity={0.7}
+                        >
+                            <View style={[
+                                styles.categoryIconCircle,
+                                selectedCategory === category.id && styles.categoryIconCircleSelected,
+                                { 
+                                    backgroundColor: category.color ? `${category.color}20` : theme.colors.secondaryBackground,
+                                    borderColor: selectedCategory === category.id ? (category.color || theme.colors.primary) : 'transparent'
+                                }
+                            ]}>
+                                {category.image_url ? (
+                                    <Image 
+                                        source={{ uri: getImageUrl(category.image_url) }} 
+                                        style={styles.categoryImage}
+                                    />
+                                ) : (
+                                    <Ionicons 
+                                        name={category.icon} 
+                                        size={32} 
+                                        color={category.color || theme.colors.secondaryText} 
+                                    />
+                                )}
+                            </View>
+                            <Text style={[
+                                styles.iconLabel,
+                                { color: theme.colors.secondaryText },
+                                selectedCategory === category.id && [styles.iconLabelSelected, { color: theme.colors.text }]
+                            ]}>
+                                {category.name}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+
+                {/* ユーザー名とアーカイブ情報 */}
+                <View style={styles.userInfoSection}>
                     <Text style={[styles.userNameText, { color: theme.colors.text }]}>
-                        {userInfo?.user_name || 'ゲスト'}
+                        {selectedCategory === 'all' 
+                            ? (userInfo?.user_name || 'ゲスト')
+                            : categories.find(cat => cat.id === selectedCategory)?.name || (userInfo?.user_name || 'ゲスト')
+                        }
                     </Text>
                     <Text style={[styles.totalArchives, { color: theme.colors.inactive }]}>
                         Total Archives: {records.length}
                     </Text>
                 </View>
-                
-                {categories.length > 0 && (
-                    <ScrollView 
-                        horizontal 
-                        showsHorizontalScrollIndicator={false}
-                        style={styles.categoryScrollContainer}
-                        contentContainerStyle={[
-                            styles.categoryScrollContent,
-                            categories.length === 2 && styles.categoryScrollContentRightAlign
-                        ]}
-                    >
-                        {categories.map((category) => (
-                            <TouchableOpacity
-                                key={category.id}
-                                style={[
-                                    styles.categoryItem,
-                                    selectedCategory === category.id && styles.categoryItemSelected
-                                ]}
-                                onPress={() => setSelectedCategory(category.id)}
-                            >
-                                <View style={[
-                                    styles.categoryIconCircle,
-                                    selectedCategory === category.id && styles.categoryIconCircleSelected,
-                                    { 
-                                        backgroundColor: category.color ? `${category.color}20` : theme.colors.secondaryBackground,
-                                        borderColor: selectedCategory === category.id ? (category.color || theme.colors.primary) : 'transparent'
-                                    }
-                                ]}>
-                                    <Ionicons 
-                                        name={category.icon} 
-                                        size={20} 
-                                        color={category.color || theme.colors.secondaryText} 
-                                    />
-                                </View>
-                                <Text style={[
-                                    styles.categoryName,
-                                    { color: theme.colors.secondaryText },
-                                    selectedCategory === category.id && [styles.categoryNameSelected, { color: theme.colors.text }]
-                                ]}>
-                                    {category.name}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                )}
             </View>
 
             <View style={styles.mainContent}>
@@ -292,7 +343,7 @@ export default function RecordListScreen({ navigation }) {
                 >
                     {records.length > 0 ? (
                         <View style={styles.gridContainer}>
-                            {renderPackedGrid()}
+                            {renderGrid()}
                         </View>
                     ) : (
                         <View style={styles.emptyContainer}>
@@ -316,6 +367,85 @@ export default function RecordListScreen({ navigation }) {
                     </View>
                 )}
             </View>
+
+            {/* カテゴリ画像変更モーダル */}
+            <Modal
+                visible={showImageModal}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => {
+                    setShowImageModal(false);
+                    setEditingCategory(null);
+                }}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.imageModalContent, { backgroundColor: theme.colors.card }]}>
+                        <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+                            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
+                                カテゴリー画像を変更
+                            </Text>
+                            <TouchableOpacity onPress={() => {
+                                setShowImageModal(false);
+                                setEditingCategory(null);
+                            }}>
+                                <Ionicons name="close" size={28} color={theme.colors.icon} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.modalBody}>
+                            {editingCategory && (
+                                <View style={styles.currentImageContainer}>
+                                    <View 
+                                        style={[
+                                            styles.modalCategoryIconCircle, 
+                                            { backgroundColor: editingCategory.color }
+                                        ]}
+                                    >
+                                        {editingCategory.image_url ? (
+                                            <Image 
+                                                source={{ uri: getImageUrl(editingCategory.image_url) }} 
+                                                style={styles.modalCategoryImage}
+                                            />
+                                        ) : (
+                                            <Ionicons 
+                                                name={editingCategory.icon} 
+                                                size={48} 
+                                                color="#fff" 
+                                            />
+                                        )}
+                                    </View>
+                                    <Text style={[styles.categoryNameInModal, { color: theme.colors.text }]}>
+                                        {editingCategory.name}
+                                    </Text>
+                                </View>
+                            )}
+
+                            <TouchableOpacity 
+                                style={[styles.modalButton, { backgroundColor: theme.colors.primary }]}
+                                onPress={pickImageForCategory}
+                            >
+                                <Ionicons name="image" size={24} color="#fff" />
+                                <Text style={styles.modalButtonText}>画像を選択</Text>
+                            </TouchableOpacity>
+
+                            {editingCategory?.image_url && (
+                                <TouchableOpacity 
+                                    style={[styles.modalButton, styles.deleteButton, { 
+                                        backgroundColor: theme.colors.secondaryBackground,
+                                        borderColor: '#FF3B30'
+                                    }]}
+                                    onPress={removeImageFromCategory}
+                                >
+                                    <Ionicons name="trash" size={24} color="#FF3B30" />
+                                    <Text style={[styles.modalButtonText, { color: '#FF3B30' }]}>
+                                        画像を削除
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -347,78 +477,79 @@ const styles = StyleSheet.create({
     notificationButton: {
         padding: 4,
     },
-    userHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingTop: 4,
-        paddingBottom: 6,
+    userHeaderContainer: {
+        paddingVertical: 16,
         borderBottomWidth: 1,
     },
+    iconScrollContainer: {
+        paddingHorizontal: 16,
+    },
+    iconScrollContent: {
+        alignItems: 'center',
+        paddingVertical: 4,
+    },
+    iconItem: {
+        alignItems: 'center',
+        marginRight: 16,
+    },
     userIconContainer: {
-        marginRight: 12,
-        width: 60,
-        height: 60,
-        borderRadius: 30,
+        width: 75,
+        height: 75,
+        borderRadius: 37.5,
         overflow: 'hidden',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    userAvatar: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-    },
-    userInfoText: {
-        flex: 0,
-        marginRight: 8,
-    },
-    userNameText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    totalArchives: {
-        fontSize: 12,
-    },
-    categoryScrollContainer: {
-        flex: 1,
-        maxHeight: 80,
-    },
-    categoryScrollContent: {
-        alignItems: 'center',
-        flexGrow: 1,
-    },
-    categoryScrollContentRightAlign: {
-        justifyContent: 'flex-end',
-    },
-    categoryItem: {
-        alignItems: 'center',
-        marginHorizontal: 8,
-    },
-    categoryIconCircle: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2,
     },
+    userAvatar: {
+        width: 75,
+        height: 75,
+        borderRadius: 37.5,
+    },
+    categoryIconCircle: {
+        width: 75,
+        height: 75,
+        borderRadius: 37.5,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        overflow: 'hidden',
+    },
     categoryIconCircleSelected: {
         // 選択時のスタイル
     },
-    categoryName: {
-        fontSize: 10,
-        marginTop: 4,
+    categoryImage: {
+        width: 75,
+        height: 75,
+        borderRadius: 37.5,
     },
-    categoryNameSelected: {
+    iconLabel: {
+        fontSize: 11,
+        marginTop: 6,
+        textAlign: 'center',
+    },
+    iconLabelSelected: {
         fontWeight: 'bold',
+    },
+    userInfoSection: {
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        alignItems: 'flex-start',
+    },
+    userNameText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    totalArchives: {
+        fontSize: 13,
+        marginTop: 2,
     },
     mainContent: {
         flex: 1,
         position: 'relative',
     },
     scrollContent: {
-        padding: 0,
+        padding: IMAGE_PADDING,
     },
     gridContainer: {
         width: '100%',
@@ -426,47 +557,30 @@ const styles = StyleSheet.create({
     rowContainer: {
         flexDirection: 'row',
         width: '100%',
+        marginBottom: IMAGE_PADDING,
     },
     galleryCard: {
-        backgroundColor: '#fff',
+        width: COLUMN_WIDTH,
+        height: COLUMN_WIDTH,
+        marginRight: IMAGE_PADDING,
         overflow: 'hidden',
-        borderWidth: 0.5,
-        borderColor: '#fff',
     },
     imageContainer: {
         width: '100%',
-        backgroundColor: '#fdfdfd',
-        // 余白なし
-        padding: 0,
+        height: '100%',
+        backgroundColor: '#f5f5f5',
     },
     galleryImage: {
         width: '100%',
         height: '100%',
         resizeMode: 'cover',
-        borderRadius: 0, // 角丸なし
     },
     placeholderGalleryImage: {
         width: '100%',
-        height: 150,
+        height: '100%',
         backgroundColor: '#f5f5f5',
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    galleryInfo: {
-        paddingTop: 8,
-        paddingHorizontal: 4,
-    },
-    galleryTitle: {
-        fontSize: 12,
-        fontWeight: '500',
-        color: '#444',
-        letterSpacing: 0.5,
-    },
-    galleryDate: {
-        fontSize: 9,
-        color: '#aaa',
-        marginTop: 2,
-        fontFamily: 'serif', // 高級感を出すためにセリフ体（利用可能な場合）
     },
     floatingDateContainer: {
         position: 'absolute',
@@ -500,5 +614,76 @@ const styles = StyleSheet.create({
         flex: 1, 
         justifyContent: 'center', 
         alignItems: 'center' 
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'flex-end',
+    },
+    imageModalContent: {
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 10,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        paddingTop: 24,
+        paddingBottom: 16,
+        borderBottomWidth: 1,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+    },
+    modalBody: {
+        paddingHorizontal: 24,
+        paddingVertical: 24,
+        paddingBottom: 40,
+    },
+    currentImageContainer: {
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    modalCategoryIconCircle: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 12,
+        overflow: 'hidden',
+    },
+    modalCategoryImage: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+    },
+    categoryNameInModal: {
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    modalButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 16,
+        borderRadius: 12,
+        marginBottom: 12,
+    },
+    deleteButton: {
+        borderWidth: 2,
+    },
+    modalButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#fff',
+        marginLeft: 8,
     },
 });
