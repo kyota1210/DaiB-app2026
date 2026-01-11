@@ -121,7 +121,7 @@ export default function RecordDetailScreen({ route, navigation }) {
 
     const handleEdit = () => {
         setShowMenu(false);
-        navigation.navigate('EditRecord', { record: currentRecord });
+        navigation.navigate('PhotoPicker', { record: currentRecord });
     };
 
     const handleMenuPress = () => {

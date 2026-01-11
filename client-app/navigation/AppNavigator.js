@@ -11,7 +11,6 @@ import { useLanguage } from '../context/LanguageContext';
 import LoginScreen from '../screens/LoginScreen'; 
 import SignupScreen from '../screens/SignupScreen';
 import RecordListScreen from '../screens/RecordListScreen';
-import CreateRecordScreen from '../screens/CreateRecordScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ThreadScreen from '../screens/ThreadScreen';
 import InsightScreen from '../screens/InsightScreen';
@@ -23,6 +22,7 @@ import PremiumPlanScreen from '../screens/PremiumPlanScreen';
 import CategoryManagementScreen from '../screens/CategoryManagementScreen';
 import ThemeSettingScreen from '../screens/ThemeSettingScreen';
 import LanguageSettingScreen from '../screens/LanguageSettingScreen';
+import PhotoPickerScreen from '../screens/PhotoPickerScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -75,7 +75,7 @@ const MainTabNavigator = () => {
       />
       <Tab.Screen 
         name="Create" 
-        component={CreateRecordScreen} 
+        component={PhotoPickerScreen} 
         options={{ title: t('create') }}
       />
       <Tab.Screen 
@@ -199,8 +199,8 @@ const AppNavigator = () => {
             }} 
           />
           <Stack.Screen 
-            name="EditRecord" 
-            component={CreateRecordScreen} 
+            name="PhotoPicker" 
+            component={PhotoPickerScreen} 
             options={{ 
               headerShown: false,
               presentation: 'modal'

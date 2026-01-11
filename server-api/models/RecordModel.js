@@ -7,6 +7,7 @@ class RecordModel {
     static async findAllByUserId(userId, categoryId = null) {
         let sql = `
             SELECT r.id, r.title, r.description, r.created_at, r.date_logged, r.image_url, r.category_id,
+                   r.aspect_ratio,
                    c.name as category_name, c.icon as category_icon, c.color as category_color
             FROM records r
             LEFT JOIN categories c ON r.category_id = c.id
@@ -32,6 +33,7 @@ class RecordModel {
     static async findById(id, userId) {
         const sql = `
             SELECT r.id, r.title, r.description, r.created_at, r.date_logged, r.image_url, r.category_id,
+                   r.aspect_ratio,
                    c.name as category_name, c.icon as category_icon, c.color as category_color
             FROM records r
             LEFT JOIN categories c ON r.category_id = c.id
@@ -44,32 +46,40 @@ class RecordModel {
     /**
      * 新しい記録を作成
      */
-    static async create({ userId, title, description, dateLogged, imageUrl, categoryId }) {
-        // image_url と category_id を保存するように変更
+    static async create({ userId, title, description, dateLogged, imageUrl, categoryId, aspectRatio }) {
         const sql = `
-            INSERT INTO records (user_id, title, description, date_logged, invalidation_flag, image_url, category_id) 
-            VALUES (?, ?, ?, ?, 0, ?, ?)
+            INSERT INTO records (user_id, title, description, date_logged, invalidation_flag, image_url, category_id, aspect_ratio) 
+            VALUES (?, ?, ?, ?, 0, ?, ?, ?)
         `;
-        const [result] = await db.query(sql, [userId, title, description, dateLogged, imageUrl, categoryId || null]);
+        const [result] = await db.query(sql, [
+            userId, 
+            title, 
+            description, 
+            dateLogged, 
+            imageUrl, 
+            categoryId || null,
+            aspectRatio || '1:1'
+        ]);
         return result.insertId;
     }
 
     /**
      * 記録を更新（IDと所有者を確認）
      */
-    static async update(id, userId, { title, description, categoryId, dateLogged, imageUrl }) {
-        let sql = 'UPDATE records SET title = ?, description = ?, category_id = ?, date_logged = ?';
-        const params = [title, description, categoryId || null, dateLogged, id, userId];
+    static async update(id, userId, { title, description, categoryId, dateLogged, imageUrl, aspectRatio }) {
+        let sql = 'UPDATE records SET title = ?, description = ?, category_id = ?, date_logged = ?, aspect_ratio = ?';
+        const params = [title, description, categoryId || null, dateLogged, aspectRatio || '1:1'];
 
         if (imageUrl) {
-            sql = 'UPDATE records SET title = ?, description = ?, category_id = ?, date_logged = ?, image_url = ?';
-            params.splice(4, 0, imageUrl); // imageUrlを5番目に挿入
+            sql += ', image_url = ?';
+            params.push(imageUrl);
         }
 
         sql += ' WHERE id = ? AND user_id = ?';
+        params.push(id, userId);
 
         const [result] = await db.query(sql, params);
-        return result.affectedRows > 0; // 更新できたかどうかをbooleanで返す
+        return result.affectedRows > 0;
     }
 
     /**
