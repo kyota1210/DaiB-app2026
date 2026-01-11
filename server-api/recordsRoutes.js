@@ -41,7 +41,7 @@ router.post('/', (req, res, next) => {
         return res.status(400).json({ message: 'リクエストデータが読み取れませんでした。' });
     }
 
-    const { title, description, date_logged, category_id } = req.body;
+    const { title, description, date_logged, category_id, aspect_ratio, zoom_level, position_x, position_y } = req.body;
     const user_id = req.user.id;
 
     // 要件: 日付のみ必須
@@ -70,7 +70,11 @@ router.post('/', (req, res, next) => {
             description: recordDescription,
             dateLogged: date_logged,
             imageUrl,
-            categoryId: category_id || null
+            categoryId: category_id || null,
+            aspectRatio: aspect_ratio || '1:1',
+            zoomLevel: zoom_level ? parseFloat(zoom_level) : 1.0,
+            positionX: position_x ? parseInt(position_x) : 0,
+            positionY: position_y ? parseInt(position_y) : 0
         });
 
         res.status(201).json({ 
@@ -136,7 +140,7 @@ router.put('/:id', (req, res, next) => {
     });
 }, async (req, res) => {
     const { id } = req.params;
-    const { title, description, category_id, date_logged } = req.body;
+    const { title, description, category_id, date_logged, aspect_ratio, zoom_level, position_x, position_y } = req.body;
     const user_id = req.user.id;
 
     let imageUrl = null;
@@ -150,7 +154,11 @@ router.put('/:id', (req, res, next) => {
             description,
             categoryId: category_id || null,
             dateLogged: date_logged,
-            imageUrl
+            imageUrl,
+            aspectRatio: aspect_ratio,
+            zoomLevel: zoom_level !== undefined ? parseFloat(zoom_level) : undefined,
+            positionX: position_x !== undefined ? parseInt(position_x) : undefined,
+            positionY: position_y !== undefined ? parseInt(position_y) : undefined
         });
 
         if (!success) {

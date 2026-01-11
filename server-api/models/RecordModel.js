@@ -7,7 +7,7 @@ class RecordModel {
     static async findAllByUserId(userId, categoryId = null) {
         let sql = `
             SELECT r.id, r.title, r.description, r.created_at, r.date_logged, r.image_url, r.category_id,
-                   r.aspect_ratio,
+                   r.aspect_ratio, r.zoom_level, r.position_x, r.position_y,
                    c.name as category_name, c.icon as category_icon, c.color as category_color
             FROM records r
             LEFT JOIN categories c ON r.category_id = c.id
@@ -33,7 +33,7 @@ class RecordModel {
     static async findById(id, userId) {
         const sql = `
             SELECT r.id, r.title, r.description, r.created_at, r.date_logged, r.image_url, r.category_id,
-                   r.aspect_ratio,
+                   r.aspect_ratio, r.zoom_level, r.position_x, r.position_y,
                    c.name as category_name, c.icon as category_icon, c.color as category_color
             FROM records r
             LEFT JOIN categories c ON r.category_id = c.id
@@ -46,10 +46,10 @@ class RecordModel {
     /**
      * 新しい記録を作成
      */
-    static async create({ userId, title, description, dateLogged, imageUrl, categoryId, aspectRatio }) {
+    static async create({ userId, title, description, dateLogged, imageUrl, categoryId, aspectRatio, zoomLevel, positionX, positionY }) {
         const sql = `
-            INSERT INTO records (user_id, title, description, date_logged, invalidation_flag, image_url, category_id, aspect_ratio) 
-            VALUES (?, ?, ?, ?, 0, ?, ?, ?)
+            INSERT INTO records (user_id, title, description, date_logged, invalidation_flag, image_url, category_id, aspect_ratio, zoom_level, position_x, position_y) 
+            VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)
         `;
         const [result] = await db.query(sql, [
             userId, 
@@ -58,7 +58,10 @@ class RecordModel {
             dateLogged, 
             imageUrl, 
             categoryId || null,
-            aspectRatio || '1:1'
+            aspectRatio || '1:1',
+            zoomLevel || 1.0,
+            positionX || 0,
+            positionY || 0
         ]);
         return result.insertId;
     }
@@ -66,9 +69,18 @@ class RecordModel {
     /**
      * 記録を更新（IDと所有者を確認）
      */
-    static async update(id, userId, { title, description, categoryId, dateLogged, imageUrl, aspectRatio }) {
-        let sql = 'UPDATE records SET title = ?, description = ?, category_id = ?, date_logged = ?, aspect_ratio = ?';
-        const params = [title, description, categoryId || null, dateLogged, aspectRatio || '1:1'];
+    static async update(id, userId, { title, description, categoryId, dateLogged, imageUrl, aspectRatio, zoomLevel, positionX, positionY }) {
+        let sql = 'UPDATE records SET title = ?, description = ?, category_id = ?, date_logged = ?, aspect_ratio = ?, zoom_level = ?, position_x = ?, position_y = ?';
+        const params = [
+            title, 
+            description, 
+            categoryId || null, 
+            dateLogged, 
+            aspectRatio || '1:1',
+            zoomLevel !== undefined ? zoomLevel : 1.0,
+            positionX !== undefined ? positionX : 0,
+            positionY !== undefined ? positionY : 0
+        ];
 
         if (imageUrl) {
             sql += ', image_url = ?';

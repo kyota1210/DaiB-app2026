@@ -10,6 +10,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useRecordsApi } from '../api/records';
 import { fetchCategories } from '../api/categories';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { getImageUrl } from '../utils/imageHelper';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -25,17 +26,23 @@ export default function PhotoPickerScreen({ navigation, route }) {
     
     // 画像関連
     const [selectedImage, setSelectedImage] = useState(
-        editRecord?.image_url 
-            ? (editRecord.image_url.startsWith('http') 
-                ? editRecord.image_url 
-                : `http://192.168.11.12:3001${editRecord.image_url.startsWith('/') ? '' : '/'}${editRecord.image_url}`)
-            : null
+        editRecord?.image_url ? getImageUrl(editRecord.image_url) : null
     );
-    // 編集モードでは、保存されている画像がすでにトリミング済みなので、そのまま表示
+    // 新しい画像が選択されたかどうかを追跡
+    const [isNewImageSelected, setIsNewImageSelected] = useState(false);
+    // 元画像のサイズ
+    const [originalImageSize, setOriginalImageSize] = useState({ width: 0, height: 0 });
+    // 表示用画像サイズ（初期スケール適用後）
     const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+    // 初期スケール（元画像→画面サイズへの変換）
+    const [initialScale, setInitialScale] = useState(1.0);
     const [aspectMode, setAspectMode] = useState(editRecord?.aspect_ratio || '1:1');
-    const [scale, setScale] = useState(1.0);
-    const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
+    // scaleは初期スケールからの追加ズーム
+    const [scale, setScale] = useState(editRecord?.zoom_level ? parseFloat(editRecord.zoom_level) : 1.0);
+    const [panPosition, setPanPosition] = useState({ 
+        x: editRecord?.position_x ? parseInt(editRecord.position_x) : 0, 
+        y: editRecord?.position_y ? parseInt(editRecord.position_y) : 0
+    });
     
     // フォーム入力
     const [title, setTitle] = useState(editRecord?.title || '');
@@ -65,11 +72,13 @@ export default function PhotoPickerScreen({ navigation, route }) {
     const panPositionRef = useRef(panPosition);
     const imageSizeRef = useRef(imageSize);
     const aspectModeRef = useRef(aspectMode);
+    const initialScaleRef = useRef(initialScale);
     
     useEffect(() => { scaleRef.current = scale; }, [scale]);
     useEffect(() => { panPositionRef.current = panPosition; }, [panPosition]);
     useEffect(() => { imageSizeRef.current = imageSize; }, [imageSize]);
     useEffect(() => { aspectModeRef.current = aspectMode; }, [aspectMode]);
+    useEffect(() => { initialScaleRef.current = initialScale; }, [initialScale]);
     
     // カテゴリーを取得
     useEffect(() => {
@@ -108,20 +117,28 @@ export default function PhotoPickerScreen({ navigation, route }) {
         if (!isEditMode) {
             pickImage();
         } else if (selectedImage) {
-            // 編集モードでも画像サイズを取得してみる（エラーハンドリング付き）
+            // 編集モードでは元画像サイズを取得し、保存されたトリミング範囲を復元
             Image.getSize(
                 selectedImage, 
                 (width, height) => {
-                    console.log('Successfully got image size:', width, height);
-                    setImageSize({ width, height });
-                    const initialScale = calculateInitialScale(width, height, aspectMode);
-                    setScale(initialScale);
+                    console.log('Edit mode - original image size:', width, height);
+                    setOriginalImageSize({ width, height });
+                    
+                    // 初期スケールを計算
+                    const calcInitialScale = calculateInitialScale(width, height, aspectMode);
+                    setInitialScale(calcInitialScale);
+                    
+                    // 表示用サイズを設定（初期スケール適用後）
+                    setImageSize({ 
+                        width: width * calcInitialScale, 
+                        height: height * calcInitialScale 
+                    });
+                    
+                    // 保存されたスケールとパン位置は既に初期化済み
                 },
                 (error) => {
                     console.log('Failed to get size for image:', selectedImage, error);
-                    // エラー時は強制的にデフォルトサイズを設定
                     setImageSize({ width: SCREEN_WIDTH, height: SCREEN_WIDTH });
-                    setScale(1.0);
                 }
             );
         }
@@ -334,13 +351,16 @@ export default function PhotoPickerScreen({ navigation, route }) {
         if (!result.canceled && result.assets && result.assets[0]) {
             const uri = result.assets[0].uri;
             setSelectedImage(uri);
+            setIsNewImageSelected(true); // 新しい画像が選択されたことをマーク
             
             Image.getSize(uri, (width, height) => {
-                setImageSize({ width, height });
-                const initialScale = calculateInitialScale(width, height, aspectMode);
-                setScale(initialScale);
+                setOriginalImageSize({ width, height });
+                const calcInitialScale = calculateInitialScale(width, height, aspectMode);
+                setInitialScale(calcInitialScale);
+                setImageSize({ width: width * calcInitialScale, height: height * calcInitialScale });
+                setScale(1.0); // 初期スケールからの追加ズームは1.0
                 setPanPosition({ x: 0, y: 0 });
-                gestureState.startScale = initialScale;
+                gestureState.startScale = 1.0;
             });
         }
     };
@@ -349,17 +369,22 @@ export default function PhotoPickerScreen({ navigation, route }) {
     const toggleAspectMode = () => {
         let newMode;
         if (aspectMode === '1:1') {
-            newMode = imageSize.width >= imageSize.height ? '4:3' : '3:4';
+            newMode = originalImageSize.width >= originalImageSize.height ? '4:3' : '3:4';
         } else {
             newMode = '1:1';
         }
         
         setAspectMode(newMode);
         
-        const initialScale = calculateInitialScale(imageSize.width, imageSize.height, newMode);
-        setScale(initialScale);
+        const calcInitialScale = calculateInitialScale(originalImageSize.width, originalImageSize.height, newMode);
+        setInitialScale(calcInitialScale);
+        setImageSize({ 
+            width: originalImageSize.width * calcInitialScale, 
+            height: originalImageSize.height * calcInitialScale 
+        });
+        setScale(1.0); // 初期スケールからの追加ズームをリセット
         setPanPosition({ x: 0, y: 0 });
-        gestureState.startScale = initialScale;
+        gestureState.startScale = 1.0;
     };
 
     // 画像をトリミングする関数
@@ -425,17 +450,21 @@ export default function PhotoPickerScreen({ navigation, route }) {
 
         setLoading(true);
         try {
-            // 画像をトリミング
-            const croppedImageUri = await cropImage();
-            
             const recordData = { 
                 title,
                 description, 
                 date_logged: dateLogged.toISOString().split('T')[0], 
-                imageUri: croppedImageUri, // トリミング済み画像を使用
                 category_id: selectedCategoryId,
-                aspect_ratio: aspectMode
+                aspect_ratio: aspectMode,
+                zoom_level: scale,
+                position_x: Math.round(panPosition.x),
+                position_y: Math.round(panPosition.y)
             };
+            
+            // 新しい画像が選択された場合のみ元画像のURIを追加（トリミングしない）
+            if (isNewImageSelected) {
+                recordData.imageUri = selectedImage;
+            }
 
             if (isEditMode) {
                 await updateRecord(editRecord.id, recordData);
@@ -543,7 +572,12 @@ export default function PhotoPickerScreen({ navigation, route }) {
                         {selectedImage ? (
                             <>
                                 {/* 画像プレビュー */}
-                                <View style={styles.imageWrapper} {...panResponder.panHandlers}>
+                                <View style={[
+                                    styles.imageWrapper,
+                                    aspectMode === '1:1' && { aspectRatio: 1 },
+                                    aspectMode === '4:3' && { aspectRatio: 4/3 },
+                                    aspectMode === '3:4' && { aspectRatio: 3/4, width: SCREEN_WIDTH * 0.75 }
+                                ]} {...panResponder.panHandlers}>
                                     {(imageSize.width > 0 && imageSize.height > 0) || isEditMode ? (
                                         <Image
                                             source={{ uri: selectedImage }}
@@ -571,15 +605,13 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                     
                                     {/* コントロールボタン - 画像プレビュー内 */}
                                     <View style={styles.overlayControls}>
-                                        {/* 比率変更ボタン（左下）- 新規作成モードのみ */}
-                                        {!isEditMode && (
-                                            <TouchableOpacity
-                                                style={[styles.overlayButton, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}
-                                                onPress={toggleAspectMode}
-                                            >
-                                                <Ionicons name="crop" size={20} color="#fff" />
-                                            </TouchableOpacity>
-                                        )}
+                                        {/* 比率変更ボタン（左下）- 常に表示 */}
+                                        <TouchableOpacity
+                                            style={[styles.overlayButton, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}
+                                            onPress={toggleAspectMode}
+                                        >
+                                            <Ionicons name="crop" size={20} color="#fff" />
+                                        </TouchableOpacity>
                                         
                                         {/* 画像選択ボタン（右下）- 常に表示 */}
                                         <TouchableOpacity
@@ -687,10 +719,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                                     >
                                                         {category.icon_url && (
                                                             <Image 
-                                                                source={{ uri: category.icon_url.startsWith('http') 
-                                                                    ? category.icon_url 
-                                                                    : `http://192.168.11.12:3001${category.icon_url}` 
-                                                                }} 
+                                                                source={{ uri: getImageUrl(category.icon_url) }} 
                                                                 style={styles.categoryIcon}
                                                             />
                                                         )}
@@ -773,7 +802,6 @@ const styles = StyleSheet.create({
     },
     imageWrapper: {
         width: SCREEN_WIDTH,
-        aspectRatio: 1,
         backgroundColor: '#000',
         overflow: 'hidden',
         justifyContent: 'center',

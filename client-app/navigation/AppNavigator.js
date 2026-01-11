@@ -203,7 +203,7 @@ const AppNavigator = () => {
             component={PhotoPickerScreen} 
             options={{ 
               headerShown: false,
-              presentation: 'modal'
+              presentation: 'card'
             }} 
           />
         </>

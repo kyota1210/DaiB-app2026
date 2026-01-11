@@ -9,28 +9,66 @@ import { getImageUrl } from '../utils/imageHelper';
 import { useFocusEffect } from '@react-navigation/native';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 // 各レコードアイテムコンポーネント
 const RecordItem = ({ item, theme, t }) => {
     const [imageAspectRatio, setImageAspectRatio] = useState(1);
+    const [displayImageSize, setDisplayImageSize] = useState({ width: 0, height: 0 });
     const imageUrl = getImageUrl(item.image_url);
     const date = new Date(item.date_logged);
     const dateString = date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    // トリミング情報（文字列を数値に変換）
+    const aspectRatio = item.aspect_ratio || '1:1';
+    const zoomLevel = parseFloat(item.zoom_level) || 1.0; // 初期スケールからの追加ズーム
+    const positionX = parseInt(item.position_x) || 0;
+    const positionY = parseInt(item.position_y) || 0;
 
     React.useEffect(() => {
         if (imageUrl) {
             Image.getSize(
                 imageUrl,
                 (width, height) => {
-                    setImageAspectRatio(width / height);
+                    // 表示コンテナのサイズを計算
+                    let containerWidth, containerHeight;
+                    if (aspectRatio === '1:1') {
+                        containerWidth = SCREEN_WIDTH;
+                        containerHeight = SCREEN_WIDTH;
+                        setImageAspectRatio(1);
+                    } else if (aspectRatio === '4:3') {
+                        containerWidth = SCREEN_WIDTH;
+                        containerHeight = SCREEN_WIDTH * 0.75;
+                        setImageAspectRatio(4 / 3);
+                    } else if (aspectRatio === '3:4') {
+                        containerWidth = SCREEN_WIDTH * 0.75;
+                        containerHeight = SCREEN_WIDTH;
+                        setImageAspectRatio(3 / 4);
+                    } else {
+                        containerWidth = SCREEN_WIDTH;
+                        containerHeight = SCREEN_WIDTH;
+                        setImageAspectRatio(1);
+                    }
+                    
+                    // 初期スケールを計算（元画像を画面サイズに合わせる）
+                    const initialScale = Math.max(
+                        containerWidth / width,
+                        containerHeight / height
+                    );
+                    
+                    // 表示用サイズ = 元画像 × 初期スケール
+                    setDisplayImageSize({
+                        width: width * initialScale,
+                        height: height * initialScale
+                    });
                 },
                 (error) => {
                     console.error('Image size fetch failed', error);
-                    setImageAspectRatio(16 / 9);
+                    setImageAspectRatio(1);
                 }
             );
         }
-    }, [imageUrl]);
+    }, [imageUrl, aspectRatio]);
 
     return (
         <View style={styles.recordItem}>
@@ -47,7 +85,33 @@ const RecordItem = ({ item, theme, t }) => {
                 </View>
             )}
 
-            {imageUrl ? (
+            {imageUrl && displayImageSize.width > 0 ? (
+                <View style={[
+                    styles.imageContainer, 
+                    { 
+                        aspectRatio: imageAspectRatio, 
+                        overflow: 'hidden', 
+                        backgroundColor: '#000', 
+                        justifyContent: 'center', 
+                        alignItems: 'center'
+                    },
+                    aspectRatio === '3:4' && { width: SCREEN_WIDTH * 0.75, alignSelf: 'center' }
+                ]}>
+                    <Image 
+                        source={{ uri: imageUrl }} 
+                        style={{
+                            width: displayImageSize.width,
+                            height: displayImageSize.height,
+                            transform: [
+                                { translateX: positionX },
+                                { translateY: positionY },
+                                { scale: zoomLevel } // 初期スケールからの追加ズーム
+                            ]
+                        }}
+                        resizeMode="cover"
+                    />
+                </View>
+            ) : imageUrl ? (
                 <View style={[styles.imageContainer, { aspectRatio: imageAspectRatio }]}>
                     <Image source={{ uri: imageUrl }} style={styles.image} />
                 </View>
