@@ -13,7 +13,6 @@ import SignupScreen from '../screens/SignupScreen';
 import RecordListScreen from '../screens/RecordListScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ThreadScreen from '../screens/ThreadScreen';
-import InsightScreen from '../screens/InsightScreen';
 // ↓ 追加
 import RecordDetailScreen from '../screens/RecordDetailScreen';
 import ProfileEditScreen from '../screens/ProfileEditScreen';
@@ -41,15 +40,10 @@ const MainTabNavigator = () => {
           let iconName;
 
           if (route.name === 'Home') {
-            // 「ホーム」→「ギャラリー」
-            iconName = focused ? 'images' : 'images-outline';
-          } else if (route.name === 'Create') {
-            iconName = focused ? 'add-circle' : 'add-circle-outline';
+            // ホームアイコン
+            iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Thread') {
             iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
-          } else if (route.name === 'MyPage') {
-            // 「マイページ」→「設定」
-            iconName = focused ? 'settings' : 'settings-outline';
           }
 
           // アイコンサイズを少し大きく（デフォルト24→30）
@@ -74,19 +68,9 @@ const MainTabNavigator = () => {
         options={{ title: t('gallery') }} 
       />
       <Tab.Screen 
-        name="Create" 
-        component={PhotoPickerScreen} 
-        options={{ title: t('create') }}
-      />
-      <Tab.Screen 
         name="Thread" 
         component={ThreadScreen} 
         options={{ title: t('thread') }}
-      />
-      <Tab.Screen 
-        name="MyPage" 
-        component={ProfileScreen} 
-        options={{ title: t('settings') }} 
       />
     </Tab.Navigator>
   );
@@ -138,10 +122,10 @@ const AppNavigator = () => {
               presentation: 'card'
             }} 
           />
-          {/* ↓ 追加: インサイト画面 */}
+          {/* ↓ 追加: 設定画面 */}
           <Stack.Screen 
-            name="Insight" 
-            component={InsightScreen} 
+            name="MyPage" 
+            component={ProfileScreen} 
             options={{ 
               headerShown: false,
               presentation: 'card'

@@ -39,7 +39,14 @@ const ProfileScreen = ({ navigation }) => {
                 backgroundColor: theme.colors.background,
                 borderBottomColor: theme.colors.border 
             }]}>
+                <TouchableOpacity 
+                    style={styles.backButton}
+                    onPress={() => navigation.goBack()}
+                >
+                    <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
+                </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{t('settings')}</Text>
+                <View style={styles.placeholder} />
             </View>
 
             <ScrollView style={[styles.scrollView, { backgroundColor: theme.colors.secondaryBackground }]}>
@@ -163,15 +170,21 @@ const styles = StyleSheet.create({
     },
     topNavBar: {
         flexDirection: 'row',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderBottomWidth: 1,
     },
+    backButton: {
+        padding: 4,
+    },
     headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
+    },
+    placeholder: {
+        width: 32,
     },
     scrollView: {
         flex: 1,

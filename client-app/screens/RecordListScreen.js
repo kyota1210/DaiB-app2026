@@ -15,34 +15,73 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IMAGE_PADDING = 1; // 画像間の余白
 const COLUMN_WIDTH = (SCREEN_WIDTH - IMAGE_PADDING * 4) / 3; // 3列
 
-// 日付を "2024 October" 形式にフォーマットするヘルパー
-const formatFloatingDate = (dateString) => {
+// 日付を yyyy/mm/dd 形式にフォーマットする関数
+const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
     const year = date.getFullYear();
-    const month = date.toLocaleString('en-US', { month: 'long' });
-    return `${year} ${month}`;
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}/${month}/${day}`;
 };
 
 // ギャラリーアイテムコンポーネント
-const GalleryItem = ({ item, navigation, allRecords, itemIndex }) => {
+const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid', theme }) => {
     const imageUrl = getImageUrl(item.image_url);
+
+    // 表示形式に応じたスタイルを選択
+    const getItemStyle = () => {
+        if (viewMode === 'list') {
+            return [styles.listItem, { backgroundColor: theme.colors.card }];
+        } else if (viewMode === 'booklist') {
+            return styles.bookListItem;
+        } else {
+            return styles.galleryCard;
+        }
+    };
+
+    const getImageStyle = () => {
+        if (viewMode === 'list') {
+            return styles.listImage;
+        } else if (viewMode === 'booklist') {
+            return styles.bookListImage;
+        } else {
+            return styles.galleryImage;
+        }
+    };
+
+    const getContainerStyle = () => {
+        if (viewMode === 'list') {
+            return styles.listImageContainer;
+        } else if (viewMode === 'booklist') {
+            return styles.bookListImageContainer;
+        } else {
+            return styles.imageContainer;
+        }
+    };
 
     return (
         <TouchableOpacity 
-            style={styles.galleryCard} 
+            style={getItemStyle()} 
             onPress={() => navigation.navigate('RecordDetail', { 
                 records: allRecords,
                 initialIndex: itemIndex
             })}
             activeOpacity={0.9}
         >
-            <View style={styles.imageContainer}>
+            <View style={getContainerStyle()}>
                 {imageUrl ? (
-                    <Image source={{ uri: imageUrl }} style={styles.galleryImage} />
+                    <Image source={{ uri: imageUrl }} style={getImageStyle()} />
                 ) : (
-                    <View style={styles.placeholderGalleryImage}>
+                    <View style={[getContainerStyle(), styles.placeholderGalleryImage]}>
                         <Ionicons name="image" size={30} color="#ccc" />
+                    </View>
+                )}
+                {viewMode === 'list' && item.date_logged && (
+                    <View style={styles.listDateContainer}>
+                        <Text style={styles.listDateText}>
+                            {formatDate(item.date_logged)}
+                        </Text>
                     </View>
                 )}
             </View>
@@ -55,14 +94,12 @@ export default function RecordListScreen({ navigation }) {
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [categories, setCategories] = useState([]);
-    const [currentDateLabel, setCurrentDateLabel] = useState('');
-    const [showDateLabel, setShowDateLabel] = useState(false);
+    const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', 'booklist'
     
     const { fetchRecords } = useRecordsApi();
     const { userInfo, userToken } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
-    const scrollTimeout = useRef(null);
     const horizontalScrollViewRef = useRef(null);
     const categoryScrollViewRefs = useRef({});
 
@@ -113,10 +150,6 @@ export default function RecordListScreen({ navigation }) {
                     .map(cat => loadRecordsForCategory(cat.id));
                 await Promise.all(categoryPromises);
             }
-            
-            if (allRecords.length > 0) {
-                setCurrentDateLabel(formatFloatingDate(allRecords[0].date_logged));
-            }
         } catch (error) {
             Alert.alert('エラー', '記録の取得に失敗しました: ' + error.message);
         } finally {
@@ -124,17 +157,23 @@ export default function RecordListScreen({ navigation }) {
         }
     }, [loadRecordsForCategory, categories]);
 
+    // 空の状態を表示する共通関数
+    const renderEmpty = () => {
+        return (
+            <View style={styles.emptyContainer}>
+                <Ionicons name="document-text-outline" size={64} color={theme.colors.border} />
+                <Text style={[styles.emptyText, { color: theme.colors.border }]}>{t('noRecords')}</Text>
+                <Text style={[styles.emptySubText, { color: theme.colors.inactive }]}>
+                    {t('createFirstRecord')}
+                </Text>
+            </View>
+        );
+    };
+
+    // グリッド表示（横3列のスクエア表示）
     const renderGrid = (records) => {
         if (!records || records.length === 0) {
-            return (
-                <View style={styles.emptyContainer}>
-                    <Ionicons name="document-text-outline" size={64} color={theme.colors.border} />
-                    <Text style={[styles.emptyText, { color: theme.colors.border }]}>{t('noRecords')}</Text>
-                    <Text style={[styles.emptySubText, { color: theme.colors.inactive }]}>
-                        {t('createFirstRecord')}
-                    </Text>
-                </View>
-            );
+            return renderEmpty();
         }
 
         const rows = [];
@@ -149,12 +188,76 @@ export default function RecordListScreen({ navigation }) {
                             navigation={navigation}
                             allRecords={records}
                             itemIndex={i + index}
+                            viewMode="grid"
+                            theme={theme}
                         />
                     ))}
                 </View>
             );
         }
         return rows;
+    };
+
+    // リスト表示（縦一列で横長）
+    const renderList = (records) => {
+        if (!records || records.length === 0) {
+            return renderEmpty();
+        }
+
+        return (
+            <View style={styles.listContainer}>
+                {records.map((item, index) => (
+                    <GalleryItem 
+                        key={item.id} 
+                        item={item} 
+                        navigation={navigation}
+                        allRecords={records}
+                        itemIndex={index}
+                        viewMode="list"
+                        theme={theme}
+                    />
+                ))}
+            </View>
+        );
+    };
+
+    // ブックリスト表示（横3列で縦長表示）
+    const renderBookList = (records) => {
+        if (!records || records.length === 0) {
+            return renderEmpty();
+        }
+
+        const rows = [];
+        for (let i = 0; i < records.length; i += 3) {
+            const rowItems = records.slice(i, i + 3);
+            rows.push(
+                <View key={`row-${i}`} style={styles.rowContainer}>
+                    {rowItems.map((item, index) => (
+                        <GalleryItem 
+                            key={item.id} 
+                            item={item} 
+                            navigation={navigation}
+                            allRecords={records}
+                            itemIndex={i + index}
+                            viewMode="booklist"
+                            theme={theme}
+                        />
+                    ))}
+                </View>
+            );
+        }
+        return rows;
+    };
+
+    // 表示形式に応じたレンダリング関数を選択
+    const renderRecords = (records) => {
+        if (viewMode === 'list') {
+            return renderList(records);
+        } else if (viewMode === 'booklist') {
+            return renderBookList(records);
+        } else {
+            return renderGrid(records);
+        }
     };
 
     // カテゴリタブUIコンポーネント
@@ -180,13 +283,10 @@ export default function RecordListScreen({ navigation }) {
                                 style={[
                                     styles.categoryTab,
                                     isAllCategory && styles.categoryTabIcon,
-                                    isSelected && [
-                                        styles.categoryTabSelected, 
-                                        { backgroundColor: '#FF8C42' }
-                                    ],
-                                    !isSelected && {
+                                    {
                                         backgroundColor: theme.colors.secondaryBackground
-                                    }
+                                    },
+                                    isSelected && styles.categoryTabSelected
                                 ]}
                                 onPress={() => {
                                     isScrollingRef.current = true;
@@ -205,18 +305,24 @@ export default function RecordListScreen({ navigation }) {
                                 activeOpacity={0.7}
                             >
                                 {isAllCategory ? (
-                                    <Ionicons 
-                                        name="apps" 
-                                        size={20} 
-                                        color={isSelected ? '#fff' : theme.colors.text} 
-                                    />
+                                    <View style={styles.categoryTabContent}>
+                                        <Ionicons 
+                                            name="apps" 
+                                            size={20} 
+                                            color={theme.colors.text} 
+                                        />
+                                        {isSelected && <View style={styles.categoryTabUnderline} />}
+                                    </View>
                                 ) : (
-                                    <Text style={[
-                                        styles.categoryTabText,
-                                        { color: isSelected ? '#fff' : theme.colors.text }
-                                    ]}>
-                                        {category.name}
-                                    </Text>
+                                    <View style={styles.categoryTabContent}>
+                                        <Text style={[
+                                            styles.categoryTabText,
+                                            { color: theme.colors.text }
+                                        ]}>
+                                            {category.name}
+                                        </Text>
+                                        {isSelected && <View style={styles.categoryTabUnderline} />}
+                                    </View>
                                 )}
                             </TouchableOpacity>
                         );
@@ -229,27 +335,7 @@ export default function RecordListScreen({ navigation }) {
 
     // 縦スクロール時の処理（各カテゴリの画像グリッド内）
     const handleVerticalScroll = (event, categoryId) => {
-        const offsetY = event.nativeEvent.contentOffset.y;
-        const records = recordsByCategory[categoryId] || [];
-        
-        // 日付ラベルを表示
-        setShowDateLabel(true);
-        
-        // スクロール停止を検知してラベルを隠す
-        if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-        scrollTimeout.current = setTimeout(() => {
-            setShowDateLabel(false);
-        }, 1500);
-
-        // 現在表示されているアイテムから日付を推定（簡易版）
-        const itemIndex = Math.floor(offsetY / 200); // 概算のアイテム高さ
-        const targetItem = records[itemIndex * 2]; // 2列なので
-        if (targetItem) {
-            const label = formatFloatingDate(targetItem.date_logged);
-            if (label !== currentDateLabel) {
-                setCurrentDateLabel(label);
-            }
-        }
+        // スクロール処理（必要に応じて追加の処理を実装可能）
     };
 
     // 横スワイプ時の処理
@@ -333,13 +419,42 @@ export default function RecordListScreen({ navigation }) {
                 <Text style={[styles.appName, { color: theme.colors.text }]}>Otium</Text>
                 <View style={styles.iconButtons}>
                     <TouchableOpacity 
-                        style={styles.insightButton}
-                        onPress={() => navigation.navigate('Insight')}
+                        style={styles.viewModeButton}
+                        onPress={() => {
+                            // 表示形式を切り替え: grid -> list -> booklist -> grid
+                            if (viewMode === 'grid') {
+                                setViewMode('list');
+                            } else if (viewMode === 'list') {
+                                setViewMode('booklist');
+                            } else {
+                                setViewMode('grid');
+                            }
+                        }}
                     >
-                        <Ionicons name="analytics-outline" size={24} color={theme.colors.icon} />
+                        {viewMode === 'booklist' ? (
+                            <View style={{ transform: [{ rotate: '90deg' }] }}>
+                                <Ionicons 
+                                    name="reorder-three-outline"
+                                    size={24} 
+                                    color={theme.colors.icon} 
+                                />
+                            </View>
+                        ) : (
+                            <Ionicons 
+                                name={
+                                    viewMode === 'grid' ? 'grid-outline' : 
+                                    'list-outline'
+                                } 
+                                size={24} 
+                                color={theme.colors.icon} 
+                            />
+                        )}
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.notificationButton}>
-                        <Ionicons name="notifications-outline" size={24} color={theme.colors.icon} />
+                    <TouchableOpacity 
+                        style={styles.settingsButton}
+                        onPress={() => navigation.navigate('MyPage')}
+                    >
+                        <Ionicons name="settings-outline" size={24} color={theme.colors.icon} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -370,9 +485,6 @@ export default function RecordListScreen({ navigation }) {
                                 <Ionicons name="person-circle-outline" size={68} color={theme.colors.icon} />
                             )}
                         </View>
-                        <Text style={[styles.iconLabel, { color: theme.colors.secondaryText }]}>
-                            Profile
-                        </Text>
                     </TouchableOpacity>
 
                     {/* ユーザー名とアーカイブ情報 */}
@@ -385,6 +497,15 @@ export default function RecordListScreen({ navigation }) {
                         </Text>
                     </View>
                 </View>
+
+                {/* 投稿ボタン（右側） */}
+                <TouchableOpacity 
+                    style={styles.createButton}
+                    onPress={() => navigation.navigate('PhotoPicker')}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="add" size={28} color={theme.colors.icon} />
+                </TouchableOpacity>
             </View>
 
             <View style={styles.mainContent}>
@@ -417,23 +538,12 @@ export default function RecordListScreen({ navigation }) {
                                 style={styles.categoryPage}
                             >
                                 <View style={styles.gridContainer}>
-                                    {renderGrid(categoryRecords)}
+                                    {renderRecords(categoryRecords)}
                                 </View>
                             </ScrollView>
                         );
                     })}
                 </ScrollView>
-
-                {/* フローティング日付インジケーター */}
-                {showDateLabel && currentDateLabel !== '' && (
-                    <View style={styles.floatingDateContainer}>
-                        <Text style={[styles.floatingDateText, { 
-                            color: theme.isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)' 
-                        }]}>
-                            {currentDateLabel}
-                        </Text>
-                    </View>
-                )}
             </View>
 
         </SafeAreaView>
@@ -460,14 +570,17 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
     },
-    insightButton: {
+    viewModeButton: {
         padding: 4,
         marginRight: 12,
     },
-    notificationButton: {
+    settingsButton: {
         padding: 4,
     },
     userHeaderContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         paddingVertical: 16,
         paddingHorizontal: 16,
         borderBottomWidth: 1,
@@ -475,6 +588,12 @@ const styles = StyleSheet.create({
     profileSection: {
         flexDirection: 'row',
         alignItems: 'center',
+        flex: 1,
+    },
+    createButton: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 8,
     },
     iconItem: {
         alignItems: 'center',
@@ -541,11 +660,21 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
     },
     categoryTabSelected: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.15,
-        shadowRadius: 6,
-        elevation: 4,
+        // 選択時のスタイル（下線は別途追加）
+    },
+    categoryTabContent: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+    },
+    categoryTabUnderline: {
+        position: 'absolute',
+        bottom: -8,
+        left: 0,
+        right: 0,
+        height: 2,
+        backgroundColor: '#4CAF50',
+        borderRadius: 1,
     },
     categoryTabText: {
         fontSize: 13,
@@ -585,26 +714,68 @@ const styles = StyleSheet.create({
         height: '100%',
         resizeMode: 'cover',
     },
+    // リスト表示用スタイル
+    listContainer: {
+        width: '100%',
+        paddingHorizontal: 8,
+    },
+    listItem: {
+        width: '100%',
+        height: 150,
+        marginBottom: 8,
+        borderRadius: 12,
+        overflow: 'hidden',
+        padding: 4,
+    },
+    listImageContainer: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 8,
+        backgroundColor: '#f5f5f5',
+        overflow: 'hidden',
+    },
+    listImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
+    listDateContainer: {
+        position: 'absolute',
+        bottom: 8,
+        right: 8,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    listDateText: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: '#fff',
+    },
+    // ブックリスト表示用スタイル
+    bookListItem: {
+        width: COLUMN_WIDTH,
+        height: COLUMN_WIDTH * 1.5, // 縦長（1.5倍）
+        marginRight: IMAGE_PADDING,
+        overflow: 'hidden',
+    },
+    bookListImageContainer: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#f5f5f5',
+    },
+    bookListImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
     placeholderGalleryImage: {
         width: '100%',
         height: '100%',
         backgroundColor: '#f5f5f5',
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    floatingDateContainer: {
-        position: 'absolute',
-        bottom: 40, // 下部に配置
-        left: 0,
-        right: 0,
-        alignItems: 'center',
-        zIndex: 1000,
-    },
-    floatingDateText: {
-        fontSize: 14,
-        fontWeight: '300',
-        letterSpacing: 4,
-        textTransform: 'uppercase',
     },
     emptyContainer: {
         alignItems: 'center',

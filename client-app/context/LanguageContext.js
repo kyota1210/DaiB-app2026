@@ -149,14 +149,6 @@ const translations = {
         languageApplied: 'この言語が適用されています',
         languageAutoApplied: 'システム設定に従って自動的に適用されています',
         languageChangeNote: '言語を変更すると、アプリ全体の表示が即座に切り替わります。',
-        
-        // Insight画面
-        insight: 'Insight',
-        totalRecordsCount: '総記録数',
-        thisMonth: '今月',
-        thisWeek: '今週',
-        categories: 'カテゴリー',
-        activity: 'アクティビティ',
         averagePerMonth: '件/月',
         longestStreak: '最長ストリーク',
         days: '日',
@@ -337,11 +329,6 @@ const translations = {
         languageApplied: 'This language is applied',
         languageAutoApplied: 'Automatically applied based on system settings',
         languageChangeNote: 'Changing the language will immediately update the entire app display.',
-        
-        // Insight screen
-        insight: 'Insight',
-        totalRecordsCount: 'Total Records',
-        thisMonth: 'This Month',
         thisWeek: 'This Week',
         categories: 'Categories',
         activity: 'Activity',
