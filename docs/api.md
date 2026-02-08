@@ -178,7 +178,6 @@ Authorization: Bearer <JWT_TOKEN>
     "category_id": 1,
     "category_name": "仕事",
     "category_icon": "briefcase",
-    "category_color": "#FF5733",
     "aspect_ratio": "1:1",
     "zoom_level": 1.0,
     "position_x": 0,
@@ -194,7 +193,6 @@ Authorization: Bearer <JWT_TOKEN>
     "category_id": null,
     "category_name": null,
     "category_icon": null,
-    "category_color": null,
     "aspect_ratio": "16:9",
     "zoom_level": 1.5,
     "position_x": 10,
@@ -230,7 +228,6 @@ Authorization: Bearer <JWT_TOKEN>
   "category_id": 1,
   "category_name": "仕事",
   "category_icon": "briefcase",
-  "category_color": "#FF5733",
   "aspect_ratio": "1:1",
   "zoom_level": 1.0,
   "position_x": 0,
@@ -324,8 +321,6 @@ Authorization: Bearer <JWT_TOKEN>
       "id": 1,
       "name": "仕事",
       "icon": "briefcase",
-      "color": "#FF5733",
-      "image_url": "uploads/categories/category-1234567890.jpg",
       "created_at": "2025-12-01T10:00:00.000Z",
       "updated_at": "2025-12-01T10:00:00.000Z"
     },
@@ -333,14 +328,14 @@ Authorization: Bearer <JWT_TOKEN>
       "id": 2,
       "name": "プライベート",
       "icon": "home",
-      "color": "#33C3F0",
-      "image_url": null,
       "created_at": "2025-12-02T10:00:00.000Z",
       "updated_at": "2025-12-02T10:00:00.000Z"
     }
   ]
 }
 ```
+
+**注意**: カテゴリーの画像と色設定機能は削除されました。`color`と`image_url`フィールドは返されません。
 
 ---
 
@@ -353,8 +348,7 @@ Authorization: Bearer <JWT_TOKEN>
 ```json
 {
   "name": "仕事",
-  "icon": "briefcase",
-  "color": "#FF5733"
+  "icon": "briefcase"
 }
 ```
 
@@ -366,8 +360,6 @@ Authorization: Bearer <JWT_TOKEN>
     "id": 1,
     "name": "仕事",
     "icon": "briefcase",
-    "color": "#FF5733",
-    "image_url": null,
     "created_at": "2025-12-07T10:00:00.000Z",
     "updated_at": "2025-12-07T10:00:00.000Z"
   }
@@ -375,7 +367,7 @@ Authorization: Bearer <JWT_TOKEN>
 ```
 
 **エラーレスポンス**:
-- `400`: カテゴリー名、アイコン、カラーが未入力
+- `400`: カテゴリー名、アイコンが未入力
 - `401`: 認証トークンが無効
 - `500`: サーバーエラー
 
@@ -393,8 +385,7 @@ Authorization: Bearer <JWT_TOKEN>
 ```json
 {
   "name": "仕事（更新）",
-  "icon": "briefcase",
-  "color": "#FF0000"
+  "icon": "briefcase"
 }
 ```
 
@@ -406,8 +397,6 @@ Authorization: Bearer <JWT_TOKEN>
     "id": 1,
     "name": "仕事（更新）",
     "icon": "briefcase",
-    "color": "#FF0000",
-    "image_url": "uploads/categories/category-1234567890.jpg",
     "created_at": "2025-12-07T10:00:00.000Z",
     "updated_at": "2025-12-07T11:00:00.000Z"
   }
@@ -415,7 +404,7 @@ Authorization: Bearer <JWT_TOKEN>
 ```
 
 **エラーレスポンス**:
-- `400`: カテゴリー名、アイコン、カラーが未入力
+- `400`: カテゴリー名、アイコンが未入力
 - `401`: 認証トークンが無効
 - `404`: カテゴリーが見つからない
 - `500`: サーバーエラー
@@ -443,74 +432,6 @@ Authorization: Bearer <JWT_TOKEN>
 - `500`: サーバーエラー
 
 **注意**: 物理削除です。関連する記録の `category_id` は NULL になります。
-
----
-
-#### PUT /api/categories/:id/image
-カテゴリー画像のアップロード
-
-**認証**: 必要
-
-**パスパラメータ**:
-- `id` (integer): カテゴリーID
-
-**リクエスト**:
-- Content-Type: `multipart/form-data`
-- ボディ:
-  - `image` (file, 必須): 画像ファイル（5MB以下）
-
-**レスポンス（成功: 200）**:
-```json
-{
-  "message": "カテゴリー画像をアップロードしました。",
-  "category": {
-    "id": 1,
-    "name": "仕事",
-    "icon": "briefcase",
-    "color": "#FF5733",
-    "image_url": "uploads/categories/category-1234567890.jpg",
-    "created_at": "2025-12-07T10:00:00.000Z",
-    "updated_at": "2025-12-07T11:00:00.000Z"
-  }
-}
-```
-
-**エラーレスポンス**:
-- `400`: 画像ファイルが必要、または画像サイズが5MBを超える
-- `401`: 認証トークンが無効
-- `404`: カテゴリーが見つからない
-- `500`: サーバーエラー
-
----
-
-#### DELETE /api/categories/:id/image
-カテゴリー画像の削除
-
-**認証**: 必要
-
-**パスパラメータ**:
-- `id` (integer): カテゴリーID
-
-**レスポンス（成功: 200）**:
-```json
-{
-  "message": "カテゴリー画像を削除しました。",
-  "category": {
-    "id": 1,
-    "name": "仕事",
-    "icon": "briefcase",
-    "color": "#FF5733",
-    "image_url": null,
-    "created_at": "2025-12-07T10:00:00.000Z",
-    "updated_at": "2025-12-07T11:00:00.000Z"
-  }
-}
-```
-
-**エラーレスポンス**:
-- `401`: 認証トークンが無効
-- `404`: カテゴリーが見つからない、または画像が設定されていない
-- `500`: サーバーエラー
 
 ---
 

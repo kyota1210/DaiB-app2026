@@ -6,12 +6,10 @@ class CategoryModel {
      */
     static async findAllByUserId(userId) {
         const sql = `
-            SELECT c.id, c.name, c.icon, c.color, c.created_at, c.updated_at,
-                   ci.image_url
-            FROM categories c
-            LEFT JOIN category_images ci ON c.id = ci.category_id
-            WHERE c.user_id = ? 
-            ORDER BY c.created_at ASC
+            SELECT id, name, created_at, updated_at
+            FROM categories
+            WHERE user_id = ? 
+            ORDER BY created_at ASC
         `;
         const [rows] = await db.query(sql, [userId]);
         return rows;
@@ -22,11 +20,9 @@ class CategoryModel {
      */
     static async findById(id, userId) {
         const sql = `
-            SELECT c.id, c.name, c.icon, c.color, c.created_at, c.updated_at,
-                   ci.image_url
-            FROM categories c
-            LEFT JOIN category_images ci ON c.id = ci.category_id
-            WHERE c.id = ? AND c.user_id = ?
+            SELECT id, name, created_at, updated_at
+            FROM categories
+            WHERE id = ? AND user_id = ?
         `;
         const [rows] = await db.query(sql, [id, userId]);
         return rows[0];
@@ -35,25 +31,25 @@ class CategoryModel {
     /**
      * 新しいカテゴリーを作成
      */
-    static async create({ userId, name, icon, color }) {
+    static async create({ userId, name }) {
         const sql = `
-            INSERT INTO categories (user_id, name, icon, color) 
-            VALUES (?, ?, ?, ?)
+            INSERT INTO categories (user_id, name) 
+            VALUES (?, ?)
         `;
-        const [result] = await db.query(sql, [userId, name, icon, color]);
+        const [result] = await db.query(sql, [userId, name]);
         return result.insertId;
     }
 
     /**
      * カテゴリーを更新（IDと所有者を確認）
      */
-    static async update(id, userId, { name, icon, color }) {
+    static async update(id, userId, { name }) {
         const sql = `
             UPDATE categories 
-            SET name = ?, icon = ?, color = ? 
+            SET name = ? 
             WHERE id = ? AND user_id = ?
         `;
-        const [result] = await db.query(sql, [name, icon, color, id, userId]);
+        const [result] = await db.query(sql, [name, id, userId]);
         return result.affectedRows > 0;
     }
 

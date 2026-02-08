@@ -7,8 +7,7 @@ Otiumアプリケーションは以下のエンティティで構成されてい
 1. **users** - ユーザー情報
 2. **records** - 記録
 3. **categories** - カテゴリー
-4. **category_images** - カテゴリー画像
-5. **user_avatars** - ユーザーアバター画像
+4. **user_avatars** - ユーザーアバター画像
 
 ## ER図
 
@@ -55,22 +54,9 @@ Otiumアプリケーションは以下のエンティティで構成されてい
 │   user_id (FK) → users.id           │
 │   name                              │
 │   icon                              │
-│   color                             │
 │   created_at                        │
 │   updated_at                        │
 └──────────────┬──────────────────────┘
-               │ 1
-               │
-               │ 0..1
-┌──────────────▼──────────────────────┐
-│       category_images              │
-├─────────────────────────────────────┤
-│ * id (PK)                           │
-│   category_id (FK) → categories.id │
-│   image_url                         │
-│   created_at                        │
-│   updated_at                        │
-└─────────────────────────────────────┘
 
 ┌─────────────────────────────────────┐
 │        user_avatars                │
@@ -158,7 +144,6 @@ Otiumアプリケーションは以下のエンティティで構成されてい
 | user_id | INT | FOREIGN KEY, NOT NULL | ユーザーID（外部キー → users.id） |
 | name | VARCHAR(255) | NOT NULL | カテゴリー名 |
 | icon | VARCHAR(50) | NOT NULL | アイコン名（例: "home", "work"） |
-| color | VARCHAR(7) | NOT NULL | カテゴリーの色（HEX形式、例: "#FF5733"） |
 | created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | 作成日時 |
 | updated_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新日時 |
 
@@ -169,37 +154,10 @@ Otiumアプリケーションは以下のエンティティで構成されてい
 **関連**:
 - 多対1: users（複数のカテゴリーは1ユーザーに属する）
 - 1対多: records（1カテゴリーは複数の記録を持つ）
-- 1対0..1: category_images（1カテゴリーは0または1つの画像を持つ）
 
 **ビジネスルール**:
 - ユーザーごとに独立したカテゴリー
-- `name`, `icon`, `color` は必須
-
----
-
-### 4. category_images（カテゴリー画像）
-
-カテゴリーに設定された画像を管理するテーブル
-
-| カラム名 | データ型 | 制約 | 説明 |
-|---------|---------|------|------|
-| id | INT | PRIMARY KEY, AUTO_INCREMENT | 画像ID（主キー） |
-| category_id | INT | FOREIGN KEY, NOT NULL, UNIQUE | カテゴリーID（外部キー → categories.id） |
-| image_url | VARCHAR(500) | NOT NULL | 画像ファイルのパス（例: "uploads/categories/filename.jpg"） |
-| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | 作成日時 |
-| updated_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新日時 |
-
-**インデックス**:
-- PRIMARY KEY: `id`
-- FOREIGN KEY: `category_id` REFERENCES `categories(id)`
-- UNIQUE INDEX: `category_id`（1カテゴリーに1画像のみ）
-
-**関連**:
-- 1対1: categories（1画像は1カテゴリーに属する）
-
-**ビジネスルール**:
-- 1カテゴリーにつき1画像のみ設定可能
-- カテゴリー削除時、関連する画像も削除される
+- `name` は必須
 
 ---
 
@@ -259,10 +217,7 @@ Otiumアプリケーションは以下のエンティティで構成されてい
 2. **records.category_id** → **categories.id**
    - カテゴリーが削除された場合: `category_id` は NULL になる（物理削除のため）
 
-3. **category_images.category_id** → **categories.id**
-   - カテゴリーが削除された場合: 関連する画像レコードも削除される
-
-4. **user_avatars.user_id** → **users.id**
+3. **user_avatars.user_id** → **users.id**
    - ユーザーが削除された場合の動作: 未定義（現状、ユーザー削除機能なし）
 
 ### 論理削除
@@ -274,7 +229,6 @@ Otiumアプリケーションは以下のエンティティで構成されてい
 
 - **categories** テーブルは物理削除を採用
   - 削除時はレコードを完全に削除
-  - 関連する `category_images` も削除
   - 関連する `records.category_id` は NULL になる
 
 ---
@@ -317,7 +271,8 @@ Otiumアプリケーションは以下のエンティティで構成されてい
 テーブル作成スクリプトは `server-api/scripts/` ディレクトリにあります：
 
 - `create_categories_table.js` - categories テーブル作成
-- `create_category_images_table.js` - category_images テーブル作成
 - `create_user_avatars_table.js` - user_avatars テーブル作成
+
+**注意**: `category_images`テーブルは削除されました。関連するマイグレーションスクリプトは `migrate_drop_category_images_table.js` を参照してください。
 
 データベース設計ファイル（A5:SQL Mk-2形式）は `Doc/DDL/otium.a5er` にあります。

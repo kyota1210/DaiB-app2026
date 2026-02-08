@@ -8,7 +8,7 @@ class RecordModel {
         let sql = `
             SELECT r.id, r.title, r.description, r.created_at, r.date_logged, r.image_url, r.category_id,
                    r.aspect_ratio, r.zoom_level, r.position_x, r.position_y,
-                   c.name as category_name, c.icon as category_icon, c.color as category_color
+                   c.name as category_name
             FROM records r
             LEFT JOIN categories c ON r.category_id = c.id
             WHERE r.user_id = ? AND r.invalidation_flag = 0
@@ -34,7 +34,7 @@ class RecordModel {
         const sql = `
             SELECT r.id, r.title, r.description, r.created_at, r.date_logged, r.image_url, r.category_id,
                    r.aspect_ratio, r.zoom_level, r.position_x, r.position_y,
-                   c.name as category_name, c.icon as category_icon, c.color as category_color
+                   c.name as category_name
             FROM records r
             LEFT JOIN categories c ON r.category_id = c.id
             WHERE r.id = ? AND r.user_id = ? AND r.invalidation_flag = 0
