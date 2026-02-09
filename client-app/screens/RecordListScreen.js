@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useContext, useRef } from 'react';
 import { StyleSheet, Text, View, Alert, ActivityIndicator, TouchableOpacity, Image, ScrollView, Dimensions, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { useRecordsApi } from '../api/records';
 import { fetchCategories, updateCategory } from '../api/categories';
 import { useFocusEffect } from '@react-navigation/native';
@@ -99,6 +100,9 @@ export default function RecordListScreen({ navigation }) {
     const [editingCategory, setEditingCategory] = useState(null);
     const [categoryName, setCategoryName] = useState('');
     const [expandedBio, setExpandedBio] = useState(false);
+    const [showCategorySuccessModal, setShowCategorySuccessModal] = useState(false);
+    const [showCategoryErrorModal, setShowCategoryErrorModal] = useState(false);
+    const [categoryErrorMessage, setCategoryErrorMessage] = useState('');
     
     const { fetchRecords } = useRecordsApi();
     const { userInfo, userToken } = useContext(AuthContext);
@@ -127,7 +131,8 @@ export default function RecordListScreen({ navigation }) {
     // カテゴリーを更新する関数
     const handleUpdateCategory = async () => {
         if (!categoryName.trim()) {
-            Alert.alert('エラー', 'カテゴリー名を入力してください');
+            setCategoryErrorMessage('カテゴリー名を入力してください');
+            setShowCategoryErrorModal(true);
             return;
         }
 
@@ -141,10 +146,14 @@ export default function RecordListScreen({ navigation }) {
             setShowEditModal(false);
             setEditingCategory(null);
             setCategoryName('');
-            Alert.alert('完了', 'カテゴリーを更新しました');
+            setShowCategorySuccessModal(true);
+            setTimeout(() => {
+                setShowCategorySuccessModal(false);
+            }, 2000);
         } catch (error) {
             console.error('カテゴリー更新エラー:', error);
-            Alert.alert('エラー', error.message || 'カテゴリーの更新に失敗しました');
+            setCategoryErrorMessage(error.message || 'カテゴリーの更新に失敗しました');
+            setShowCategoryErrorModal(true);
         } finally {
             setLoading(false);
         }
@@ -676,6 +685,76 @@ export default function RecordListScreen({ navigation }) {
                 </KeyboardAvoidingView>
             </Modal>
 
+            {/* カテゴリー更新成功モーダル */}
+            <Modal
+                visible={showCategorySuccessModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowCategorySuccessModal(false)}
+            >
+                <BlurView
+                    intensity={20}
+                    tint="dark"
+                    style={styles.categoryModalOverlay}
+                >
+                    <TouchableOpacity
+                        style={styles.modalOverlayTouchable}
+                        activeOpacity={1}
+                        onPress={() => setShowCategorySuccessModal(false)}
+                    >
+                        <View style={[styles.categorySuccessModalContent, { backgroundColor: theme.colors.card }]}>
+                            <View style={[styles.categorySuccessIconContainer, { backgroundColor: theme.colors.primary + '20' }]}>
+                                <Ionicons name="checkmark-circle" size={48} color={theme.colors.primary} />
+                            </View>
+                            <Text style={[styles.categorySuccessTitle, { color: theme.colors.text }]}>
+                                完了
+                            </Text>
+                            <Text style={[styles.categorySuccessMessage, { color: theme.colors.secondaryText }]}>
+                                カテゴリーを更新しました
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
+                </BlurView>
+            </Modal>
+
+            {/* カテゴリー更新エラーモーダル */}
+            <Modal
+                visible={showCategoryErrorModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowCategoryErrorModal(false)}
+            >
+                <BlurView
+                    intensity={20}
+                    tint="dark"
+                    style={styles.categoryModalOverlay}
+                >
+                    <TouchableOpacity
+                        style={styles.modalOverlayTouchable}
+                        activeOpacity={1}
+                        onPress={() => setShowCategoryErrorModal(false)}
+                    >
+                        <View style={[styles.categoryErrorModalContent, { backgroundColor: theme.colors.card }]}>
+                            <View style={[styles.categoryErrorIconContainer, { backgroundColor: '#FF3B30' + '20' }]}>
+                                <Ionicons name="close-circle" size={48} color="#FF3B30" />
+                            </View>
+                            <Text style={[styles.categoryErrorTitle, { color: theme.colors.text }]}>
+                                エラー
+                            </Text>
+                            <Text style={[styles.categoryErrorMessage, { color: theme.colors.secondaryText }]}>
+                                {categoryErrorMessage}
+                            </Text>
+                            <TouchableOpacity
+                                style={[styles.categoryErrorButton, { backgroundColor: theme.colors.primary }]}
+                                onPress={() => setShowCategoryErrorModal(false)}
+                            >
+                                <Text style={styles.categoryErrorButtonText}>OK</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                </BlurView>
+            </Modal>
+
         </SafeAreaView>
     );
 }
@@ -1020,5 +1099,97 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#fff',
         letterSpacing: 0.2,
+    },
+    categoryModalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalOverlayTouchable: {
+        flex: 1,
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    categorySuccessModalContent: {
+        borderRadius: 20,
+        padding: 32,
+        alignItems: 'center',
+        minWidth: 280,
+        maxWidth: '80%',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 8,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 16,
+        elevation: 10,
+    },
+    categorySuccessIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    categorySuccessTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    categorySuccessMessage: {
+        fontSize: 14,
+        textAlign: 'center',
+        lineHeight: 20,
+    },
+    categoryErrorModalContent: {
+        borderRadius: 20,
+        padding: 32,
+        alignItems: 'center',
+        minWidth: 280,
+        maxWidth: '80%',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 8,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 16,
+        elevation: 10,
+    },
+    categoryErrorIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    categoryErrorTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    categoryErrorMessage: {
+        fontSize: 14,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 24,
+    },
+    categoryErrorButton: {
+        paddingHorizontal: 32,
+        paddingVertical: 12,
+        borderRadius: 20,
+        minWidth: 120,
+    },
+    categoryErrorButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+        textAlign: 'center',
     },
 });
