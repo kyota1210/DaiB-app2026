@@ -117,24 +117,44 @@ const ProfileScreen = ({ navigation }) => {
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('other')}</Text>
                     <View style={[styles.menuSection, { backgroundColor: theme.colors.card }]}>
-                        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}>
+                        <TouchableOpacity 
+                            style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
+                            onPress={() => navigation.navigate('Help')}
+                        >
                             <Ionicons name="help-circle-outline" size={24} color={theme.colors.icon} />
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('help')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}>
+                        <TouchableOpacity 
+                            style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
+                            onPress={() => navigation.navigate('About')}
+                        >
                             <Ionicons name="information-circle-outline" size={24} color={theme.colors.icon} />
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('about')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}>
+                        <TouchableOpacity 
+                            style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
+                            onPress={() => navigation.navigate('Terms')}
+                        >
                             <Ionicons name="document-text-outline" size={24} color={theme.colors.icon} />
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('terms')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}>
+                        <TouchableOpacity 
+                            style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
+                            onPress={() => navigation.navigate('Privacy')}
+                        >
                             <Ionicons name="shield-checkmark-outline" size={24} color={theme.colors.icon} />
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('privacy')}</Text>
+                            <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                            style={styles.menuItem}
+                            onPress={() => navigation.navigate('Contact')}
+                        >
+                            <Ionicons name="mail-outline" size={24} color={theme.colors.icon} />
+                            <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('contact')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
                     </View>

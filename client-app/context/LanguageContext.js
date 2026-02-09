@@ -40,6 +40,7 @@ const translations = {
         about: 'アプリについて',
         terms: '利用規約',
         privacy: 'プライバシーポリシー',
+        contact: 'お問い合わせ',
         logout: 'ログアウト',
         profileSettings: 'プロフィール設定',
         
@@ -224,6 +225,7 @@ const translations = {
         about: 'About',
         terms: 'Terms of Service',
         privacy: 'Privacy Policy',
+        contact: 'Contact',
         logout: 'Logout',
         profileSettings: 'Profile Settings',
         

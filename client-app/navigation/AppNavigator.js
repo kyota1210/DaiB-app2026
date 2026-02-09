@@ -22,6 +22,11 @@ import PremiumPlanScreen from '../screens/PremiumPlanScreen';
 import CategoryManagementScreen from '../screens/CategoryManagementScreen';
 import LanguageSettingScreen from '../screens/LanguageSettingScreen';
 import PhotoPickerScreen from '../screens/PhotoPickerScreen';
+import HelpScreen from '../screens/HelpScreen';
+import AboutScreen from '../screens/AboutScreen';
+import TermsScreen from '../screens/TermsScreen';
+import PrivacyScreen from '../screens/PrivacyScreen';
+import ContactScreen from '../screens/ContactScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -233,6 +238,46 @@ const AppNavigator = () => {
           <Stack.Screen 
             name="PhotoPicker" 
             component={PhotoPickerScreen} 
+            options={{ 
+              headerShown: false,
+              presentation: 'card'
+            }} 
+          />
+          <Stack.Screen 
+            name="Help" 
+            component={HelpScreen} 
+            options={{ 
+              headerShown: false,
+              presentation: 'card'
+            }} 
+          />
+          <Stack.Screen 
+            name="About" 
+            component={AboutScreen} 
+            options={{ 
+              headerShown: false,
+              presentation: 'card'
+            }} 
+          />
+          <Stack.Screen 
+            name="Terms" 
+            component={TermsScreen} 
+            options={{ 
+              headerShown: false,
+              presentation: 'card'
+            }} 
+          />
+          <Stack.Screen 
+            name="Privacy" 
+            component={PrivacyScreen} 
+            options={{ 
+              headerShown: false,
+              presentation: 'card'
+            }} 
+          />
+          <Stack.Screen 
+            name="Contact" 
+            component={ContactScreen} 
             options={{ 
               headerShown: false,
               presentation: 'card'
