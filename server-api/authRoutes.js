@@ -79,10 +79,19 @@ router.post('/login', async (req, res) => {
             { expiresIn: '1d' }
         );
 
+        // ユーザー情報を再取得（bioを含む）
+        const fullUser = await UserModel.findById(user.id);
+        const avatar = await UserAvatarModel.findByUserId(user.id);
+
         // トークンとユーザー情報をクライアントに返す
         res.status(200).json({
             token: token,
-            user: { id: user.id, user_name: user.user_name }
+            user: { 
+                id: fullUser.id, 
+                user_name: fullUser.user_name,
+                bio: fullUser.bio || null,
+                avatar_url: avatar ? avatar.image_url : null
+            }
         });
 
     } catch (error) {
@@ -113,6 +122,7 @@ router.get('/me', auth, async (req, res) => {
                 id: user.id, 
                 user_name: user.user_name,
                 email: user.email,
+                bio: user.bio || null,
                 avatar_url: avatar ? avatar.image_url : null
             }
         });
