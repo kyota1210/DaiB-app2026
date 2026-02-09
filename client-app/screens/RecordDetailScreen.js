@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Alert, ActivityIndicator, Modal, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, Modal, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRecordsApi } from '../api/records';
@@ -71,20 +71,11 @@ const RecordItem = ({ item, theme, t }) => {
     }, [imageUrl, aspectRatio]);
 
     return (
-        <View style={styles.recordItem}>
-            {/* タイトル */}
-            {item.title && (
-                <View style={styles.titleContainer}>
-                    <Text 
-                        style={[styles.title, { color: theme.colors.text }]}
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                    >
-                        {item.title}
-                    </Text>
-                </View>
-            )}
-
+        <ScrollView 
+            style={styles.recordItem}
+            contentContainerStyle={styles.recordItemContent}
+            showsVerticalScrollIndicator={true}
+        >
             {imageUrl && displayImageSize.width > 0 ? (
                 <View style={[
                     styles.imageContainer, 
@@ -126,13 +117,20 @@ const RecordItem = ({ item, theme, t }) => {
 
             <View style={styles.infoContainer}>
                 <Text style={[styles.date, { color: theme.colors.secondaryText }]}>{dateString}</Text>
+                {item.title && (
+                    <Text 
+                        style={[styles.title, { color: theme.colors.text }]}
+                    >
+                        {item.title}
+                    </Text>
+                )}
                 {item.description && (
                     <Text style={[styles.description, { color: theme.colors.secondaryText }]}>
                         {item.description}
                     </Text>
                 )}
             </View>
-        </View>
+        </ScrollView>
     );
 };
 
@@ -141,7 +139,7 @@ export default function RecordDetailScreen({ route, navigation }) {
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
     const [showMenu, setShowMenu] = useState(false);
     const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
-    const flatListRef = useRef(null);
+    const scrollViewRef = useRef(null);
     const menuButtonRef = useRef(null);
     const { deleteRecord } = useRecordsApi();
     const { theme } = useTheme();
@@ -149,16 +147,26 @@ export default function RecordDetailScreen({ route, navigation }) {
 
     const currentRecord = records[currentIndex];
 
-    // スクロール時に現在のインデックスを更新
-    const onViewableItemsChanged = useRef(({ viewableItems }) => {
-        if (viewableItems.length > 0) {
-            setCurrentIndex(viewableItems[0].index);
+    // 横スクロール終了時に現在のインデックスを更新
+    const handleMomentumScrollEnd = (event) => {
+        const offsetX = event.nativeEvent.contentOffset.x;
+        const index = Math.round(offsetX / SCREEN_WIDTH);
+        if (index >= 0 && index < records.length) {
+            setCurrentIndex(index);
         }
-    }).current;
+    };
 
-    const viewabilityConfig = useRef({
-        itemVisiblePercentThreshold: 50
-    }).current;
+    // 初期表示時に正しい位置にスクロール
+    React.useEffect(() => {
+        if (scrollViewRef.current && initialIndex > 0) {
+            setTimeout(() => {
+                scrollViewRef.current?.scrollTo({
+                    x: SCREEN_WIDTH * initialIndex,
+                    animated: false,
+                });
+            }, 100);
+        }
+    }, [initialIndex]);
 
     const handleDelete = () => {
         setShowMenu(false);
@@ -197,11 +205,6 @@ export default function RecordDetailScreen({ route, navigation }) {
         }
     };
 
-    // 各レコードのレンダリング
-    const renderRecordItem = ({ item }) => {
-        return <RecordItem item={item} theme={theme} t={t} />;
-    };
-
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
             {/* ヘッダー */}
@@ -222,25 +225,22 @@ export default function RecordDetailScreen({ route, navigation }) {
                 </TouchableOpacity>
             </View>
 
-            <FlatList
-                ref={flatListRef}
-                data={records}
-                renderItem={renderRecordItem}
-                keyExtractor={(item) => item.id.toString()}
-                initialScrollIndex={initialIndex}
-                onViewableItemsChanged={onViewableItemsChanged}
-                viewabilityConfig={viewabilityConfig}
-                getItemLayout={(data, index) => ({
-                    length: SCREEN_HEIGHT - 100, // ヘッダー分を引いた画面の高さ
-                    offset: (SCREEN_HEIGHT - 100) * index,
-                    index,
-                })}
-                showsVerticalScrollIndicator={true}
-                pagingEnabled={true}
+            {/* 横スワイプで投稿を切り替えるScrollView */}
+            <ScrollView
+                ref={scrollViewRef}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={handleMomentumScrollEnd}
                 decelerationRate="fast"
-                snapToInterval={SCREEN_HEIGHT - 100}
-                snapToAlignment="start"
-            />
+                style={styles.horizontalScrollView}
+            >
+                {records.map((record, index) => (
+                    <View key={record.id.toString()} style={styles.recordWrapper}>
+                        <RecordItem item={record} theme={theme} t={t} />
+                    </View>
+                ))}
+            </ScrollView>
 
             {/* メニューモーダル */}
             <Modal
@@ -309,16 +309,23 @@ const styles = StyleSheet.create({
     menuButton: {
         padding: 4,
     },
-    recordItem: {
-        height: SCREEN_HEIGHT - 100, // ヘッダー分を引いた画面の高さ
+    horizontalScrollView: {
+        flex: 1,
     },
-    titleContainer: {
-        paddingHorizontal: 6,
-        paddingTop: 12,
+    recordWrapper: {
+        width: SCREEN_WIDTH,
+    },
+    recordItem: {
+        flex: 1,
+    },
+    recordItemContent: {
+        flexGrow: 1,
+        paddingBottom: 20,
     },
     title: {
-        flex: 1,
-        fontSize: 10,
+        fontSize: 18,
+        fontWeight: '600',
+        marginBottom: 12,
     },
     imageContainer: {
         width: '100%',
@@ -339,15 +346,11 @@ const styles = StyleSheet.create({
         marginTop: 10 
     },
     infoContainer: { 
-        padding: 10,
-        minHeight: 100,
+        padding: 16,
+        paddingTop: 16,
     },
     date: { 
         fontSize: 14, 
-        marginBottom: 8 
-    },
-    title: { 
-        fontSize: 18, 
         marginBottom: 12 
     },
     description: { 
