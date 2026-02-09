@@ -110,14 +110,6 @@ const ProfileScreen = ({ navigation }) => {
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('languageSettings')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
-                        <TouchableOpacity 
-                            style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
-                            onPress={() => navigation.navigate('ThemeSetting')}
-                        >
-                            <Ionicons name="color-palette-outline" size={24} color={theme.colors.icon} />
-                            <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('themeSettings')}</Text>
-                            <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
-                        </TouchableOpacity>
                     </View>
                 </View>
 

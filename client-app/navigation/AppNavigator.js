@@ -2,7 +2,8 @@ import * as React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text, View, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -19,7 +20,6 @@ import ProfileEditScreen from '../screens/ProfileEditScreen';
 import LoginInfoScreen from '../screens/LoginInfoScreen';
 import PremiumPlanScreen from '../screens/PremiumPlanScreen';
 import CategoryManagementScreen from '../screens/CategoryManagementScreen';
-import ThemeSettingScreen from '../screens/ThemeSettingScreen';
 import LanguageSettingScreen from '../screens/LanguageSettingScreen';
 import PhotoPickerScreen from '../screens/PhotoPickerScreen';
 
@@ -33,34 +33,90 @@ const MainTabNavigator = () => {
   const { theme } = useTheme();
   const { t } = useLanguage();
   
+  // Liquid glassデザインのカスタムタブバー
+  const CustomTabBar = (props) => {
+    return (
+      <BlurView
+        intensity={80}
+        tint="dark"
+        style={styles.blurContainer}
+      >
+        <View style={styles.tabBarContainer}>
+          {props.state.routes.map((route, index) => {
+            const { options } = props.descriptors[route.key];
+            const isFocused = props.state.index === index;
+            const color = isFocused ? '#fff' : theme.colors.inactive;
+
+            const onPress = () => {
+              const event = props.navigation.emit({
+                type: 'tabPress',
+                target: route.key,
+                canPreventDefault: true,
+              });
+
+              if (!isFocused && !event.defaultPrevented) {
+                props.navigation.navigate(route.name);
+              }
+            };
+
+            const onLongPress = () => {
+              props.navigation.emit({
+                type: 'tabLongPress',
+                target: route.key,
+              });
+            };
+
+            let iconName;
+            let IconComponent;
+            if (route.name === 'Home') {
+              IconComponent = MaterialIcons;
+              iconName = 'home';
+            } else if (route.name === 'Thread') {
+              IconComponent = Ionicons;
+              iconName = isFocused ? 'chatbubbles' : 'chatbubbles-outline';
+            }
+
+            return (
+              <TouchableOpacity
+                key={route.key}
+                accessibilityRole="button"
+                accessibilityState={isFocused ? { selected: true } : {}}
+                accessibilityLabel={options.tabBarAccessibilityLabel}
+                testID={options.tabBarTestID}
+                onPress={onPress}
+                onLongPress={onLongPress}
+                style={styles.tabBarButton}
+              >
+                {isFocused ? (
+                  <BlurView
+                    intensity={20}
+                    tint="dark"
+                    style={styles.iconGlassContainer}
+                  >
+                    {IconComponent && (
+                      <IconComponent name={iconName} size={30} color={color} />
+                    )}
+                  </BlurView>
+                ) : (
+                  IconComponent && (
+                    <IconComponent name={iconName} size={30} color={color} />
+                  )
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </BlurView>
+    );
+  };
+  
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color }) => {
-          let iconName;
-
-          if (route.name === 'Home') {
-            // ホームアイコン
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Thread') {
-            iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
-          }
-
-          // アイコンサイズを少し大きく（デフォルト24→30）
-          return <Ionicons name={iconName} size={30} color={color} />;
-        },
-        tabBarActiveTintColor: theme.colors.primary, // アクティブな色
-        tabBarInactiveTintColor: theme.colors.inactive,  // 非アクティブな色
-        headerShown: false,              // タブ画面の上部タイトルバーを非表示
-        tabBarShowLabel: false,          // 下部メニュー名（ラベル）を非表示（アイコンのみ）
-        tabBarStyle: {
-          backgroundColor: theme.colors.card, // タブバーの背景色
-          borderTopColor: theme.colors.border, // 上部ボーダー色
-          borderTopWidth: 1,
-          paddingTop: 10,                // 上部余白を追加してアイコンを中央に
-          paddingBottom: 10,             // 下部余白を追加してアイコンを中央に
-        },
-      })}
+      tabBar={(props) => <CustomTabBar {...props} />}
+      screenOptions={{
+        headerShown: false,
+        tabBarShowLabel: false,
+      }}
     >
       <Tab.Screen 
         name="Home" 
@@ -167,14 +223,6 @@ const AppNavigator = () => {
           />
           {/* ↓ 追加: アプリ設定画面 */}
           <Stack.Screen 
-            name="ThemeSetting" 
-            component={ThemeSettingScreen} 
-            options={{ 
-              headerShown: false,
-              presentation: 'card'
-            }} 
-          />
-          <Stack.Screen 
             name="LanguageSetting" 
             component={LanguageSettingScreen} 
             options={{ 
@@ -207,6 +255,47 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
+  },
+  blurContainer: {
+    position: 'absolute',
+    bottom: 20,
+    alignSelf: 'center',
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  tabBarContainer: {
+    flexDirection: 'row',
+    height: 60,
+    paddingTop: 10,
+    paddingBottom: 10,
+    paddingHorizontal: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 40,
+  },
+  tabBarButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconGlassContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
 });
 

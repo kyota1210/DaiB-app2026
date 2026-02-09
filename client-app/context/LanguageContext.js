@@ -45,7 +45,6 @@ const translations = {
         
         // 記録画面
         noRecords: 'まだ記録がありません。',
-        createFirstRecord: '下の「作成」タブから新しい記録を追加しましょう。',
         totalArchives: 'Total Archives',
         recordDetail: '記録の詳細',
         
@@ -225,7 +224,6 @@ const translations = {
         
         // Records screen
         noRecords: 'No records yet.',
-        createFirstRecord: 'Add a new record from the "Create" tab below.',
         totalArchives: 'Total Archives',
         recordDetail: 'Record Detail',
         

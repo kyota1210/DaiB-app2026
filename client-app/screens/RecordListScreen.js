@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useContext, useRef } from 'react';
-import { StyleSheet, Text, View, Alert, ActivityIndicator, TouchableOpacity, Image, ScrollView, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, Alert, ActivityIndicator, TouchableOpacity, Image, ScrollView, Dimensions, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRecordsApi } from '../api/records';
-import { fetchCategories } from '../api/categories';
+import { fetchCategories, updateCategory } from '../api/categories';
 import { useFocusEffect } from '@react-navigation/native';
 import { getImageUrl } from '../utils/imageHelper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -91,10 +91,13 @@ const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid
 
 export default function RecordListScreen({ navigation }) {
     const [recordsByCategory, setRecordsByCategory] = useState({});
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [categories, setCategories] = useState([]);
     const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', 'booklist'
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingCategory, setEditingCategory] = useState(null);
+    const [categoryName, setCategoryName] = useState('');
     
     const { fetchRecords } = useRecordsApi();
     const { userInfo, userToken } = useContext(AuthContext);
@@ -118,7 +121,40 @@ export default function RecordListScreen({ navigation }) {
             console.error('カテゴリー取得エラー:', error);
             setCategories([]);
         }
-    }, [userToken, theme.colors.primary]);
+    }, [userToken]);
+
+    // カテゴリーを更新する関数
+    const handleUpdateCategory = async () => {
+        if (!categoryName.trim()) {
+            Alert.alert('エラー', 'カテゴリー名を入力してください');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await updateCategory(userToken, editingCategory.id, {
+                name: categoryName.trim(),
+            });
+
+            await loadCategories(); // カテゴリー一覧を再取得
+            setShowEditModal(false);
+            setEditingCategory(null);
+            setCategoryName('');
+            Alert.alert('完了', 'カテゴリーを更新しました');
+        } catch (error) {
+            console.error('カテゴリー更新エラー:', error);
+            Alert.alert('エラー', error.message || 'カテゴリーの更新に失敗しました');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 編集モーダルを閉じる
+    const resetEditForm = () => {
+        setShowEditModal(false);
+        setEditingCategory(null);
+        setCategoryName('');
+    };
 
     // 記録を取得する関数（特定のカテゴリ用）
     const loadRecordsForCategory = useCallback(async (categoryId) => {
@@ -163,9 +199,6 @@ export default function RecordListScreen({ navigation }) {
             <View style={styles.emptyContainer}>
                 <Ionicons name="document-text-outline" size={64} color={theme.colors.border} />
                 <Text style={[styles.emptyText, { color: theme.colors.border }]}>{t('noRecords')}</Text>
-                <Text style={[styles.emptySubText, { color: theme.colors.inactive }]}>
-                    {t('createFirstRecord')}
-                </Text>
             </View>
         );
     };
@@ -301,6 +334,14 @@ export default function RecordListScreen({ navigation }) {
                                     setTimeout(() => {
                                         isScrollingRef.current = false;
                                     }, 300);
+                                }}
+                                onLongPress={() => {
+                                    // "All"カテゴリは編集できないので、長押しを無効化
+                                    if (!isAllCategory) {
+                                        setEditingCategory(category);
+                                        setCategoryName(category.name);
+                                        setShowEditModal(true);
+                                    }
                                 }}
                                 activeOpacity={0.7}
                             >
@@ -545,6 +586,84 @@ export default function RecordListScreen({ navigation }) {
                     })}
                 </ScrollView>
             </View>
+
+            {/* カテゴリー編集モーダル */}
+            <Modal
+                visible={showEditModal}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={resetEditForm}
+            >
+                <KeyboardAvoidingView
+                    style={styles.modalOverlay}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                >
+                    <View style={styles.modalOverlayContent}>
+                        <View style={[styles.modalContent, { backgroundColor: theme.colors.card }]}>
+                            <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+                                <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
+                                    カテゴリーを編集
+                                </Text>
+                                <TouchableOpacity onPress={resetEditForm}>
+                                    <Ionicons name="close" size={28} color={theme.colors.icon} />
+                                </TouchableOpacity>
+                            </View>
+
+                            <ScrollView 
+                                style={styles.modalBody}
+                                keyboardShouldPersistTaps="handled"
+                                showsVerticalScrollIndicator={false}
+                            >
+                                {/* カテゴリー名 */}
+                                <View style={styles.inputGroup}>
+                                    <Text style={[styles.label, { color: theme.colors.text }]}>カテゴリー名</Text>
+                                    <TextInput
+                                        style={[styles.input, {
+                                            backgroundColor: theme.colors.secondaryBackground,
+                                            borderColor: theme.colors.border,
+                                            color: theme.colors.text
+                                        }]}
+                                        value={categoryName}
+                                        onChangeText={setCategoryName}
+                                        placeholder="例: 読書、運動、料理"
+                                        placeholderTextColor={theme.colors.inactive}
+                                        autoFocus={true}
+                                    />
+                                </View>
+
+                            </ScrollView>
+
+                            {/* ボタン */}
+                            <View style={[styles.modalFooter, { 
+                                borderTopColor: theme.colors.border,
+                                backgroundColor: theme.colors.card
+                            }]}>
+                                <TouchableOpacity 
+                                    style={[styles.cancelButton, {
+                                        backgroundColor: theme.colors.secondaryBackground,
+                                        borderColor: theme.colors.border
+                                    }]}
+                                    onPress={resetEditForm}
+                                >
+                                    <Text style={[styles.cancelButtonText, { color: theme.colors.secondaryText }]}>
+                                        キャンセル
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity 
+                                    style={[styles.saveButton, { backgroundColor: theme.colors.primary }]}
+                                    onPress={handleUpdateCategory}
+                                    disabled={loading}
+                                >
+                                    <Text style={styles.saveButtonText}>
+                                        更新
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
 
         </SafeAreaView>
     );
@@ -795,5 +914,97 @@ const styles = StyleSheet.create({
         flex: 1, 
         justifyContent: 'center', 
         alignItems: 'center' 
+    },
+    // モーダルスタイル
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    },
+    modalOverlayContent: {
+        flex: 1,
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        maxHeight: '92%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 10,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        paddingTop: 24,
+        paddingBottom: 16,
+        borderBottomWidth: 1,
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        letterSpacing: 0.3,
+    },
+    modalBody: {
+        paddingHorizontal: 24,
+        paddingTop: 24,
+        paddingBottom: 12,
+    },
+    inputGroup: {
+        marginBottom: 16,
+    },
+    label: {
+        fontSize: 15,
+        fontWeight: '600',
+        marginBottom: 6,
+        letterSpacing: 0.2,
+    },
+    input: {
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        fontSize: 16,
+        borderWidth: 1,
+    },
+    modalFooter: {
+        flexDirection: 'row',
+        paddingHorizontal: 24,
+        paddingVertical: 20,
+        paddingBottom: 32,
+        borderTopWidth: 1,
+    },
+    cancelButton: {
+        flex: 1,
+        paddingVertical: 16,
+        marginRight: 8,
+        borderRadius: 12,
+        alignItems: 'center',
+        borderWidth: 1,
+    },
+    cancelButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        letterSpacing: 0.2,
+    },
+    saveButton: {
+        flex: 1,
+        paddingVertical: 16,
+        marginLeft: 8,
+        borderRadius: 12,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    saveButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#fff',
+        letterSpacing: 0.2,
     },
 });
