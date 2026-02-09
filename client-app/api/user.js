@@ -1,17 +1,23 @@
 import { API_BASE_URL } from '../config';
 
 /**
- * プロフィールを更新（ユーザー名とアバター画像）
+ * プロフィールを更新（ユーザー名、自己紹介、アバター画像）
  * @param {string} token - 認証トークン
  * @param {string} userName - 更新するユーザー名
+ * @param {string} bio - 更新する自己紹介（100文字まで）
  * @param {object} avatarFile - アップロードする画像ファイル（uri, name, type）
  */
-export const updateProfile = async (token, userName, avatarFile) => {
+export const updateProfile = async (token, userName, bio, avatarFile) => {
     const formData = new FormData();
     
     // ユーザー名を追加
-    if (userName) {
+    if (userName !== undefined) {
         formData.append('user_name', userName);
+    }
+    
+    // 自己紹介を追加
+    if (bio !== undefined) {
+        formData.append('bio', bio);
     }
     
     // アバター画像を追加

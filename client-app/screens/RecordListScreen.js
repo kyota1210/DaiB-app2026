@@ -98,6 +98,7 @@ export default function RecordListScreen({ navigation }) {
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
     const [categoryName, setCategoryName] = useState('');
+    const [expandedBio, setExpandedBio] = useState(false);
     
     const { fetchRecords } = useRecordsApi();
     const { userInfo, userToken } = useContext(AuthContext);
@@ -523,19 +524,29 @@ export default function RecordListScreen({ navigation }) {
                                     style={styles.userAvatar}
                                 />
                             ) : (
-                                <Ionicons name="person-circle-outline" size={68} color={theme.colors.icon} />
+                                <Ionicons name="person-circle-outline" size={80} color={theme.colors.icon} />
                             )}
                         </View>
                     </TouchableOpacity>
 
-                    {/* ユーザー名とアーカイブ情報 */}
+                    {/* ユーザー名と自己紹介 */}
                     <View style={styles.userInfoSection}>
                         <Text style={[styles.userNameText, { color: theme.colors.text }]}>
                             {userInfo?.user_name || 'ゲスト'}
                         </Text>
-                        <Text style={[styles.totalArchives, { color: theme.colors.inactive }]}>
-                            Total Archives: {(recordsByCategory[selectedCategory] || []).length}
-                        </Text>
+                        {userInfo?.bio && (
+                            <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={() => setExpandedBio(!expandedBio)}
+                            >
+                                <Text 
+                                    style={[styles.userBio, { color: theme.colors.secondaryText }]} 
+                                    numberOfLines={expandedBio ? undefined : 3}
+                                >
+                                    {userInfo.bio}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 </View>
 
@@ -706,31 +717,33 @@ const styles = StyleSheet.create({
     },
     profileSection: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         flex: 1,
     },
     createButton: {
         justifyContent: 'center',
         alignItems: 'center',
         padding: 8,
+        height: 80,
+        alignSelf: 'flex-start',
     },
     iconItem: {
         alignItems: 'center',
         marginRight: 16,
     },
     userIconContainer: {
-        width: 75,
-        height: 75,
-        borderRadius: 37.5,
+        width: 80,
+        height: 80,
+        borderRadius: 40,
         overflow: 'hidden',
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2,
     },
     userAvatar: {
-        width: 75,
-        height: 75,
-        borderRadius: 37.5,
+        width: 80,
+        height: 80,
+        borderRadius: 40,
     },
     iconLabel: {
         fontSize: 11,
@@ -749,9 +762,10 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
-    totalArchives: {
-        fontSize: 13,
-        marginTop: 2,
+    userBio: {
+        fontSize: 11,
+        marginTop: 4,
+        lineHeight: 15,
     },
     mainContent: {
         flex: 1,

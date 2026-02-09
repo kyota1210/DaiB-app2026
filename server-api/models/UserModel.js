@@ -6,7 +6,7 @@ class UserModel {
      * @param {number} id 
      */
     static async findById(id) {
-        const sql = 'SELECT id, user_name, email FROM users WHERE id = ?';
+        const sql = 'SELECT id, user_name, email, bio FROM users WHERE id = ?';
         const [rows] = await db.query(sql, [id]);
         return rows[0]; // ユーザーが見つかればオブジェクト、なければundefinedを返す
     }
@@ -42,6 +42,17 @@ class UserModel {
     static async updateUserName(id, userName) {
         const sql = 'UPDATE users SET user_name = ? WHERE id = ?';
         const [result] = await db.query(sql, [userName, id]);
+        return result.affectedRows;
+    }
+
+    /**
+     * 自己紹介を更新
+     * @param {number} id 
+     * @param {string} bio 
+     */
+    static async updateBio(id, bio) {
+        const sql = 'UPDATE users SET bio = ? WHERE id = ?';
+        const [result] = await db.query(sql, [bio, id]);
         return result.affectedRows;
     }
 }

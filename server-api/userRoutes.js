@@ -33,11 +33,16 @@ router.put('/profile', authenticateToken, (req, res, next) => {
 }, async (req, res) => {
     try {
         const userId = req.user.id;
-        const { user_name } = req.body;
+        const { user_name, bio } = req.body;
 
         // ユーザー名を更新
-        if (user_name) {
+        if (user_name !== undefined) {
             await UserModel.updateUserName(userId, user_name);
+        }
+
+        // 自己紹介を更新
+        if (bio !== undefined) {
+            await UserModel.updateBio(userId, bio);
         }
 
         // アバター画像がアップロードされた場合

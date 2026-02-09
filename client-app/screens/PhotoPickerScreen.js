@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, PanResponder, D
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -55,6 +56,9 @@ export default function PhotoPickerScreen({ navigation, route }) {
     const [selectedCategoryId, setSelectedCategoryId] = useState(editRecord?.category_id || null);
     const [categoriesLoading, setCategoriesLoading] = useState(true);
     const [loading, setLoading] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
     
     // キーボード管理
     const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -439,12 +443,14 @@ export default function PhotoPickerScreen({ navigation, route }) {
     // 作成・更新ボタン
     const handlePost = async () => {
         if (!selectedImage) {
-            Alert.alert('エラー', '写真を選択してください');
+            setErrorMessage(t('photoSelectRequired'));
+            setShowErrorModal(true);
             return;
         }
         
         if (!dateLogged) {
-            Alert.alert(t('error'), t('dateRequired'));
+            setErrorMessage(t('dateRequired'));
+            setShowErrorModal(true);
             return;
         }
 
@@ -468,18 +474,22 @@ export default function PhotoPickerScreen({ navigation, route }) {
 
             if (isEditMode) {
                 await updateRecord(editRecord.id, recordData);
-                Alert.alert(t('success'), t('recordUpdated'));
-                navigation.goBack();
+                setShowSuccessModal(true);
+                setTimeout(() => {
+                    setShowSuccessModal(false);
+                    navigation.goBack();
+                }, 2000);
             } else {
                 await createRecord(recordData);
-                Alert.alert(t('success'), t('recordAdded'));
-                navigation.navigate('Home');
+                setShowSuccessModal(true);
+                setTimeout(() => {
+                    setShowSuccessModal(false);
+                    navigation.goBack();
+                }, 2000);
             }
         } catch (error) {
-            Alert.alert(
-                isEditMode ? t('updateFailed') : t('createFailed'), 
-                error.message
-            );
+            setErrorMessage(error.message || (isEditMode ? t('updateFailed') : t('createFailed')));
+            setShowErrorModal(true);
         } finally {
             setLoading(false);
         }
@@ -766,6 +776,76 @@ export default function PhotoPickerScreen({ navigation, route }) {
                         )}
                     </ScrollView>
                 </KeyboardAvoidingView>
+
+                {/* 成功モーダル */}
+                <Modal
+                    visible={showSuccessModal}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setShowSuccessModal(false)}
+                >
+                    <BlurView
+                        intensity={20}
+                        tint="dark"
+                        style={styles.modalOverlayBlur}
+                    >
+                        <TouchableOpacity
+                            style={styles.modalOverlayTouchable}
+                            activeOpacity={1}
+                            onPress={() => setShowSuccessModal(false)}
+                        >
+                            <View style={[styles.successModalContent, { backgroundColor: theme.colors.card }]}>
+                                <View style={[styles.successIconContainer, { backgroundColor: theme.colors.primary + '20' }]}>
+                                    <Ionicons name="checkmark-circle" size={48} color={theme.colors.primary} />
+                                </View>
+                                <Text style={[styles.successTitle, { color: theme.colors.text }]}>
+                                    {t('success')}
+                                </Text>
+                                <Text style={[styles.successMessage, { color: theme.colors.secondaryText }]}>
+                                    {isEditMode ? t('recordUpdated') : t('recordAdded')}
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                    </BlurView>
+                </Modal>
+
+                {/* エラーモーダル */}
+                <Modal
+                    visible={showErrorModal}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setShowErrorModal(false)}
+                >
+                    <BlurView
+                        intensity={20}
+                        tint="dark"
+                        style={styles.modalOverlayBlur}
+                    >
+                        <TouchableOpacity
+                            style={styles.modalOverlayTouchable}
+                            activeOpacity={1}
+                            onPress={() => setShowErrorModal(false)}
+                        >
+                            <View style={[styles.errorModalContent, { backgroundColor: theme.colors.card }]}>
+                                <View style={[styles.errorIconContainer, { backgroundColor: '#FF3B30' + '20' }]}>
+                                    <Ionicons name="close-circle" size={48} color="#FF3B30" />
+                                </View>
+                                <Text style={[styles.errorTitle, { color: theme.colors.text }]}>
+                                    {t('error')}
+                                </Text>
+                                <Text style={[styles.errorMessage, { color: theme.colors.secondaryText }]}>
+                                    {errorMessage}
+                                </Text>
+                                <TouchableOpacity
+                                    style={[styles.errorButton, { backgroundColor: theme.colors.primary }]}
+                                    onPress={() => setShowErrorModal(false)}
+                                >
+                                    <Text style={styles.errorButtonText}>{t('ok')}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </TouchableOpacity>
+                    </BlurView>
+                </Modal>
             </SafeAreaView>
         </TouchableWithoutFeedback>
     );
@@ -908,6 +988,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
+    modalOverlayBlur: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalOverlayTouchable: {
+        flex: 1,
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     modalContent: {
         backgroundColor: 'white',
         borderRadius: 20,
@@ -918,6 +1009,87 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.25,
         shadowRadius: 4,
         elevation: 5,
+    },
+    successModalContent: {
+        borderRadius: 20,
+        padding: 32,
+        alignItems: 'center',
+        minWidth: 280,
+        maxWidth: '80%',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 8,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 16,
+        elevation: 10,
+    },
+    successIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    successTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    successMessage: {
+        fontSize: 14,
+        textAlign: 'center',
+        lineHeight: 20,
+    },
+    errorModalContent: {
+        borderRadius: 20,
+        padding: 32,
+        alignItems: 'center',
+        minWidth: 280,
+        maxWidth: '80%',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 8,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 16,
+        elevation: 10,
+    },
+    errorIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    errorTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    errorMessage: {
+        fontSize: 14,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 24,
+    },
+    errorButton: {
+        paddingHorizontal: 32,
+        paddingVertical: 12,
+        borderRadius: 20,
+        minWidth: 120,
+    },
+    errorButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+        textAlign: 'center',
     },
     iosDatePicker: {
         width: 320,

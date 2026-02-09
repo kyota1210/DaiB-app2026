@@ -75,6 +75,8 @@ const translations = {
         // プロフィール編集
         userName: 'ユーザー名',
         userNamePlaceholder: 'ユーザー名を入力',
+        bio: '自己紹介',
+        bioPlaceholder: '自己紹介を入力（100文字まで）',
         tapToSelectPhoto: 'タップして写真を選択',
         
         // ログイン情報変更
@@ -161,14 +163,17 @@ const translations = {
         confirm: '確認',
         completed: '完了',
         deleteConfirm: '削除確認',
+        deleteConfirmMessage: '削除します。よろしいですか？',
         deleteRecordMessage: 'この記録を本当に削除しますか？',
         logoutConfirm: 'ログアウトしますか？',
         changeEmailConfirm: 'メールアドレスを変更しますか？',
         cancelPlanConfirm: '本当に解約しますか？',
         deleteCategoryConfirm: 'を削除しますか？',
+        photoSelectRequired: '写真を選択してください',
         
         // 成功メッセージ
         recordCreated: '新しい記録が追加されました。',
+        recordAdded: '記録を追加しました',
         recordUpdated: '記録が更新されました。',
         profileUpdated: 'プロフィールを更新しました',
         emailChanged: 'メールアドレスを変更しました',
@@ -254,6 +259,8 @@ const translations = {
         // Profile edit
         userName: 'User Name',
         userNamePlaceholder: 'Enter user name',
+        bio: 'Bio',
+        bioPlaceholder: 'Enter bio (max 100 characters)',
         tapToSelectPhoto: 'Tap to select photo',
         
         // Login info change
@@ -343,14 +350,17 @@ const translations = {
         confirm: 'Confirm',
         completed: 'Completed',
         deleteConfirm: 'Delete Confirmation',
+        deleteConfirmMessage: 'Are you sure you want to delete?',
         deleteRecordMessage: 'Are you sure you want to delete this record?',
         logoutConfirm: 'Are you sure you want to logout?',
         changeEmailConfirm: 'Do you want to change your email address?',
         cancelPlanConfirm: 'Are you sure you want to cancel?',
         deleteCategoryConfirm: 'Do you want to delete',
+        photoSelectRequired: 'Please select a photo',
         
         // Success messages
         recordCreated: 'New record has been added.',
+        recordAdded: 'Record has been added',
         recordUpdated: 'Record has been updated.',
         profileUpdated: 'Profile has been updated',
         emailChanged: 'Email address has been changed',
