@@ -166,42 +166,24 @@ export default function RecordListScreen({ navigation }) {
         setCategoryName('');
     };
 
-    // 記録を取得する関数（特定のカテゴリ用）
-    const loadRecordsForCategory = useCallback(async (categoryId) => {
-        try {
-            const id = categoryId === 'all' ? null : categoryId;
-            const data = await fetchRecords(id);
-            setRecordsByCategory(prev => ({
-                ...prev,
-                [categoryId]: data
-            }));
-            return data;
-        } catch (error) {
-            console.error(`カテゴリ ${categoryId} の記録取得エラー:`, error);
-            return [];
-        }
-    }, [fetchRecords]);
-
-    // 全カテゴリの記録を取得
+    // 記録を1回で全件取得し、クライアントでカテゴリ別に分割
     const loadAllRecords = useCallback(async () => {
         setLoading(true);
         try {
-            // Allカテゴリのデータを取得
-            const allRecords = await loadRecordsForCategory('all');
-            
-            // 各カテゴリのデータも取得
-            if (categories.length > 0) {
-                const categoryPromises = categories
-                    .filter(cat => cat.id !== 'all')
-                    .map(cat => loadRecordsForCategory(cat.id));
-                await Promise.all(categoryPromises);
-            }
+            const allRecords = await fetchRecords(null);
+            const next = { all: allRecords };
+            categories
+                .filter(cat => cat.id !== 'all')
+                .forEach(cat => {
+                    next[cat.id] = (allRecords || []).filter(r => r.category_id === cat.id);
+                });
+            setRecordsByCategory(next);
         } catch (error) {
             Alert.alert('エラー', '記録の取得に失敗しました: ' + error.message);
         } finally {
             setLoading(false);
         }
-    }, [loadRecordsForCategory, categories]);
+    }, [fetchRecords, categories]);
 
     // 空の状態を表示する共通関数
     const renderEmpty = () => {

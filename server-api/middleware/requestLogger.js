@@ -2,8 +2,19 @@ const logger = require('../utils/logger').createLogger('requestLogger');
 
 /**
  * APIリクエストとレスポンスをログに記録するミドルウェア
+ * アップロード画像（/uploads）の読み込みはログ対象外（件数が多くノイズになるため）
  */
 function requestLogger(req, res, next) {
+    // 静的ファイル（画像）の配信はログしない
+    if (req.path.startsWith('/uploads')) {
+        return next();
+    }
+
+    // 記録一覧取得はルート側で1行のみログするため、ここではログしない
+    if (req.method === 'GET' && req.path === '/api/records') {
+        return next();
+    }
+
     const startTime = Date.now();
     const { method, url, ip } = req;
     

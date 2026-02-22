@@ -112,6 +112,9 @@ router.get('/', async (req, res) => {
     const user_id = req.user.id; // 自分のIDのみを使用
     const category_id = req.query.category_id; // カテゴリーフィルター
 
+    // ホームで画像一覧を開いた操作を最小限でログ（同一ユーザーは60秒に1回まで）
+    logger.info('record list viewed', { userId: user_id });
+
     try {
         const records = await RecordModel.findAllByUserId(user_id, category_id || null);
         res.status(200).json(records);
