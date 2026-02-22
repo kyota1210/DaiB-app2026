@@ -9,3 +9,7 @@ node_modules/
 # uploads (画像ファイルはGit管理しない)
 uploads/
 
+# logs (ログファイルはGit管理しない)
+logs/
+!logs/.gitkeep
+

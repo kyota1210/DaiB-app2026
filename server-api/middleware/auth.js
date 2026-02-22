@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const logger = require('../utils/logger').createLogger('auth');
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const auth = (req, res, next) => {
@@ -24,7 +25,11 @@ const auth = (req, res, next) => {
         // 4. 次の処理（APIルートのロジック）へ進む
         next(); 
     } catch (error) {
-        console.error('認証エラー:', error.message);
+        logger.warn('認証エラー', { 
+            error: error.message,
+            ip: req.ip,
+            userAgent: req.get('user-agent')
+        });
         // トークンが無効または期限切れの場合
         res.status(401).json({ message: '無効なトークンです。再ログインが必要です。' });
     }

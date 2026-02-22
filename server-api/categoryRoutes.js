@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authenticateToken = require('./middleware/auth');
 const CategoryModel = require('./models/CategoryModel');
+const logger = require('./utils/logger').createLogger('categoryRoutes');
 
 /**
  * GET /api/categories
@@ -13,7 +14,11 @@ router.get('/', authenticateToken, async (req, res) => {
         const categories = await CategoryModel.findAllByUserId(userId);
         res.status(200).json({ categories });
     } catch (error) {
-        console.error('カテゴリー取得エラー:', error);
+        logger.error('カテゴリー取得エラー', { 
+            error: error.message, 
+            stack: error.stack,
+            userId: userId 
+        });
         res.status(500).json({ message: 'カテゴリーの取得に失敗しました。' });
     }
 });
@@ -37,12 +42,23 @@ router.post('/', authenticateToken, async (req, res) => {
         // 作成したカテゴリーを取得して返す
         const category = await CategoryModel.findById(categoryId, userId);
         
+        logger.info('カテゴリー作成成功', { 
+            categoryId, 
+            userId,
+            categoryName: name 
+        });
+        
         res.status(201).json({ 
             message: 'カテゴリーを作成しました。',
             category 
         });
     } catch (error) {
-        console.error('カテゴリー作成エラー:', error);
+        logger.error('カテゴリー作成エラー', { 
+            error: error.message, 
+            stack: error.stack,
+            userId,
+            categoryName: name 
+        });
         res.status(500).json({ message: 'カテゴリーの作成に失敗しました。' });
     }
 });
@@ -77,12 +93,24 @@ router.put('/:id', authenticateToken, async (req, res) => {
         // 更新後のカテゴリーを取得して返す
         const category = await CategoryModel.findById(categoryId, userId);
         
+        logger.info('カテゴリー更新成功', { 
+            categoryId, 
+            userId,
+            categoryName: name 
+        });
+        
         res.status(200).json({ 
             message: 'カテゴリーを更新しました。',
             category 
         });
     } catch (error) {
-        console.error('カテゴリー更新エラー:', error);
+        logger.error('カテゴリー更新エラー', { 
+            error: error.message, 
+            stack: error.stack,
+            categoryId,
+            userId,
+            categoryName: name 
+        });
         res.status(500).json({ message: 'カテゴリーの更新に失敗しました。' });
     }
 });
@@ -108,9 +136,19 @@ router.delete('/:id', authenticateToken, async (req, res) => {
             return res.status(404).json({ message: 'カテゴリーの削除に失敗しました。' });
         }
 
+        logger.info('カテゴリー削除成功', { 
+            categoryId, 
+            userId 
+        });
+        
         res.status(200).json({ message: 'カテゴリーを削除しました。' });
     } catch (error) {
-        console.error('カテゴリー削除エラー:', error);
+        logger.error('カテゴリー削除エラー', { 
+            error: error.message, 
+            stack: error.stack,
+            categoryId,
+            userId 
+        });
         res.status(500).json({ message: 'カテゴリーの削除に失敗しました。' });
     }
 });

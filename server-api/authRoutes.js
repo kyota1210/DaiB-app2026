@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const UserModel = require('./models/UserModel'); // モデルを読み込み
 const UserAvatarModel = require('./models/UserAvatarModel');
 const auth = require('./middleware/auth'); // 認証ミドルウェア
+const logger = require('./utils/logger').createLogger('authRoutes');
 
 // JWTの秘密鍵は.envから取得
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -45,7 +46,11 @@ router.post('/signup', async (req, res) => {
         if (error.code === 'ER_DUP_ENTRY') {
             return res.status(409).json({ message: 'このメールアドレスは既に登録されています。' });
         }
-        console.error('サインアップエラー:', error);
+        logger.error('サインアップエラー', { 
+            error: error.message, 
+            stack: error.stack,
+            email: email 
+        });
         res.status(500).json({ message: 'サーバーエラーが発生しました。' });
     }
 });
@@ -95,7 +100,11 @@ router.post('/login', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('ログインエラー:', error);
+        logger.error('ログインエラー', { 
+            error: error.message, 
+            stack: error.stack,
+            email: email 
+        });
         res.status(500).json({ message: 'サーバーエラーが発生しました。' });
     }
 });
@@ -127,7 +136,11 @@ router.get('/me', auth, async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('ユーザー情報取得エラー:', error);
+        logger.error('ユーザー情報取得エラー', { 
+            error: error.message, 
+            stack: error.stack,
+            userId: req.user.id 
+        });
         res.status(500).json({ message: 'サーバーエラーが発生しました。' });
     }
 });

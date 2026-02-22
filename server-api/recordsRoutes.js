@@ -4,6 +4,7 @@ const RecordModel = require('./models/RecordModel');
 const auth = require('./middleware/auth');
 const multer = require('multer');
 const path = require('path');
+const logger = require('./utils/logger').createLogger('recordsRoutes');
 
 // Multerの設定
 const storage = multer.diskStorage({
@@ -30,7 +31,11 @@ router.use(auth);
 router.post('/', (req, res, next) => {
     upload.single('image')(req, res, (err) => {
         if (err) {
-            console.error('Multer Error:', err);
+            logger.error('Multer Error', { 
+                error: err.message, 
+                stack: err.stack,
+                userId: req.user ? req.user.id : null 
+            });
             return res.status(400).json({ message: '画像のアップロードに失敗しました。', error: err.message });
         }
         next();
@@ -77,13 +82,23 @@ router.post('/', (req, res, next) => {
             positionY: position_y ? parseInt(position_y) : 0
         });
 
+        logger.info('記録作成成功', { 
+            recordId, 
+            userId: user_id,
+            categoryId: category_id || null 
+        });
+        
         res.status(201).json({ 
             message: '記録が作成されました。',
             recordId,
             imageUrl // クライアントには保存した相対パスを返す
         });
     } catch (error) {
-        console.error('記録作成エラー:', error);
+        logger.error('記録作成エラー', { 
+            error: error.message, 
+            stack: error.stack,
+            userId: user_id 
+        });
         res.status(500).json({ message: 'サーバーエラーが発生しました。' });
     }
 });
@@ -101,7 +116,12 @@ router.get('/', async (req, res) => {
         const records = await RecordModel.findAllByUserId(user_id, category_id || null);
         res.status(200).json(records);
     } catch (error) {
-        console.error('記録取得エラー:', error);
+        logger.error('記録取得エラー', { 
+            error: error.message, 
+            stack: error.stack,
+            userId: user_id,
+            categoryId: category_id || null 
+        });
         res.status(500).json({ message: 'サーバーエラーが発生しました。' });
     }
 });
@@ -121,7 +141,12 @@ router.get('/:id', async (req, res) => {
         }
         res.status(200).json(record);
     } catch (error) {
-        console.error('記録取得エラー:', error);
+        logger.error('記録取得エラー', { 
+            error: error.message, 
+            stack: error.stack,
+            recordId: id,
+            userId: user_id 
+        });
         res.status(500).json({ message: 'サーバーエラーが発生しました。' });
     }
 });
@@ -133,7 +158,12 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', (req, res, next) => {
     upload.single('image')(req, res, (err) => {
         if (err) {
-            console.error('Multer Error:', err);
+            logger.error('Multer Error', { 
+                error: err.message, 
+                stack: err.stack,
+                recordId: req.params.id,
+                userId: req.user ? req.user.id : null 
+            });
             return res.status(400).json({ message: '画像のアップロードに失敗しました。', error: err.message });
         }
         next();
@@ -165,9 +195,19 @@ router.put('/:id', (req, res, next) => {
             return res.status(404).json({ message: '記録が見つからないか、更新権限がありません。' });
         }
 
+        logger.info('記録更新成功', { 
+            recordId: id, 
+            userId: user_id 
+        });
+        
         res.status(200).json({ message: '記録が更新されました。', imageUrl });
     } catch (error) {
-        console.error('記録更新エラー:', error);
+        logger.error('記録更新エラー', { 
+            error: error.message, 
+            stack: error.stack,
+            recordId: id,
+            userId: user_id 
+        });
         res.status(500).json({ message: 'サーバーエラーが発生しました。' });
     }
 });
@@ -186,9 +226,19 @@ router.delete('/:id', async (req, res) => {
             return res.status(404).json({ message: '記録が見つからないか、削除権限がありません。' });
         }
 
+        logger.info('記録削除成功', { 
+            recordId: id, 
+            userId: user_id 
+        });
+        
         res.status(200).json({ message: '記録が削除されました。' });
     } catch (error) {
-        console.error('記録削除エラー:', error);
+        logger.error('記録削除エラー', { 
+            error: error.message, 
+            stack: error.stack,
+            recordId: id,
+            userId: user_id 
+        });
         res.status(500).json({ message: 'サーバーエラーが発生しました。' });
     }
 });

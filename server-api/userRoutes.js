@@ -6,6 +6,7 @@ const fs = require('fs');
 const authenticateToken = require('./middleware/auth');
 const UserModel = require('./models/UserModel');
 const UserAvatarModel = require('./models/UserAvatarModel');
+const logger = require('./utils/logger').createLogger('userRoutes');
 
 // Multerの設定（記録の画像投稿と同じ方法）
 const storage = multer.diskStorage({
@@ -25,7 +26,11 @@ const upload = multer({ storage: storage });
 router.put('/profile', authenticateToken, (req, res, next) => {
     upload.single('avatar')(req, res, (err) => {
         if (err) {
-            console.error('Multer Error:', err);
+            logger.error('Multer Error', { 
+                error: err.message, 
+                stack: err.stack,
+                userId: req.user ? req.user.id : null 
+            });
             return res.status(400).json({ message: '画像のアップロードに失敗しました。', error: err.message });
         }
         next();
@@ -68,6 +73,11 @@ router.put('/profile', authenticateToken, (req, res, next) => {
         const updatedUser = await UserModel.findById(userId);
         const avatar = await UserAvatarModel.findByUserId(userId);
 
+        logger.info('プロフィール更新成功', { 
+            userId: userId,
+            hasAvatar: !!req.file 
+        });
+        
         res.status(200).json({
             message: 'プロフィールを更新しました',
             user: {
@@ -76,7 +86,11 @@ router.put('/profile', authenticateToken, (req, res, next) => {
             }
         });
     } catch (error) {
-        console.error('プロフィール更新エラー:', error);
+        logger.error('プロフィール更新エラー', { 
+            error: error.message, 
+            stack: error.stack,
+            userId: userId 
+        });
         res.status(500).json({ 
             message: 'プロフィール更新に失敗しました',
             error: error.message 
@@ -102,7 +116,11 @@ router.get('/me', authenticateToken, async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('ユーザー情報取得エラー:', error);
+        logger.error('ユーザー情報取得エラー', { 
+            error: error.message, 
+            stack: error.stack,
+            userId: userId 
+        });
         res.status(500).json({ 
             message: 'ユーザー情報の取得に失敗しました',
             error: error.message 
