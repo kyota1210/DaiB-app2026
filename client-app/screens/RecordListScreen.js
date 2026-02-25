@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useContext, useRef } from 'react';
 import { StyleSheet, Text, View, Alert, ActivityIndicator, TouchableOpacity, Image, ScrollView, Dimensions, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -26,45 +26,36 @@ const formatDate = (dateString) => {
     return `${year}/${month}/${day}`;
 };
 
-// ギャラリーアイテムコンポーネント
+// ギャラリーアイテム（一覧はセルに合わせた cover 表示、詳細画面で aspect/zoom/position を反映）
 const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid', theme }) => {
     const imageUrl = getImageUrl(item.image_url);
 
-    // 表示形式に応じたスタイルを選択
     const getItemStyle = () => {
         if (viewMode === 'list') {
             return [styles.listItem, { backgroundColor: theme.colors.card }];
-        } else if (viewMode === 'booklist') {
-            return styles.bookListItem;
-        } else {
-            return styles.galleryCard;
         }
+        if (viewMode === 'booklist') {
+            return styles.bookListItem;
+        }
+        return styles.galleryCard;
     };
 
     const getImageStyle = () => {
-        if (viewMode === 'list') {
-            return styles.listImage;
-        } else if (viewMode === 'booklist') {
-            return styles.bookListImage;
-        } else {
-            return styles.galleryImage;
-        }
+        if (viewMode === 'list') return styles.listImage;
+        if (viewMode === 'booklist') return styles.bookListImage;
+        return styles.galleryImage;
     };
 
     const getContainerStyle = () => {
-        if (viewMode === 'list') {
-            return styles.listImageContainer;
-        } else if (viewMode === 'booklist') {
-            return styles.bookListImageContainer;
-        } else {
-            return styles.imageContainer;
-        }
+        if (viewMode === 'list') return styles.listImageContainer;
+        if (viewMode === 'booklist') return styles.bookListImageContainer;
+        return styles.imageContainer;
     };
 
     return (
-        <TouchableOpacity 
-            style={getItemStyle()} 
-            onPress={() => navigation.navigate('RecordDetail', { 
+        <TouchableOpacity
+            style={getItemStyle()}
+            onPress={() => navigation.navigate('RecordDetail', {
                 records: allRecords,
                 initialIndex: itemIndex
             })}
@@ -72,7 +63,7 @@ const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid
         >
             <View style={getContainerStyle()}>
                 {imageUrl ? (
-                    <Image source={{ uri: imageUrl }} style={getImageStyle()} />
+                    <Image source={{ uri: imageUrl }} style={getImageStyle()} resizeMode="cover" />
                 ) : (
                     <View style={[getContainerStyle(), styles.placeholderGalleryImage]}>
                         <Ionicons name="image" size={30} color="#ccc" />

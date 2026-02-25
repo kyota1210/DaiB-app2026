@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, PanResponder, Dimensions, ScrollView, TextInput, Platform, Modal, KeyboardAvoidingView, ActivityIndicator, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +10,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useRecordsApi } from '../api/records';
 import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { getImageUrl } from '../utils/imageHelper';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -37,7 +37,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
     const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
     // 初期スケール（元画像→画面サイズへの変換）
     const [initialScale, setInitialScale] = useState(1.0);
-    const [aspectMode, setAspectMode] = useState(editRecord?.aspect_ratio || '1:1');
+    const [aspectMode, setAspectMode] = useState(editRecord?.aspect_ratio || 'original');
     // scaleは初期スケールからの追加ズーム
     const [scale, setScale] = useState(editRecord?.zoom_level ? parseFloat(editRecord.zoom_level) : 1.0);
     const [panPosition, setPanPosition] = useState({ 
@@ -157,6 +157,9 @@ export default function PhotoPickerScreen({ navigation, route }) {
         if (!imgSize.width || !imgSize.height) {
             return { x: 0, y: 0 };
         }
+        if (mode === 'original') {
+            return { x: 0, y: 0 };
+        }
         
         const scaledWidth = imgSize.width * scaleValue;
         const scaledHeight = imgSize.height * scaleValue;
@@ -166,21 +169,13 @@ export default function PhotoPickerScreen({ navigation, route }) {
         if (mode === '1:1') {
             containerWidth = SCREEN_WIDTH;
             containerHeight = SCREEN_WIDTH;
-        } else if (mode === '4:3') {
-            containerWidth = SCREEN_WIDTH;
-            containerHeight = SCREEN_WIDTH * 0.75;
-        } else if (mode === '3:4') {
-            containerWidth = SCREEN_WIDTH * 0.75;
-            containerHeight = SCREEN_WIDTH;
         } else {
             containerWidth = SCREEN_WIDTH;
             containerHeight = SCREEN_WIDTH;
         }
         
-        // 画像が選択範囲より小さい方向は中央固定
         const canMoveX = scaledWidth > containerWidth;
         const canMoveY = scaledHeight > containerHeight;
-        
         const maxX = canMoveX ? (scaledWidth - containerWidth) / 2 : 0;
         const maxY = canMoveY ? (scaledHeight - containerHeight) / 2 : 0;
         
@@ -190,43 +185,85 @@ export default function PhotoPickerScreen({ navigation, route }) {
         };
     }).current;
     
-    // 初期スケールを計算
+    // 初期スケールを計算（1:1 と original のみ）
     const calculateInitialScale = (width, height, mode) => {
         if (mode === '1:1') {
             return Math.max(SCREEN_WIDTH / width, SCREEN_WIDTH / height);
-        } else if (mode === '4:3') {
-            const targetHeight = SCREEN_WIDTH * 0.75;
-            return Math.max(SCREEN_WIDTH / width, targetHeight / height);
-        } else if (mode === '3:4') {
-            const targetWidth = SCREEN_WIDTH * 0.75;
-            return Math.max(targetWidth / width, SCREEN_WIDTH / height);
+        }
+        if (mode === 'original') {
+            // コンテナを余白なく埋める（cover）。縦長でも横長でも余白が出ない
+            return Math.max(SCREEN_WIDTH / width, SCREEN_WIDTH / height);
         }
         return 1.0;
     };
-    
-    // 最小スケールを計算
+
+    // 最小スケールを計算（1:1 と original のみ）
     const calculateMinScale = (width, height, mode) => {
+        if (mode === 'original') {
+            return Math.max(SCREEN_WIDTH / width, SCREEN_WIDTH / height);
+        }
         if (mode === '1:1') {
             return Math.max(SCREEN_WIDTH / width, SCREEN_WIDTH / height);
-        } else if (mode === '4:3') {
-            const targetHeight = SCREEN_WIDTH * 0.75;
-            return Math.max(SCREEN_WIDTH / width, targetHeight / height);
-        } else if (mode === '3:4') {
-            const targetWidth = SCREEN_WIDTH * 0.75;
-            return Math.max(targetWidth / width, SCREEN_WIDTH / height);
         }
         return 0.5;
     };
 
-    // PanResponder
+    // 表示領域（コンテナ）のサイズを取得（画像の中央配置・パン制限に使用）
+    // 詳細画面と揃え幅いっぱい。imageWrapper のサイズと一致させること
+    const getContainerDimensions = (mode, originalSize = null) => {
+        if (mode === 'original' && originalSize?.width && originalSize?.height) {
+            const { width: w, height: h } = originalSize;
+            return { width: SCREEN_WIDTH, height: SCREEN_WIDTH * (h / w) };
+        }
+        if (mode === '1:1') {
+            return { width: SCREEN_WIDTH, height: SCREEN_WIDTH };
+        }
+        return { width: SCREEN_WIDTH, height: SCREEN_WIDTH };
+    };
+
+    // 現在の表示範囲を元にトリミングした画像の URI を返す（original のときはそのまま返す）
+    const getCroppedImageUri = async () => {
+        if (aspectMode === 'original' || !originalImageSize?.width || !originalImageSize?.height) {
+            return selectedImage;
+        }
+        const { width: origW, height: origH } = originalImageSize;
+        const container = getContainerDimensions(aspectMode, originalImageSize);
+        const containerWidth = container.width;
+        const containerHeight = container.height;
+        const scaledWidth = imageSize.width * scale;
+        const scaledHeight = imageSize.height * scale;
+        const totalScale = initialScale * scale;
+        let originX = ((scaledWidth - containerWidth) / 2 - panPosition.x) / totalScale;
+        let originY = ((scaledHeight - containerHeight) / 2 - panPosition.y) / totalScale;
+        let cropW = containerWidth / totalScale;
+        let cropH = containerHeight / totalScale;
+        originX = Math.max(0, Math.min(originX, origW - 1));
+        originY = Math.max(0, Math.min(originY, origH - 1));
+        cropW = Math.min(cropW, origW - originX);
+        cropH = Math.min(cropH, origH - originY);
+        if (cropW < 1 || cropH < 1) return selectedImage;
+        try {
+            const result = await ImageManipulator.manipulateAsync(
+                selectedImage,
+                [{ crop: { originX, originY, width: cropW, height: cropH } }],
+                { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
+            );
+            return result.uri;
+        } catch (err) {
+            console.error('Crop failed:', err);
+            return selectedImage;
+        }
+    };
+
+    // PanResponder（original のときはタッチを奪わずスクロールを有効に）
     const panResponder = useRef(
         PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
+            onStartShouldSetPanResponder: () => aspectModeRef.current !== 'original',
+            onMoveShouldSetPanResponder: () => aspectModeRef.current !== 'original',
             onPanResponderTerminationRequest: () => false,
             
             onPanResponderGrant: (evt) => {
-                // 画像プレビューをタッチしたらスクロールを無効化
+                // 1:1 のときだけ画像プレビューでパン/ズームするためスクロールを無効化
                 setScrollEnabled(false);
                 
                 const touches = evt.nativeEvent.touches;
@@ -341,6 +378,12 @@ export default function PhotoPickerScreen({ navigation, route }) {
             quality: 1.0,
         });
 
+        // 新規作成で最初の写真選択を×で閉じた場合はホームに戻る
+        if (result.canceled && !isEditMode && !selectedImage) {
+            navigation.goBack();
+            return;
+        }
+
         if (!result.canceled && result.assets && result.assets[0]) {
             const uri = result.assets[0].uri;
             setSelectedImage(uri);
@@ -358,15 +401,9 @@ export default function PhotoPickerScreen({ navigation, route }) {
         }
     };
 
-    // アスペクト比切り替え
+    // アスペクト比切り替え（元の比率 ⇔ スクエア のみ）
     const toggleAspectMode = () => {
-        let newMode;
-        if (aspectMode === '1:1') {
-            newMode = originalImageSize.width >= originalImageSize.height ? '4:3' : '3:4';
-        } else {
-            newMode = '1:1';
-        }
-        
+        const newMode = aspectMode === '1:1' ? 'original' : '1:1';
         setAspectMode(newMode);
         
         const calcInitialScale = calculateInitialScale(originalImageSize.width, originalImageSize.height, newMode);
@@ -375,58 +412,9 @@ export default function PhotoPickerScreen({ navigation, route }) {
             width: originalImageSize.width * calcInitialScale, 
             height: originalImageSize.height * calcInitialScale 
         });
-        setScale(1.0); // 初期スケールからの追加ズームをリセット
+        setScale(1.0);
         setPanPosition({ x: 0, y: 0 });
         gestureState.startScale = 1.0;
-    };
-
-    // 画像をトリミングする関数
-    const cropImage = async () => {
-        try {
-            // トリミング範囲を計算
-            const scaledWidth = imageSize.width * scale;
-            const scaledHeight = imageSize.height * scale;
-            
-            // コンテナサイズを計算
-            let containerWidth, containerHeight;
-            if (aspectMode === '1:1') {
-                containerWidth = SCREEN_WIDTH;
-                containerHeight = SCREEN_WIDTH;
-            } else if (aspectMode === '4:3') {
-                containerWidth = SCREEN_WIDTH;
-                containerHeight = SCREEN_WIDTH * 0.75;
-            } else if (aspectMode === '3:4') {
-                containerWidth = SCREEN_WIDTH * 0.75;
-                containerHeight = SCREEN_WIDTH;
-            }
-            
-            // 元画像でのトリミング領域を計算
-            const originX = ((scaledWidth - containerWidth) / 2 - panPosition.x) / scale;
-            const originY = ((scaledHeight - containerHeight) / 2 - panPosition.y) / scale;
-            const cropWidth = containerWidth / scale;
-            const cropHeight = containerHeight / scale;
-            
-            // トリミング実行
-            const manipResult = await ImageManipulator.manipulateAsync(
-                selectedImage,
-                [
-                    {
-                        crop: {
-                            originX: Math.max(0, originX),
-                            originY: Math.max(0, originY),
-                            width: Math.min(cropWidth, imageSize.width),
-                            height: Math.min(cropHeight, imageSize.height)
-                        }
-                    }
-                ],
-                { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
-            );
-            
-            return manipResult.uri;
-        } catch (error) {
-            console.error('Failed to crop image:', error);
-            return selectedImage; // エラー時は元画像を返す
-        }
     };
 
     // 作成・更新ボタン
@@ -451,14 +439,12 @@ export default function PhotoPickerScreen({ navigation, route }) {
                 date_logged: dateLogged.toISOString().split('T')[0], 
                 category_id: selectedCategoryId,
                 aspect_ratio: aspectMode,
-                zoom_level: scale,
-                position_x: Math.round(panPosition.x),
-                position_y: Math.round(panPosition.y)
+                zoom_level: 1,
+                position_x: 0,
+                position_y: 0
             };
-            
-            // 新しい画像が選択された場合のみ元画像のURIを追加（トリミングしない）
             if (isNewImageSelected) {
-                recordData.imageUri = selectedImage;
+                recordData.imageUri = await getCroppedImageUri();
             }
 
             if (isEditMode) {
@@ -564,6 +550,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
                         ref={scrollViewRef}
                         contentContainerStyle={[
                             styles.scrollContent,
+                            { paddingHorizontal: 0, paddingTop: 0 },
                             keyboardVisible && { paddingBottom: 300 }
                         ]}
                         keyboardShouldPersistTaps="handled"
@@ -572,27 +559,38 @@ export default function PhotoPickerScreen({ navigation, route }) {
                     >
                         {selectedImage ? (
                             <>
-                                {/* 画像プレビュー */}
+                                {/* 画像プレビュー（余白なしで幅いっぱい）。original のときはタッチを透過してスクロール可能に */}
                                 <View style={[
                                     styles.imageWrapper,
-                                    aspectMode === '1:1' && { aspectRatio: 1 },
-                                    aspectMode === '4:3' && { aspectRatio: 4/3 },
-                                    aspectMode === '3:4' && { aspectRatio: 3/4, width: SCREEN_WIDTH * 0.75 }
-                                ]} {...panResponder.panHandlers}>
+                                    aspectMode === '1:1' && { width: SCREEN_WIDTH, height: SCREEN_WIDTH },
+                                    aspectMode === 'original' && originalImageSize?.width && originalImageSize?.height && (() => {
+                                        const c = getContainerDimensions('original', originalImageSize);
+                                        return { width: c.width, height: c.height };
+                                    })(),
+                                    aspectMode === 'original' && (!originalImageSize?.width || !originalImageSize?.height) && { aspectRatio: 1, height: SCREEN_WIDTH },
+                                ]} pointerEvents={aspectMode === 'original' ? 'box-none' : 'auto'} {...(aspectMode !== 'original' ? panResponder.panHandlers : {})}>
                                     {(imageSize.width > 0 && imageSize.height > 0) || isEditMode ? (
+                                        (() => {
+                                            const container = getContainerDimensions(aspectMode, originalImageSize);
+                                            const imgW = imageSize.width || SCREEN_WIDTH;
+                                            const imgH = imageSize.height || SCREEN_WIDTH;
+                                            const centerOffsetX = (container.width - imgW) / 2;
+                                            const centerOffsetY = (container.height - imgH) / 2;
+                                            return (
                                         <Image
                                             source={{ uri: selectedImage }}
+                                            pointerEvents={aspectMode === 'original' ? 'none' : 'auto'}
                                             style={
                                                 isEditMode && (imageSize.width === 0 || imageSize.height === 0)
                                                     ? styles.editModeImage 
                                                     : [
                                                         styles.imagePreview,
                                                         {
-                                                            width: imageSize.width || SCREEN_WIDTH,
-                                                            height: imageSize.height || SCREEN_WIDTH,
+                                                            width: imgW,
+                                                            height: imgH,
                                                             transform: [
-                                                                { translateX: panPosition.x },
-                                                                { translateY: panPosition.y },
+                                                                { translateX: centerOffsetX + panPosition.x },
+                                                                { translateY: centerOffsetY + panPosition.y },
                                                                 { scale: scale }
                                                             ]
                                                         }
@@ -600,12 +598,17 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                             }
                                             resizeMode={isEditMode && (imageSize.width === 0 || imageSize.height === 0) ? 'contain' : 'cover'}
                                         />
+                                            );
+                                        })()
                                     ) : (
                                         <ActivityIndicator size="large" color="#fff" />
                                     )}
-                                    
+                                    {/* original 時: 画像エリア全体でタッチを透過しスクロール可能にするレイヤー（オーバーレイの下に配置） */}
+                                    {aspectMode === 'original' && (
+                                        <View style={StyleSheet.absoluteFill} pointerEvents="none" />
+                                    )}
                                     {/* コントロールボタン - 画像プレビュー内 */}
-                                    <View style={styles.overlayControls}>
+                                    <View style={styles.overlayControls} pointerEvents="box-none">
                                         {/* 比率変更ボタン（左下）- 常に表示 */}
                                         <TouchableOpacity
                                             style={[styles.overlayButton, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}
@@ -875,12 +878,13 @@ const styles = StyleSheet.create({
         width: SCREEN_WIDTH,
         backgroundColor: '#000',
         overflow: 'hidden',
-        justifyContent: 'center',
-        alignItems: 'center',
         position: 'relative',
+        marginHorizontal: 0,
     },
     imagePreview: {
         position: 'absolute',
+        left: 0,
+        top: 0,
     },
     editModeImage: {
         width: '100%',
@@ -912,6 +916,8 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
+        padding: 0,
+        paddingHorizontal: 0,
     },
     formSection: {
         paddingHorizontal: 16,
