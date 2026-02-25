@@ -2,12 +2,12 @@ import React, { useState, useCallback, useContext, useRef } from 'react';
 import { StyleSheet, Text, View, Alert, ActivityIndicator, TouchableOpacity, Image, ScrollView, Dimensions, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { useRecordsApi } from '../api/records';
-import { fetchCategories, updateCategory } from '../api/categories';
+import { updateCategory } from '../api/categories';
 import { useFocusEffect } from '@react-navigation/native';
 import { getImageUrl } from '../utils/imageHelper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../context/AuthContext';
+import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SERVER_URL } from '../config';
@@ -91,10 +91,7 @@ const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid
 };
 
 export default function RecordListScreen({ navigation }) {
-    const [recordsByCategory, setRecordsByCategory] = useState({});
-    const [loading, setLoading] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState('all');
-    const [categories, setCategories] = useState([]);
     const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', 'booklist'
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
@@ -103,30 +100,14 @@ export default function RecordListScreen({ navigation }) {
     const [showCategorySuccessModal, setShowCategorySuccessModal] = useState(false);
     const [showCategoryErrorModal, setShowCategoryErrorModal] = useState(false);
     const [categoryErrorMessage, setCategoryErrorMessage] = useState('');
-    
-    const { fetchRecords } = useRecordsApi();
+    const [updatingCategory, setUpdatingCategory] = useState(false);
+
+    const { categories, recordsByCategory, records, loadCategories, loadRecords, loadingCategories, loadingRecords } = useRecordsAndCategories();
     const { userInfo, userToken } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
     const horizontalScrollViewRef = useRef(null);
     const categoryScrollViewRefs = useRef({});
-
-    // カテゴリーを取得する関数
-    const loadCategories = useCallback(async () => {
-        try {
-            const fetchedCategories = await fetchCategories(userToken);
-            if (fetchedCategories.length > 0) {
-                const allCategory = { id: 'all', name: 'All', icon: 'apps' };
-                const newCategories = [allCategory, ...fetchedCategories];
-                setCategories(newCategories);
-            } else {
-                setCategories([]);
-            }
-        } catch (error) {
-            console.error('カテゴリー取得エラー:', error);
-            setCategories([]);
-        }
-    }, [userToken]);
 
     // カテゴリーを更新する関数
     const handleUpdateCategory = async () => {
@@ -136,13 +117,13 @@ export default function RecordListScreen({ navigation }) {
             return;
         }
 
-        setLoading(true);
+        setUpdatingCategory(true);
         try {
             await updateCategory(userToken, editingCategory.id, {
                 name: categoryName.trim(),
             });
 
-            await loadCategories(); // カテゴリー一覧を再取得
+            await loadCategories(); // キャッシュを更新
             setShowEditModal(false);
             setEditingCategory(null);
             setCategoryName('');
@@ -155,7 +136,7 @@ export default function RecordListScreen({ navigation }) {
             setCategoryErrorMessage(error.message || 'カテゴリーの更新に失敗しました');
             setShowCategoryErrorModal(true);
         } finally {
-            setLoading(false);
+            setUpdatingCategory(false);
         }
     };
 
@@ -165,25 +146,6 @@ export default function RecordListScreen({ navigation }) {
         setEditingCategory(null);
         setCategoryName('');
     };
-
-    // 記録を1回で全件取得し、クライアントでカテゴリ別に分割
-    const loadAllRecords = useCallback(async () => {
-        setLoading(true);
-        try {
-            const allRecords = await fetchRecords(null);
-            const next = { all: allRecords };
-            categories
-                .filter(cat => cat.id !== 'all')
-                .forEach(cat => {
-                    next[cat.id] = (allRecords || []).filter(r => r.category_id === cat.id);
-                });
-            setRecordsByCategory(next);
-        } catch (error) {
-            Alert.alert('エラー', '記録の取得に失敗しました: ' + error.message);
-        } finally {
-            setLoading(false);
-        }
-    }, [fetchRecords, categories]);
 
     // 空の状態を表示する共通関数
     const renderEmpty = () => {
@@ -402,19 +364,13 @@ export default function RecordListScreen({ navigation }) {
         }
     }, [selectedCategory, categories.length]);
 
-    // 画面が表示されるたびにデータを再取得
+    // 画面フォーカス時にキャッシュを更新（キャッシュがあれば即表示し、バックグラウンドで再取得）
     useFocusEffect(
         useCallback(() => {
             loadCategories();
-        }, [loadCategories])
+            loadRecords();
+        }, [loadCategories, loadRecords])
     );
-    
-    // カテゴリが読み込まれたら全カテゴリの記録を取得
-    React.useEffect(() => {
-        if (categories.length > 0) {
-            loadAllRecords();
-        }
-    }, [categories.length, loadAllRecords]);
 
     // 初期表示時に選択されたカテゴリのページにスクロール
     React.useEffect(() => {
@@ -431,7 +387,8 @@ export default function RecordListScreen({ navigation }) {
         }
     }, [categories.length]);
 
-    if (loading) {
+    const showInitialLoading = (loadingCategories && categories.length === 0) || (loadingRecords && records.length === 0);
+    if (showInitialLoading) {
         return (
             <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
                 <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -655,7 +612,7 @@ export default function RecordListScreen({ navigation }) {
                                 <TouchableOpacity 
                                     style={[styles.saveButton, { backgroundColor: theme.colors.primary }]}
                                     onPress={handleUpdateCategory}
-                                    disabled={loading}
+                                    disabled={updatingCategory}
                                 >
                                     <Text style={styles.saveButtonText}>
                                         更新

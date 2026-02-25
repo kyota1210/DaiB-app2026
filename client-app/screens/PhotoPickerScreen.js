@@ -9,7 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { AuthContext } from '../context/AuthContext';
 import { useRecordsApi } from '../api/records';
-import { fetchCategories } from '../api/categories';
+import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getImageUrl } from '../utils/imageHelper';
 
@@ -52,9 +52,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
         editRecord ? new Date(editRecord.date_logged) : new Date()
     );
     const [showDatePicker, setShowDatePicker] = useState(false);
-    const [categories, setCategories] = useState([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState(editRecord?.category_id || null);
-    const [categoriesLoading, setCategoriesLoading] = useState(true);
     const [loading, setLoading] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showErrorModal, setShowErrorModal] = useState(false);
@@ -70,6 +68,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
     const captionInputRef = useRef(null);
     
     const { createRecord, updateRecord } = useRecordsApi();
+    const { categories, loadCategories, loadingCategories, loadRecords } = useRecordsAndCategories();
     
     // 最新の値をrefで保持
     const scaleRef = useRef(scale);
@@ -84,21 +83,11 @@ export default function PhotoPickerScreen({ navigation, route }) {
     useEffect(() => { aspectModeRef.current = aspectMode; }, [aspectMode]);
     useEffect(() => { initialScaleRef.current = initialScale; }, [initialScale]);
     
-    // カテゴリーを取得
+    // カテゴリーを取得（キャッシュになければ読み込む）
     useEffect(() => {
-        const loadCategories = async () => {
-            try {
-                const data = await fetchCategories(userToken);
-                setCategories(data);
-            } catch (error) {
-                console.error(t('categoryFetchError'), error);
-            } finally {
-                setCategoriesLoading(false);
-            }
-        };
         loadCategories();
-    }, [userToken, t]);
-    
+    }, [loadCategories]);
+
     // キーボードイベントリスナー
     useEffect(() => {
         const keyboardDidShowListener = Keyboard.addListener(
@@ -474,6 +463,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
 
             if (isEditMode) {
                 await updateRecord(editRecord.id, recordData);
+                await loadRecords(); // キャッシュを更新
                 setShowSuccessModal(true);
                 setTimeout(() => {
                     setShowSuccessModal(false);
@@ -481,6 +471,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
                 }, 2000);
             } else {
                 await createRecord(recordData);
+                await loadRecords(); // キャッシュを更新
                 setShowSuccessModal(true);
                 setTimeout(() => {
                     setShowSuccessModal(false);
@@ -705,7 +696,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                         <Text style={[styles.label, { color: theme.colors.secondaryText }]}>
                                             {t('category')}
                                         </Text>
-                                        {categoriesLoading ? (
+                                        {loadingCategories ? (
                                             <ActivityIndicator size="small" color={theme.colors.primary} />
                                         ) : (
                                             <ScrollView 
@@ -713,7 +704,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                                 showsHorizontalScrollIndicator={false}
                                                 style={styles.categoryScrollView}
                                             >
-                                                {categories.map(category => (
+                                                {categories.filter(c => c.id !== 'all').map(category => (
                                                     <TouchableOpacity
                                                         key={category.id}
                                                         style={[

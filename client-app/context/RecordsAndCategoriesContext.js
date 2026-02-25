@@ -1,0 +1,83 @@
+import React, { createContext, useState, useCallback, useMemo, useContext } from 'react';
+import { AuthContext } from './AuthContext';
+import { useRecordsApi } from '../api/records';
+import { fetchCategories } from '../api/categories';
+
+export const RecordsAndCategoriesContext = createContext(null);
+
+const ALL_CATEGORY = { id: 'all', name: 'All', icon: 'apps' };
+
+/**
+ * 記録・カテゴリを保持し、画面遷移時にキャッシュを先に表示するための Context
+ * - キャッシュがあれば即表示し、必要に応じてバックグラウンドで再取得
+ */
+export function RecordsAndCategoriesProvider({ children }) {
+    const { userToken } = useContext(AuthContext);
+    const { fetchRecords } = useRecordsApi();
+
+    const [categories, setCategories] = useState([]);
+    const [records, setRecords] = useState([]);
+    const [loadingCategories, setLoadingCategories] = useState(false);
+    const [loadingRecords, setLoadingRecords] = useState(false);
+
+    const recordsByCategory = useMemo(() => {
+        if (!Array.isArray(records)) return {};
+        const cats = categories.length > 0 ? categories : [ALL_CATEGORY];
+        const next = { all: records };
+        cats.filter(cat => cat.id !== 'all').forEach(cat => {
+            next[cat.id] = records.filter(r => r.category_id === cat.id);
+        });
+        return next;
+    }, [records, categories]);
+
+    const loadCategories = useCallback(async () => {
+        if (!userToken) return;
+        const hasCache = categories.length > 0;
+        if (!hasCache) setLoadingCategories(true);
+        try {
+            const data = await fetchCategories(userToken);
+            setCategories([ALL_CATEGORY, ...(data || [])]);
+        } catch (error) {
+            console.error('カテゴリー取得エラー:', error);
+        } finally {
+            setLoadingCategories(false);
+        }
+    }, [userToken, categories.length]);
+
+    const loadRecords = useCallback(async () => {
+        const hasCache = records.length > 0;
+        if (!hasCache) setLoadingRecords(true);
+        try {
+            const data = await fetchRecords(null);
+            setRecords(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error('記録取得エラー:', error);
+        } finally {
+            setLoadingRecords(false);
+        }
+    }, [fetchRecords, records.length]);
+
+    const value = useMemo(() => ({
+        categories,
+        records,
+        recordsByCategory,
+        loadCategories,
+        loadRecords,
+        loadingCategories,
+        loadingRecords,
+    }), [categories, records, recordsByCategory, loadCategories, loadRecords, loadingCategories, loadingRecords]);
+
+    return (
+        <RecordsAndCategoriesContext.Provider value={value}>
+            {children}
+        </RecordsAndCategoriesContext.Provider>
+    );
+}
+
+export function useRecordsAndCategories() {
+    const ctx = useContext(RecordsAndCategoriesContext);
+    if (!ctx) {
+        throw new Error('useRecordsAndCategories must be used within RecordsAndCategoriesProvider');
+    }
+    return ctx;
+}

@@ -7,21 +7,23 @@ import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { fetchCategories, createCategory, updateCategory, deleteCategory } from '../api/categories';
+import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext';
+import { createCategory, updateCategory, deleteCategory } from '../api/categories';
 
 const CategoryManagementScreen = ({ navigation }) => {
     const { userToken } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
-    
+    const { categories, loadCategories, loadingCategories } = useRecordsAndCategories();
+
     // デフォルトカテゴリー（削除不可、DBには保存しない）
     const defaultCategories = [
         { id: 'all', name: 'All', icon: 'apps', isDefault: true },
     ];
 
-    // ユーザーカスタムカテゴリー
-    const [customCategories, setCustomCategories] = useState([]);
-    const [loading, setLoading] = useState(false);
+    // ユーザーカスタムカテゴリー（Context のキャッシュから 'all' を除いた一覧）
+    const customCategories = categories.filter(c => c.id !== 'all');
+    const [savingCategory, setSavingCategory] = useState(false);
 
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
@@ -33,22 +35,7 @@ const CategoryManagementScreen = ({ navigation }) => {
     const [categoryToDelete, setCategoryToDelete] = useState(null);
     const [successAction, setSuccessAction] = useState(''); // 'add', 'update', 'delete'
 
-    // カテゴリーを読み込む関数
-    const loadCategories = React.useCallback(async () => {
-        setLoading(true);
-        try {
-            const categories = await fetchCategories(userToken);
-            setCustomCategories(categories);
-        } catch (error) {
-            console.error('カテゴリー取得エラー:', error);
-            setErrorMessage('カテゴリーの取得に失敗しました');
-            setShowErrorModal(true);
-        } finally {
-            setLoading(false);
-        }
-    }, [userToken]);
-
-    // 画面表示時にカテゴリーを取得
+    // 画面フォーカス時にキャッシュを更新（Context の loadCategories を使用）
     useFocusEffect(
         React.useCallback(() => {
             loadCategories();
@@ -64,13 +51,13 @@ const CategoryManagementScreen = ({ navigation }) => {
             return;
         }
 
-        setLoading(true);
+        setSavingCategory(true);
         try {
             await createCategory(userToken, {
                 name: categoryName.trim(),
             });
 
-            await loadCategories(); // カテゴリー一覧を再取得
+            await loadCategories(); // キャッシュを更新
             resetForm();
             setSuccessAction('add');
             setShowSuccessModal(true);
@@ -82,7 +69,7 @@ const CategoryManagementScreen = ({ navigation }) => {
             setErrorMessage(error.message || 'カテゴリーの追加に失敗しました');
             setShowErrorModal(true);
         } finally {
-            setLoading(false);
+            setSavingCategory(false);
         }
     };
 
@@ -93,13 +80,13 @@ const CategoryManagementScreen = ({ navigation }) => {
             return;
         }
 
-        setLoading(true);
+        setSavingCategory(true);
         try {
             await updateCategory(userToken, editingCategory.id, {
                 name: categoryName.trim(),
             });
 
-            await loadCategories(); // カテゴリー一覧を再取得
+            await loadCategories(); // キャッシュを更新
             resetForm();
             setSuccessAction('update');
             setShowSuccessModal(true);
@@ -111,7 +98,7 @@ const CategoryManagementScreen = ({ navigation }) => {
             setErrorMessage(error.message || 'カテゴリーの更新に失敗しました');
             setShowErrorModal(true);
         } finally {
-            setLoading(false);
+            setSavingCategory(false);
         }
     };
 
@@ -124,10 +111,10 @@ const CategoryManagementScreen = ({ navigation }) => {
         if (!categoryToDelete) return;
         
         setShowDeleteConfirmModal(false);
-        setLoading(true);
+        setSavingCategory(true);
         try {
             await deleteCategory(userToken, categoryToDelete.id);
-            await loadCategories(); // カテゴリー一覧を再取得
+            await loadCategories(); // キャッシュを更新
             setCategoryToDelete(null);
             setSuccessAction('delete');
             setShowSuccessModal(true);
@@ -139,7 +126,7 @@ const CategoryManagementScreen = ({ navigation }) => {
             setErrorMessage(error.message || 'カテゴリーの削除に失敗しました');
             setShowErrorModal(true);
         } finally {
-            setLoading(false);
+            setSavingCategory(false);
         }
     };
 

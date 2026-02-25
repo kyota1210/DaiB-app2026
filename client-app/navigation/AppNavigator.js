@@ -7,6 +7,7 @@ import { BlurView } from 'expo-blur';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { RecordsAndCategoriesProvider } from '../context/RecordsAndCategoriesContext';
 
 // 画面インポート
 import LoginScreen from '../screens/LoginScreen'; 
@@ -167,126 +168,85 @@ const AppNavigator = () => {
     );
   }
   
-  return (
-    // Stack.Navigator で全体を包み、認証状態によって中身を切り替える
-    // ログイン後は TabNavigator を表示する
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {userToken ? (
-        <>
+  // ログイン後は記録・カテゴリのキャッシュを提供。Navigator の直接の子は Screen のみのため Provider は外側でラップ
+  if (userToken) {
+    return (
+      <RecordsAndCategoriesProvider>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Main" component={MainTabNavigator} />
-          {/* ↓ 追加: 詳細画面 */}
-          <Stack.Screen 
-            name="RecordDetail" 
-            component={RecordDetailScreen} 
-            options={{ 
-              headerShown: false,
-              presentation: 'card'
-            }} 
+          <Stack.Screen
+            name="RecordDetail"
+            component={RecordDetailScreen}
+            options={{ headerShown: false, presentation: 'card' }}
           />
-          {/* ↓ 追加: 設定画面 */}
-          <Stack.Screen 
-            name="MyPage" 
-            component={ProfileScreen} 
-            options={{ 
-              headerShown: false,
-              presentation: 'card'
-            }} 
+          <Stack.Screen
+            name="MyPage"
+            component={ProfileScreen}
+            options={{ headerShown: false, presentation: 'card' }}
           />
-          {/* ↓ 追加: アカウント設定画面 */}
-          <Stack.Screen 
-            name="ProfileEdit" 
-            component={ProfileEditScreen} 
-            options={{ 
-              headerShown: false,
-              presentation: 'card'
-            }} 
+          <Stack.Screen
+            name="ProfileEdit"
+            component={ProfileEditScreen}
+            options={{ headerShown: false, presentation: 'card' }}
           />
-          <Stack.Screen 
-            name="LoginInfo" 
-            component={LoginInfoScreen} 
-            options={{ 
-              headerShown: false,
-              presentation: 'card'
-            }} 
+          <Stack.Screen
+            name="LoginInfo"
+            component={LoginInfoScreen}
+            options={{ headerShown: false, presentation: 'card' }}
           />
-          <Stack.Screen 
-            name="PremiumPlan" 
-            component={PremiumPlanScreen} 
-            options={{ 
-              headerShown: false,
-              presentation: 'card'
-            }} 
+          <Stack.Screen
+            name="PremiumPlan"
+            component={PremiumPlanScreen}
+            options={{ headerShown: false, presentation: 'card' }}
           />
-          {/* ↓ 追加: Otium設定画面 */}
-          <Stack.Screen 
-            name="CategoryManagement" 
-            component={CategoryManagementScreen} 
-            options={{ 
-              headerShown: false,
-              presentation: 'card'
-            }} 
+          <Stack.Screen
+            name="CategoryManagement"
+            component={CategoryManagementScreen}
+            options={{ headerShown: false, presentation: 'card' }}
           />
-          {/* ↓ 追加: アプリ設定画面 */}
-          <Stack.Screen 
-            name="LanguageSetting" 
-            component={LanguageSettingScreen} 
-            options={{ 
-              headerShown: false,
-              presentation: 'card'
-            }} 
+          <Stack.Screen
+            name="LanguageSetting"
+            component={LanguageSettingScreen}
+            options={{ headerShown: false, presentation: 'card' }}
           />
-          <Stack.Screen 
-            name="PhotoPicker" 
-            component={PhotoPickerScreen} 
-            options={{ 
-              headerShown: false,
-              presentation: 'card'
-            }} 
+          <Stack.Screen
+            name="PhotoPicker"
+            component={PhotoPickerScreen}
+            options={{ headerShown: false, presentation: 'card' }}
           />
-          <Stack.Screen 
-            name="Help" 
-            component={HelpScreen} 
-            options={{ 
-              headerShown: false,
-              presentation: 'card'
-            }} 
+          <Stack.Screen
+            name="Help"
+            component={HelpScreen}
+            options={{ headerShown: false, presentation: 'card' }}
           />
-          <Stack.Screen 
-            name="About" 
-            component={AboutScreen} 
-            options={{ 
-              headerShown: false,
-              presentation: 'card'
-            }} 
+          <Stack.Screen
+            name="About"
+            component={AboutScreen}
+            options={{ headerShown: false, presentation: 'card' }}
           />
-          <Stack.Screen 
-            name="Terms" 
-            component={TermsScreen} 
-            options={{ 
-              headerShown: false,
-              presentation: 'card'
-            }} 
+          <Stack.Screen
+            name="Terms"
+            component={TermsScreen}
+            options={{ headerShown: false, presentation: 'card' }}
           />
-          <Stack.Screen 
-            name="Privacy" 
-            component={PrivacyScreen} 
-            options={{ 
-              headerShown: false,
-              presentation: 'card'
-            }} 
+          <Stack.Screen
+            name="Privacy"
+            component={PrivacyScreen}
+            options={{ headerShown: false, presentation: 'card' }}
           />
-          <Stack.Screen 
-            name="Contact" 
-            component={ContactScreen} 
-            options={{ 
-              headerShown: false,
-              presentation: 'card'
-            }} 
+          <Stack.Screen
+            name="Contact"
+            component={ContactScreen}
+            options={{ headerShown: false, presentation: 'card' }}
           />
-        </>
-      ) : (
-        <Stack.Screen name="Auth" component={AuthStack} />
-      )}
+        </Stack.Navigator>
+      </RecordsAndCategoriesProvider>
+    );
+  }
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Auth" component={AuthStack} />
     </Stack.Navigator>
   );
 };

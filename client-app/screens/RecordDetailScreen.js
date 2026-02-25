@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRecordsApi } from '../api/records';
+import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getImageUrl } from '../utils/imageHelper';
@@ -146,6 +147,7 @@ export default function RecordDetailScreen({ route, navigation }) {
     const scrollViewRef = useRef(null);
     const menuButtonRef = useRef(null);
     const { deleteRecord } = useRecordsApi();
+    const { loadRecords } = useRecordsAndCategories();
     const { theme } = useTheme();
     const { t } = useLanguage();
 
@@ -181,6 +183,7 @@ export default function RecordDetailScreen({ route, navigation }) {
         setShowDeleteConfirmModal(false);
         try {
             await deleteRecord(currentRecord.id);
+            await loadRecords(); // キャッシュを更新
             navigation.goBack();
         } catch (error) {
             setErrorMessage(error.message || t('deleteFailed'));
