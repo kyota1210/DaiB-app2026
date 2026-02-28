@@ -15,6 +15,10 @@ import { SERVER_URL } from '../config';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IMAGE_PADDING = 1; // 画像間の余白
 const COLUMN_WIDTH = (SCREEN_WIDTH - IMAGE_PADDING * 4) / 3; // 3列
+// タイル表示（他ユーザープロフィール同様: 隙間あり・正方形・3列）
+const TILE_PADDING = 16;
+const TILE_GAP = 8;
+const TILE_SIZE = (SCREEN_WIDTH - TILE_PADDING * 2 - TILE_GAP * (3 - 1)) / 3;
 
 // 日付を yyyy/mm/dd 形式にフォーマットする関数
 const formatDate = (dateString) => {
@@ -37,18 +41,23 @@ const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid
         if (viewMode === 'booklist') {
             return styles.bookListItem;
         }
+        if (viewMode === 'tile') {
+            return [styles.tileCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }];
+        }
         return styles.galleryCard;
     };
 
     const getImageStyle = () => {
         if (viewMode === 'list') return styles.listImage;
         if (viewMode === 'booklist') return styles.bookListImage;
+        if (viewMode === 'tile') return styles.tileImage;
         return styles.galleryImage;
     };
 
     const getContainerStyle = () => {
         if (viewMode === 'list') return styles.listImageContainer;
         if (viewMode === 'booklist') return styles.bookListImageContainer;
+        if (viewMode === 'tile') return styles.tileImageContainer;
         return styles.imageContainer;
     };
 
@@ -83,7 +92,7 @@ const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid
 
 export default function RecordListScreen({ navigation }) {
     const [selectedCategory, setSelectedCategory] = useState('all');
-    const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', 'booklist'
+    const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', 'booklist', 'tile'
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
     const [categoryName, setCategoryName] = useState('');
@@ -228,12 +237,42 @@ export default function RecordListScreen({ navigation }) {
         return rows;
     };
 
+    // タイル表示（隙間あり・正方形・3列・他ユーザープロフィール同様）
+    const renderTile = (records) => {
+        if (!records || records.length === 0) {
+            return renderEmpty();
+        }
+
+        const rows = [];
+        for (let i = 0; i < records.length; i += 3) {
+            const rowItems = records.slice(i, i + 3);
+            rows.push(
+                <View key={`tile-row-${i}`} style={styles.tileRowContainer}>
+                    {rowItems.map((item, index) => (
+                        <GalleryItem 
+                            key={item.id} 
+                            item={item} 
+                            navigation={navigation}
+                            allRecords={records}
+                            itemIndex={i + index}
+                            viewMode="tile"
+                            theme={theme}
+                        />
+                    ))}
+                </View>
+            );
+        }
+        return rows;
+    };
+
     // 表示形式に応じたレンダリング関数を選択
     const renderRecords = (records) => {
         if (viewMode === 'list') {
             return renderList(records);
         } else if (viewMode === 'booklist') {
             return renderBookList(records);
+        } else if (viewMode === 'tile') {
+            return renderTile(records);
         } else {
             return renderGrid(records);
         }
@@ -407,11 +446,13 @@ export default function RecordListScreen({ navigation }) {
                     <TouchableOpacity 
                         style={styles.viewModeButton}
                         onPress={() => {
-                            // 表示形式を切り替え: grid -> list -> booklist -> grid
+                            // 表示形式を切り替え: grid -> list -> booklist -> tile -> grid
                             if (viewMode === 'grid') {
                                 setViewMode('list');
                             } else if (viewMode === 'list') {
                                 setViewMode('booklist');
+                            } else if (viewMode === 'booklist') {
+                                setViewMode('tile');
                             } else {
                                 setViewMode('grid');
                             }
@@ -425,6 +466,12 @@ export default function RecordListScreen({ navigation }) {
                                     color={theme.colors.icon} 
                                 />
                             </View>
+                        ) : viewMode === 'tile' ? (
+                            <Ionicons 
+                                name="apps-outline"
+                                size={24} 
+                                color={theme.colors.icon} 
+                            />
                         ) : (
                             <Ionicons 
                                 name={
@@ -941,6 +988,30 @@ const styles = StyleSheet.create({
         backgroundColor: '#f5f5f5',
     },
     bookListImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
+    // タイル表示用スタイル（隙間あり・正方形・3列）
+    tileRowContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: TILE_PADDING,
+        marginBottom: TILE_GAP,
+        gap: TILE_GAP,
+    },
+    tileCard: {
+        width: TILE_SIZE,
+        height: TILE_SIZE,
+        borderRadius: 12,
+        borderWidth: StyleSheet.hairlineWidth,
+        overflow: 'hidden',
+    },
+    tileImageContainer: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#f5f5f5',
+    },
+    tileImage: {
         width: '100%',
         height: '100%',
         resizeMode: 'cover',
