@@ -5,6 +5,8 @@ const authRoutes = require('./authRoutes');
 const recordsRoutes = require('./recordsRoutes');
 const userRoutes = require('./userRoutes');
 const categoryRoutes = require('./categoryRoutes');
+const followsRoutes = require('./followsRoutes');
+const threadsRoutes = require('./threadsRoutes');
 const requestLogger = require('./middleware/requestLogger');
 const errorHandler = require('./middleware/errorHandler');
 const logger = require('./utils/logger').createLogger('server');
@@ -51,6 +53,12 @@ app.use('/api/users', userRoutes);
 
 // カテゴリールート (認証が必要)
 app.use('/api/categories', categoryRoutes);
+
+// フォロールート (認証が必要)
+app.use('/api/follows', followsRoutes);
+
+// スレッド・タイムラインフート (認証が必要)
+app.use('/api/threads', threadsRoutes);
 
 // エラーハンドラーミドルウェアを最後に追加（すべてのルートの後）
 app.use(errorHandler);

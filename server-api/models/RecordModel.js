@@ -91,6 +91,31 @@ class RecordModel {
         const [result] = await db.query(sql, [id, userId]);
         return result.affectedRows > 0;
     }
+
+    /**
+     * タイムライン用: 指定ユーザー群の直近7日間の記録を取得（投稿者情報付き）
+     * @param {number[]} authorIds - 投稿者ユーザーIDの配列
+     */
+    static async findTimelineByAuthorIds(authorIds) {
+        if (!authorIds || authorIds.length === 0) return [];
+        const placeholders = authorIds.map(() => '?').join(',');
+        const sql = `
+            SELECT r.id, r.title, r.description, r.created_at, r.date_logged, r.image_url, r.category_id, r.user_id AS author_id,
+                   u.user_name AS author_name,
+                   ua.image_url AS author_avatar_url,
+                   c.name AS category_name
+            FROM records r
+            JOIN users u ON u.id = r.user_id
+            LEFT JOIN user_avatars ua ON ua.user_id = u.id
+            LEFT JOIN categories c ON c.id = r.category_id
+            WHERE r.user_id IN (${placeholders})
+              AND r.invalidation_flag = 0
+              AND r.created_at >= NOW() - INTERVAL 7 DAY
+            ORDER BY r.created_at DESC
+        `;
+        const [rows] = await db.query(sql, authorIds);
+        return rows;
+    }
 }
 
 module.exports = RecordModel;

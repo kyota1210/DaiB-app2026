@@ -18,6 +18,8 @@ import ThreadScreen from '../screens/ThreadScreen';
 import RecordDetailScreen from '../screens/RecordDetailScreen';
 import ProfileEditScreen from '../screens/ProfileEditScreen';
 import LoginInfoScreen from '../screens/LoginInfoScreen';
+import UserSearchScreen from '../screens/UserSearchScreen';
+import FollowListScreen from '../screens/FollowListScreen';
 import PremiumPlanScreen from '../screens/PremiumPlanScreen';
 import CategoryManagementScreen from '../screens/CategoryManagementScreen';
 import LanguageSettingScreen from '../screens/LanguageSettingScreen';
@@ -254,6 +256,23 @@ const AppNavigator = () => {
           <Stack.Screen
             name="Contact"
             component={ContactScreen}
+            options={{ headerShown: false, presentation: 'card' }}
+          />
+          <Stack.Screen
+            name="UserSearch"
+            component={UserSearchScreen}
+            options={{ headerShown: false, presentation: 'card' }}
+          />
+          <Stack.Screen
+            name="FollowingList"
+            component={FollowListScreen}
+            initialParams={{ mode: 'following' }}
+            options={{ headerShown: false, presentation: 'card' }}
+          />
+          <Stack.Screen
+            name="FollowersList"
+            component={FollowListScreen}
+            initialParams={{ mode: 'followers' }}
             options={{ headerShown: false, presentation: 'card' }}
           />
         </Stack.Navigator>
