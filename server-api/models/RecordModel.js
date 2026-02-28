@@ -46,8 +46,8 @@ class RecordModel {
      */
     static async create({ userId, title, description, dateLogged, imageUrl, categoryId }) {
         const sql = `
-            INSERT INTO records (user_id, title, description, date_logged, invalidation_flag, image_url, category_id) 
-            VALUES (?, ?, ?, ?, 0, ?, ?)
+            INSERT INTO records (user_id, title, description, date_logged, invalidation_flag, image_url, category_id, created_at, updated_at) 
+            VALUES (?, ?, ?, ?, 0, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         `;
         const [result] = await db.query(sql, [
             userId,
@@ -64,7 +64,7 @@ class RecordModel {
      * 記録を更新（IDと所有者を確認）
      */
     static async update(id, userId, { title, description, categoryId, dateLogged, imageUrl }) {
-        let sql = 'UPDATE records SET title = ?, description = ?, category_id = ?, date_logged = ?';
+        let sql = 'UPDATE records SET title = ?, description = ?, category_id = ?, date_logged = ?, updated_at = CURRENT_TIMESTAMP';
         const params = [title, description, categoryId || null, dateLogged];
 
         if (imageUrl) {
