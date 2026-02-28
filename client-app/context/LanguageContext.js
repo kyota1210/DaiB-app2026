@@ -27,17 +27,24 @@ const translations = {
         searchUsersPlaceholder: 'ユーザー名やキーワードで検索',
         timeline: 'タイムライン',
         follow: 'フォローする',
+        followedMessage: 'フォローしました。',
+        followedMessageWithName: '{{name}}をフォローしました。',
         unfollow: 'フォロー解除',
+        unfollowConfirmMessage: 'フォローを解除しますか？',
+        unfollowConfirmMessageWithName: '{{name}}のフォローを解除しますか？',
+        thisUser: 'このユーザー',
         noTimeline: 'フォローしているユーザーの投稿がここに表示されます',
         followingList: 'フォロー中',
         followersList: 'フォロワー',
-        noUsers: 'いません',
+        noUsers: 'なし',
         qrCode: 'QRコード',
         showMyQr: '自分のQRコード',
         scanQr: 'QR読み取り',
         backToQrDisplay: 'QR表示に戻る',
         rescanQr: '再読み込み',
         userNotFoundByQr: 'ユーザーが見つかりませんでした',
+        userNotFound: 'ユーザーが見つかりません',
+        profile: 'プロフィール',
         scanQrToFollow: 'QRコードをスキャンしてフォロー',
         permissionRequired: '許可が必要です',
         photoLibraryAccess: 'フォトライブラリへのアクセス',
@@ -67,6 +74,7 @@ const translations = {
         
         // 記録画面
         noRecords: 'まだ記録がありません。',
+        posts: '投稿',
         recordDetail: '記録の詳細',
         
         // 作成・編集画面
@@ -256,7 +264,12 @@ const translations = {
         searchUsersPlaceholder: 'Search by name or keyword',
         timeline: 'Timeline',
         follow: 'Follow',
+        followedMessage: 'Followed.',
+        followedMessageWithName: 'You followed {{name}}.',
         unfollow: 'Unfollow',
+        unfollowConfirmMessage: 'Unfollow this user?',
+        unfollowConfirmMessageWithName: 'Unfollow {{name}}?',
+        thisUser: 'this user',
         noTimeline: 'Posts from people you follow will appear here',
         followingList: 'Following',
         followersList: 'Followers',
@@ -267,6 +280,8 @@ const translations = {
         backToQrDisplay: 'Back to QR display',
         rescanQr: 'Scan again',
         userNotFoundByQr: 'User was not found',
+        userNotFound: 'User not found',
+        profile: 'Profile',
         scanQrToFollow: 'Scan QR code to follow',
         permissionRequired: 'Permission required',
         photoLibraryAccess: 'Photo library access',
@@ -296,6 +311,7 @@ const translations = {
         
         // Records screen
         noRecords: 'No records yet.',
+        posts: 'Posts',
         recordDetail: 'Record Detail',
         
         // Create/Edit screen

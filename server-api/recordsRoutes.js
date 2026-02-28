@@ -55,7 +55,7 @@ router.post('/', (req, res, next) => {
     }
 
     // タイトル未入力時はデフォルト値を設定
-    const recordTitle = typeof title === 'string' && title.trim() ? title : '無題の記録';
+    const recordTitle = typeof title === 'string' && title.trim() ? title : '';
     const recordDescription = typeof description === 'string' ? description : '';
 
     // 画像パスの生成（相対パス）

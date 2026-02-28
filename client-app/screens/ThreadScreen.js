@@ -61,20 +61,33 @@ const ThreadScreen = ({ navigation }) => {
             console.error('ThreadScreen load error', err);
         } finally {
             setLoading(false);
-            setRefreshing(false);
+            // プルリフレッシュ時は onRefresh 側で setRefreshing(false) を行うためここでは触らない
         }
     }, [userToken]);
 
+    // フォーカス時: 初回（データなし）のみローディング表示。戻ったときはバックグラウンドで再取得してスクロール位置を維持
     useFocusEffect(
         useCallback(() => {
-            setLoading(true);
+            if (records.length === 0) {
+                setLoading(true);
+            }
             loadData();
         }, [loadData])
     );
 
-    const onRefresh = useCallback(() => {
+    const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        loadData();
+        const start = Date.now();
+        try {
+            await loadData();
+        } finally {
+            const elapsed = Date.now() - start;
+            const remaining = Math.max(0, 1000 - elapsed);
+            if (remaining > 0) {
+                await new Promise((r) => setTimeout(r, remaining));
+            }
+            setRefreshing(false);
+        }
     }, [loadData]);
 
     useEffect(() => {
@@ -119,10 +132,7 @@ const ThreadScreen = ({ navigation }) => {
         setScanBusy(true);
         try {
             await follow(userToken, scannedUser.id);
-            setScannedUser(null);
-            setQrMode('display');
-            setScanNoUserFound(false);
-            setShowQrModal(false);
+            setScannedUser((prev) => (prev ? { ...prev, is_following: true } : null));
         } catch (e) {
             console.error(e);
         } finally {
@@ -145,13 +155,24 @@ const ThreadScreen = ({ navigation }) => {
             ? new Date(item.date_logged).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })
             : '';
 
+        const openUserProfile = () => {
+            if (item.author_id != null) {
+                navigation.navigate('UserProfile', { userId: item.author_id });
+            }
+        };
+
         return (
             <TouchableOpacity
                 style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
                 onPress={() => openRecordDetail(index)}
                 activeOpacity={0.9}
             >
-                <View style={styles.cardHeader}>
+                <TouchableOpacity
+                    style={styles.cardHeader}
+                    onPress={openUserProfile}
+                    activeOpacity={0.8}
+                    disabled={item.author_id == null}
+                >
                     {authorAvatarUrl ? (
                         <Image source={{ uri: authorAvatarUrl }} style={styles.avatar} />
                     ) : (
@@ -162,7 +183,7 @@ const ThreadScreen = ({ navigation }) => {
                     <Text style={[styles.authorName, { color: theme.colors.text }]} numberOfLines={1}>
                         {item.author_name || ''}
                     </Text>
-                </View>
+                </TouchableOpacity>
                 {imageUrl ? (
                     <Image source={{ uri: imageUrl }} style={styles.recordImage} resizeMode="cover" />
                 ) : (
@@ -227,39 +248,39 @@ const ThreadScreen = ({ navigation }) => {
                         >
                             <Ionicons name="close" size={28} color="#fff" />
                         </TouchableOpacity>
-                        <View style={[styles.qrModalContent, { backgroundColor: theme.colors.background }]}>
-                            {qrMode === 'display' && (
-                                <Text style={[styles.qrModalTitle, { color: theme.colors.text }]}>
-                                    {t('showMyQr')}
-                                </Text>
-                            )}
+                        <View style={[styles.qrModalContent, { backgroundColor: theme.colors.background }, qrMode === 'display' && styles.qrModalContentFlex]}>
                             {qrMode === 'display' ? (
                                 <>
-                                    {qrKeyLoading ? (
-                                        <ActivityIndicator size="large" color={theme.colors.primary} style={styles.qrLoader} />
-                                    ) : (searchKeyForQr && String(searchKeyForQr).trim()) ? (
-                                        <View style={[styles.qrCodeWrap, { backgroundColor: '#fff', padding: 16, borderRadius: 12 }]}>
-                                            <QRCode
-                                                value={String(searchKeyForQr)}
-                                                size={QR_SIZE}
-                                                color="#000"
-                                                backgroundColor="#fff"
-                                                logo={require('../assets/icon.png')}
-                                                logoSize={QR_SIZE * 0.22}
-                                                logoBackgroundColor="#fff"
-                                                logoMargin={2}
-                                                ecl="H"
-                                            />
-                                        </View>
-                                    ) : (
-                                        <Text style={[styles.qrHint, { color: theme.colors.secondaryText }]}>{t('userNotFoundByQr')}</Text>
-                                    )}
-                                    <TouchableOpacity
-                                        style={[styles.qrActionButton, { backgroundColor: theme.colors.primary }]}
-                                        onPress={() => { setQrMode('scan'); setScannedUser(null); setScanNoUserFound(false); }}
-                                    >
-                                        <Text style={styles.qrActionButtonText}>{t('scanQr')}</Text>
-                                    </TouchableOpacity>
+                                    <View style={styles.qrModalCenter}>
+                                        <Text style={[styles.qrModalTitle, { color: theme.colors.text }]}>
+                                            {t('showMyQr')}
+                                        </Text>
+                                        {qrKeyLoading ? (
+                                            <ActivityIndicator size="large" color={theme.colors.primary} style={styles.qrLoader} />
+                                        ) : (searchKeyForQr && String(searchKeyForQr).trim()) ? (
+                                            <View style={[styles.qrCodeWrap, { backgroundColor: '#fff', padding: 16, borderRadius: 12, width: QR_SIZE + 32, height: QR_SIZE + 32, justifyContent: 'center' }]}>
+                                                <QRCode
+                                                    value={String(searchKeyForQr)}
+                                                    size={QR_SIZE}
+                                                    color="#000"
+                                                    backgroundColor="#fff"
+                                                    logo={require('../assets/icon.png')}
+                                                    logoSize={QR_SIZE * 0.22}
+                                                    logoBackgroundColor="#fff"
+                                                    logoMargin={2}
+                                                    ecl="H"
+                                                />
+                                            </View>
+                                        ) : (
+                                            <Text style={[styles.qrHint, { color: theme.colors.secondaryText }]}>{t('userNotFoundByQr')}</Text>
+                                        )}
+                                        <TouchableOpacity
+                                            style={[styles.qrActionButton, styles.qrActionButtonCompact, { backgroundColor: theme.colors.primary }]}
+                                            onPress={() => { setQrMode('scan'); setScannedUser(null); setScanNoUserFound(false); }}
+                                        >
+                                            <Text style={styles.qrActionButtonText}>{t('scanQr')}</Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 </>
                             ) : (
                                 <>
@@ -287,23 +308,22 @@ const ThreadScreen = ({ navigation }) => {
                                                 </View>
                                             )}
                                             <Text style={[styles.scannedUserName, { color: theme.colors.text }]}>{scannedUser.user_name || ''}</Text>
-                                            <TouchableOpacity
-                                                style={[
-                                                    styles.qrFollowButton,
-                                                    { backgroundColor: scannedUser.is_following ? theme.colors.secondaryBackground : theme.colors.primary, borderColor: theme.colors.border },
-                                                ]}
-                                                onPress={scannedUser.is_following ? undefined : handleFollowScannedUser}
-                                                disabled={scanBusy || scannedUser.is_following}
-                                                activeOpacity={0.8}
-                                            >
-                                                {scanBusy ? (
-                                                    <ActivityIndicator size="small" color={scannedUser.is_following ? theme.colors.text : '#fff'} />
-                                                ) : (
-                                                    <Text style={[styles.qrFollowButtonText, { color: scannedUser.is_following ? theme.colors.text : '#fff' }]}>
-                                                        {scannedUser.is_following ? t('unfollow') : t('follow')}
-                                                    </Text>
-                                                )}
-                                            </TouchableOpacity>
+                                            {scannedUser.is_following ? (
+                                                <Text style={[styles.qrFollowedMessage, { color: theme.colors.secondaryText }]}>{t('followedMessage')}</Text>
+                                            ) : (
+                                                <TouchableOpacity
+                                                    style={[styles.qrFollowButton, { backgroundColor: theme.colors.primary, borderColor: theme.colors.border }]}
+                                                    onPress={handleFollowScannedUser}
+                                                    disabled={scanBusy}
+                                                    activeOpacity={0.8}
+                                                >
+                                                    {scanBusy ? (
+                                                        <ActivityIndicator size="small" color="#fff" />
+                                                    ) : (
+                                                        <Text style={[styles.qrFollowButtonText, { color: '#fff' }]}>{t('follow')}</Text>
+                                                    )}
+                                                </TouchableOpacity>
+                                            )}
                                         </View>
                                     ) : scanNoUserFound ? (
                                         <View style={[styles.qrNoUserWrap, { backgroundColor: theme.colors.secondaryBackground }]}>
@@ -323,14 +343,14 @@ const ThreadScreen = ({ navigation }) => {
                                     <View style={styles.qrBackButtonWrap}>
                                         {scanNoUserFound && (
                                             <TouchableOpacity
-                                                style={[styles.qrRescanButton, { backgroundColor: theme.colors.primary }]}
+                                                style={[styles.qrRescanButton, styles.qrScanButtonCompact, { backgroundColor: theme.colors.primary }]}
                                                 onPress={() => { setScanNoUserFound(false); }}
                                             >
                                                 <Text style={styles.qrRescanButtonText}>{t('rescanQr')}</Text>
                                             </TouchableOpacity>
                                         )}
                                         <TouchableOpacity
-                                            style={[styles.qrBackButton, { borderColor: theme.colors.border }]}
+                                            style={[styles.qrBackButton, styles.qrScanButtonCompact, { borderColor: theme.colors.border }]}
                                             onPress={() => { setQrMode('display'); setScannedUser(null); setScanNoUserFound(false); }}
                                         >
                                             <Text style={[styles.qrBackButtonText, { color: theme.colors.text }]}>{t('backToQrDisplay')}</Text>
@@ -342,6 +362,13 @@ const ThreadScreen = ({ navigation }) => {
                     </View>
                 </SafeAreaView>
             </Modal>
+
+            {/* プルダウン更新中のローディング表示（投稿一覧画面と同じ） */}
+            {refreshing && (
+                <View style={styles.refreshingIndicator}>
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
+                </View>
+            )}
 
             {loading ? (
                 <View style={styles.centered}>
@@ -360,7 +387,12 @@ const ThreadScreen = ({ navigation }) => {
                         </View>
                     }
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor={theme.colors.primary}
+                            colors={[theme.colors.primary]}
+                        />
                     }
                 />
             )}
@@ -385,6 +417,11 @@ const styles = StyleSheet.create({
     headerSpacer: { flex: 1 },
     searchButton: { padding: 8 },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    refreshingIndicator: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 8,
+    },
     listContent: { padding: 12, paddingBottom: 80 },
     emptyContainer: { flex: 1, justifyContent: 'center', paddingBottom: 80 },
     emptyState: { alignItems: 'center', paddingVertical: 48 },
@@ -405,14 +442,17 @@ const styles = StyleSheet.create({
     dateText: { fontSize: 12 },
     titleText: { fontSize: 14, marginTop: 4 },
     qrModalSafeArea: { flex: 1 },
-    qrModalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+    qrModalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
     qrModalCloseFixed: { position: 'absolute', zIndex: 10, padding: 12, minWidth: 48, minHeight: 48, justifyContent: 'center', alignItems: 'center' },
-    qrModalContent: { borderRadius: 16, padding: 20, width: '100%', maxWidth: 400 },
-    qrModalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
+    qrModalContent: { borderRadius: 16, paddingHorizontal: 12, paddingVertical: 16, width: '100%', maxWidth: 400 },
+    qrModalContentFlex: { flex: 1 },
+    qrModalCenter: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    qrModalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' },
     qrLoader: { marginVertical: 40 },
     qrCodeWrap: { alignItems: 'center', marginVertical: 16 },
     qrHint: { textAlign: 'center', marginVertical: 16 },
     qrActionButton: { marginTop: 16, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+    qrActionButtonCompact: { width: '80%', maxWidth: 280, alignSelf: 'center' },
     qrActionButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
     qrBackButton: { borderWidth: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
     qrBackButtonText: { fontSize: 15 },
@@ -447,17 +487,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    qrCameraWrap: { width: '100%', height: 320, borderRadius: 12, overflow: 'hidden', position: 'relative', marginTop: 8, backgroundColor: '#000' },
+    qrCameraWrap: { width: '100%', maxWidth: 320, alignSelf: 'center', height: 320, borderRadius: 12, overflow: 'hidden', position: 'relative', marginTop: 8, backgroundColor: '#000' },
     qrCameraView: { width: '100%', height: '100%' },
     qrScanHint: { position: 'absolute', bottom: 12, left: 0, right: 0, textAlign: 'center', fontSize: 12 },
     qrNoUserWrap: { paddingVertical: 24, paddingHorizontal: 20, borderRadius: 12, alignItems: 'center', justifyContent: 'center', minHeight: 120 },
     qrNoUserText: { fontSize: 15, textAlign: 'center' },
-    qrBackButtonWrap: { marginTop: 16, gap: 12 },
+    qrBackButtonWrap: { marginTop: 16, gap: 12, alignItems: 'center' },
     qrRescanButton: { paddingVertical: 12, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+    qrScanButtonCompact: { width: '80%', maxWidth: 280, alignSelf: 'center' },
     qrRescanButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
     scannedUserCard: { padding: 20, borderRadius: 12, borderWidth: 1, alignItems: 'center', marginTop: 16 },
     scannedUserAvatar: { width: 64, height: 64, borderRadius: 32 },
     scannedUserName: { marginTop: 12, fontSize: 18, fontWeight: '600' },
+    qrFollowedMessage: { marginTop: 20, fontSize: 15 },
     qrFollowButton: {
         marginTop: 20,
         width: '100%',

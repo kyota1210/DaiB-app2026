@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     Image,
     ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -45,21 +46,42 @@ const UserSearchScreen = ({ navigation }) => {
         }
     }, [query, userToken]);
 
-    const handleFollow = async (userId, isCurrentlyFollowing) => {
+    const handleFollow = async (userId, isCurrentlyFollowing, userName) => {
+        if (busyId !== null) return;
+        if (isCurrentlyFollowing) {
+            const name = (userName || '').trim() || t('thisUser');
+            const message = t('unfollowConfirmMessageWithName').replace('{{name}}', name);
+            Alert.alert(
+                '',
+                message,
+                [
+                    { text: t('cancel'), style: 'cancel' },
+                    { text: t('unfollow'), style: 'destructive', onPress: () => doUnfollow(userId) },
+                ]
+            );
+            return;
+        }
+        setBusyId(userId);
+        try {
+            await follow(userToken, userId);
+            setFollowingIds((prev) => new Set(prev).add(userId));
+        } catch (err) {
+            console.error('follow/unfollow error', err);
+        } finally {
+            setBusyId(null);
+        }
+    };
+
+    const doUnfollow = async (userId) => {
         if (busyId !== null) return;
         setBusyId(userId);
         try {
-            if (isCurrentlyFollowing) {
-                await unfollow(userToken, userId);
-                setFollowingIds((prev) => {
-                    const next = new Set(prev);
-                    next.delete(userId);
-                    return next;
-                });
-            } else {
-                await follow(userToken, userId);
-                setFollowingIds((prev) => new Set(prev).add(userId));
-            }
+            await unfollow(userToken, userId);
+            setFollowingIds((prev) => {
+                const next = new Set(prev);
+                next.delete(userId);
+                return next;
+            });
         } catch (err) {
             console.error('follow/unfollow error', err);
         } finally {
@@ -90,7 +112,7 @@ const UserSearchScreen = ({ navigation }) => {
                         styles.followButton,
                         isFollowing ? { backgroundColor: theme.colors.secondaryBackground } : { backgroundColor: theme.colors.primary },
                     ]}
-                    onPress={() => handleFollow(item.id, isFollowing)}
+                    onPress={() => handleFollow(item.id, isFollowing, item.user_name)}
                     disabled={isBusy}
                 >
                     {isBusy ? (

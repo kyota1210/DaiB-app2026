@@ -8,6 +8,7 @@ import {
     Image,
     ActivityIndicator,
     RefreshControl,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -55,28 +56,56 @@ const FollowListScreen = ({ navigation, route }) => {
         fetchList();
     };
 
-    const handleFollow = async (userId, isCurrentlyFollowing) => {
+    const handleFollow = async (userId, isCurrentlyFollowing, userName) => {
         if (busyId !== null) return;
+        if (isCurrentlyFollowing) {
+            const name = (userName || '').trim() || t('thisUser');
+            const message = t('unfollowConfirmMessageWithName').replace('{{name}}', name);
+            Alert.alert(
+                '',
+                message,
+                [
+                    { text: t('cancel'), style: 'cancel' },
+                    { text: t('unfollow'), style: 'destructive', onPress: () => doUnfollow(userId) },
+                ]
+            );
+            return;
+        }
         setBusyId(userId);
         try {
-            if (isCurrentlyFollowing) {
-                await unfollow(userToken, userId);
-                if (mode === 'following') {
-                    setUsers((prev) => prev.filter((u) => u.id !== userId));
-                } else {
-                    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, is_following: false } : u)));
-                }
-            } else {
-                await follow(userToken, userId);
-                if (mode === 'followers') {
-                    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, is_following: true } : u)));
-                }
+            await follow(userToken, userId);
+            if (mode === 'followers') {
+                setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, is_following: true } : u)));
+                const displayName = (userName || '').trim() || t('thisUser');
+                const message = t('followedMessageWithName').replace('{{name}}', displayName);
+                Alert.alert('', message);
             }
         } catch (err) {
             console.error('follow/unfollow error', err);
         } finally {
             setBusyId(null);
         }
+    };
+
+    const doUnfollow = async (userId) => {
+        if (busyId !== null) return;
+        setBusyId(userId);
+        try {
+            await unfollow(userToken, userId);
+            if (mode === 'following') {
+                setUsers((prev) => prev.filter((u) => u.id !== userId));
+            } else {
+                setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, is_following: false } : u)));
+            }
+        } catch (err) {
+            console.error('follow/unfollow error', err);
+        } finally {
+            setBusyId(null);
+        }
+    };
+
+    const openUserProfile = (userId) => {
+        navigation.navigate('UserProfile', { userId });
     };
 
     const renderUser = ({ item }) => {
@@ -86,21 +115,27 @@ const FollowListScreen = ({ navigation, route }) => {
 
         return (
             <View style={[styles.row, { borderBottomColor: theme.colors.border }]}>
-                {avatarUrl ? (
-                    <Image source={{ uri: avatarUrl }} style={styles.avatar} />
-                ) : (
-                    <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.border }]}>
-                        <Ionicons name="person" size={24} color={theme.colors.inactive} />
+                <TouchableOpacity
+                    style={styles.rowLeft}
+                    onPress={() => openUserProfile(item.id)}
+                    activeOpacity={0.7}
+                >
+                    {avatarUrl ? (
+                        <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                    ) : (
+                        <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.border }]}>
+                            <Ionicons name="person" size={24} color={theme.colors.inactive} />
+                        </View>
+                    )}
+                    <View style={styles.userInfo}>
+                        <Text style={[styles.userName, { color: theme.colors.text }]} numberOfLines={1}>{item.user_name || ''}</Text>
+                        {item.bio ? <Text style={[styles.bio, { color: theme.colors.secondaryText }]} numberOfLines={2}>{item.bio}</Text> : null}
                     </View>
-                )}
-                <View style={styles.userInfo}>
-                    <Text style={[styles.userName, { color: theme.colors.text }]} numberOfLines={1}>{item.user_name || ''}</Text>
-                    {item.bio ? <Text style={[styles.bio, { color: theme.colors.secondaryText }]} numberOfLines={2}>{item.bio}</Text> : null}
-                </View>
+                </TouchableOpacity>
                 {mode === 'following' ? (
                     <TouchableOpacity
                         style={[styles.followButton, { backgroundColor: theme.colors.secondaryBackground }]}
-                        onPress={() => handleFollow(item.id, true)}
+                        onPress={() => handleFollow(item.id, true, item.user_name)}
                         disabled={isBusy}
                     >
                         {isBusy ? <ActivityIndicator size="small" color={theme.colors.text} /> : <Text style={[styles.followButtonText, { color: theme.colors.text }]}>{t('unfollow')}</Text>}
@@ -108,7 +143,7 @@ const FollowListScreen = ({ navigation, route }) => {
                 ) : (
                     <TouchableOpacity
                         style={[styles.followButton, isFollowing ? { backgroundColor: theme.colors.secondaryBackground } : { backgroundColor: theme.colors.primary }]}
-                        onPress={() => handleFollow(item.id, isFollowing)}
+                        onPress={() => handleFollow(item.id, isFollowing, item.user_name)}
                         disabled={isBusy}
                     >
                         {isBusy ? (
@@ -177,6 +212,7 @@ const styles = StyleSheet.create({
         padding: 12,
         borderBottomWidth: 1,
     },
+    rowLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
     avatar: { width: 44, height: 44, borderRadius: 22 },
     avatarPlaceholder: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
     userInfo: { flex: 1, marginLeft: 12 },

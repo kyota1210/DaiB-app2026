@@ -7,6 +7,7 @@ const authenticateToken = require('./middleware/auth');
 const UserModel = require('./models/UserModel');
 const UserAvatarModel = require('./models/UserAvatarModel');
 const FollowModel = require('./models/FollowModel');
+const RecordModel = require('./models/RecordModel');
 const logger = require('./utils/logger').createLogger('userRoutes');
 
 // Multerの設定（記録の画像投稿と同じ方法）
@@ -201,6 +202,54 @@ router.get('/me/followers', authenticateToken, async (req, res) => {
     } catch (error) {
         logger.error('フォロワー一覧取得エラー', { error: error.message, stack: error.stack });
         res.status(500).json({ message: '一覧の取得に失敗しました', error: error.message });
+    }
+});
+
+// 他ユーザーの投稿一覧取得（プロフィール画面用）
+router.get('/:id/records', authenticateToken, async (req, res) => {
+    try {
+        const targetId = parseInt(req.params.id, 10);
+        if (Number.isNaN(targetId)) {
+            return res.status(400).json({ message: '無効なユーザーIDです。' });
+        }
+        const user = await UserModel.findById(targetId);
+        if (!user) {
+            return res.status(404).json({ message: 'ユーザーが見つかりません' });
+        }
+        const records = await RecordModel.findAllByUserId(targetId, null);
+        res.status(200).json({ records });
+    } catch (error) {
+        logger.error('ユーザー投稿一覧取得エラー', { error: error.message, stack: error.stack });
+        res.status(500).json({ message: '取得に失敗しました', error: error.message });
+    }
+});
+
+// 他ユーザーの公開プロフィール取得（ホーム画面用）
+router.get('/:id', authenticateToken, async (req, res) => {
+    try {
+        const targetId = parseInt(req.params.id, 10);
+        if (Number.isNaN(targetId)) {
+            return res.status(400).json({ message: '無効なユーザーIDです。' });
+        }
+        const viewerId = req.user.id;
+        const user = await UserModel.findById(targetId);
+        if (!user) {
+            return res.status(404).json({ message: 'ユーザーが見つかりません' });
+        }
+        const avatar = await UserAvatarModel.findByUserId(targetId);
+        const isFollowing = await FollowModel.isFollowing(viewerId, targetId);
+        res.status(200).json({
+            user: {
+                id: user.id,
+                user_name: user.user_name,
+                bio: user.bio || null,
+                avatar_url: avatar ? avatar.image_url : null,
+                is_following: isFollowing,
+            },
+        });
+    } catch (error) {
+        logger.error('ユーザープロフィール取得エラー', { error: error.message, stack: error.stack });
+        res.status(500).json({ message: '取得に失敗しました', error: error.message });
     }
 });
 

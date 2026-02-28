@@ -140,3 +140,53 @@ export const getFollowers = async (token) => {
     if (!response.ok) throw new Error(data.message || '一覧の取得に失敗しました');
     return data;
 };
+
+/**
+ * 他ユーザーの公開プロフィール取得（ホーム画面用）
+ * @param {string} token - 認証トークン
+ * @param {number} userId - 対象ユーザーID
+ */
+export const getOtherUserProfile = async (token, userId) => {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const contentType = response.headers.get('content-type');
+    const text = await response.text();
+    if (!contentType || !contentType.includes('application/json')) {
+        throw new Error(`サーバーがJSON以外を返しました（${response.status}）。APIのURLとサーバー起動を確認してください。`);
+    }
+    let data;
+    try {
+        data = JSON.parse(text);
+    } catch {
+        throw new Error('サーバーからのレスポンスの解析に失敗しました。');
+    }
+    if (!response.ok) throw new Error(data.message || 'ユーザー情報の取得に失敗しました');
+    return data;
+};
+
+/**
+ * 他ユーザーの投稿一覧取得（プロフィール画面用）
+ * @param {string} token - 認証トークン
+ * @param {number} userId - 対象ユーザーID
+ */
+export const getOtherUserRecords = async (token, userId) => {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/records`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const contentType = response.headers.get('content-type');
+    const text = await response.text();
+    if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('サーバーがJSON以外を返しました。');
+    }
+    let data;
+    try {
+        data = JSON.parse(text);
+    } catch {
+        throw new Error('レスポンスの解析に失敗しました。');
+    }
+    if (!response.ok) throw new Error(data.message || '投稿一覧の取得に失敗しました');
+    return data;
+};

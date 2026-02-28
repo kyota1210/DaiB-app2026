@@ -1,10 +1,11 @@
-import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useMemo, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, Modal, Dimensions, LayoutAnimation } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRecordsApi } from '../api/records';
 import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext';
+import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getImageUrl } from '../utils/imageHelper';
@@ -90,8 +91,11 @@ const RecordItem = React.memo(function RecordItem({ item, theme, t }) {
 export default function RecordDetailScreen({ route, navigation }) {
     const { records: paramsRecords, initialIndex } = route.params;
     const { records: contextRecords } = useRecordsAndCategories();
-    // 編集後に Context が更新されるため、Context の一覧を優先して表示する
-    const records = contextRecords?.length > 0 ? contextRecords : paramsRecords;
+    // タイムラインから開いた場合（author_id あり）は params を優先。それ以外は編集反映のため Context を優先
+    const paramsHaveAuthorInfo = paramsRecords?.some?.((r) => r.author_id != null);
+    const records = (paramsHaveAuthorInfo && paramsRecords?.length > 0)
+        ? paramsRecords
+        : (contextRecords?.length > 0 ? contextRecords : paramsRecords) || [];
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
     const [showMenu, setShowMenu] = useState(false);
     const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -103,6 +107,7 @@ export default function RecordDetailScreen({ route, navigation }) {
     const menuButtonRef = useRef(null);
     const { deleteRecord } = useRecordsApi();
     const { loadRecords } = useRecordsAndCategories();
+    const { userInfo } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
 
@@ -110,6 +115,11 @@ export default function RecordDetailScreen({ route, navigation }) {
     const currentRecordIdRef = useRef(records[initialIndex]?.id);
     const currentRecord = records[currentIndex];
     if (currentRecord?.id) currentRecordIdRef.current = currentRecord.id;
+
+    // 表示中の投稿がログインユーザー自身のものか（他人の投稿なら false）
+    const isOwnPost = !currentRecord?.author_id || currentRecord.author_id === userInfo?.id;
+    // タイムラインから他人の投稿を開いた場合のみ true（ヘッダーに著者表示・横スワイプ無効）
+    const isTimelineOtherUser = !!(paramsHaveAuthorInfo && currentRecord && !isOwnPost);
 
     useEffect(() => {
         const id = currentRecordIdRef.current;
@@ -177,42 +187,78 @@ export default function RecordDetailScreen({ route, navigation }) {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
-            {/* ヘッダー */}
+            {/* ヘッダー（メニューバー） */}
             <View style={[styles.header, { 
                 backgroundColor: theme.colors.background,
                 borderBottomColor: theme.colors.border 
             }]}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
-                </TouchableOpacity>
-                <View style={styles.headerSpacer} />
-                <TouchableOpacity 
-                    ref={menuButtonRef}
-                    onPress={handleMenuPress} 
-                    style={styles.menuButton}
-                >
-                    <Ionicons name="ellipsis-horizontal" size={24} color={theme.colors.icon} />
-                </TouchableOpacity>
+                {!isTimelineOtherUser && (
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
+                    </TouchableOpacity>
+                )}
+                {isTimelineOtherUser && currentRecord ? (
+                    <TouchableOpacity
+                        style={styles.headerAuthorRow}
+                        onPress={() => currentRecord.author_id != null && navigation.navigate('UserProfile', { userId: currentRecord.author_id })}
+                        activeOpacity={0.7}
+                        disabled={currentRecord.author_id == null}
+                    >
+                        {currentRecord.author_avatar_url ? (
+                            <Image source={{ uri: getImageUrl(currentRecord.author_avatar_url) }} style={styles.headerAuthorAvatar} />
+                        ) : (
+                            <View style={[styles.headerAuthorAvatarPlaceholder, { backgroundColor: theme.colors.border }]}>
+                                <Ionicons name="person" size={18} color={theme.colors.inactive} />
+                            </View>
+                        )}
+                        <Text style={[styles.headerAuthorName, { color: theme.colors.text }]} numberOfLines={1}>
+                            {currentRecord.author_name || ''}
+                        </Text>
+                    </TouchableOpacity>
+                ) : (
+                    <View style={styles.headerSpacer} />
+                )}
+                {isTimelineOtherUser ? (
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
+                        <Ionicons name="close" size={26} color={theme.colors.icon} />
+                    </TouchableOpacity>
+                ) : isOwnPost ? (
+                    <TouchableOpacity 
+                        ref={menuButtonRef}
+                        onPress={handleMenuPress} 
+                        style={styles.menuButton}
+                    >
+                        <Ionicons name="ellipsis-horizontal" size={24} color={theme.colors.icon} />
+                    </TouchableOpacity>
+                ) : (
+                    <View style={styles.headerSpacer} />
+                )}
             </View>
 
-            {/* 横スワイプで投稿を切り替えるScrollView */}
-            <ScrollView
-                ref={scrollViewRef}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onMomentumScrollEnd={handleMomentumScrollEnd}
-                decelerationRate="fast"
-                style={styles.horizontalScrollView}
-                removeClippedSubviews={true}
-                onLayout={(e) => setScrollAreaHeight(e.nativeEvent.layout.height)}
-            >
-                {records.map((record) => (
-                    <View key={record.id.toString()} style={[styles.recordWrapper, { height: scrollAreaHeight }]}>
-                        <RecordItem item={record} theme={theme} t={t} />
-                    </View>
-                ))}
-            </ScrollView>
+            {/* コンテンツ: タイムライン他人投稿時は1件のみ表示（横スワイプ不可）、それ以外は横スワイプ可能 */}
+            {isTimelineOtherUser && currentRecord ? (
+                <View style={styles.singleRecordWrapper}>
+                    <RecordItem item={currentRecord} theme={theme} t={t} />
+                </View>
+            ) : (
+                <ScrollView
+                    ref={scrollViewRef}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    onMomentumScrollEnd={handleMomentumScrollEnd}
+                    decelerationRate="fast"
+                    style={styles.horizontalScrollView}
+                    removeClippedSubviews={true}
+                    onLayout={(e) => setScrollAreaHeight(e.nativeEvent.layout.height)}
+                >
+                    {records.map((record) => (
+                        <View key={record.id.toString()} style={[styles.recordWrapper, { height: scrollAreaHeight }]}>
+                            <RecordItem item={record} theme={theme} t={t} />
+                        </View>
+                    ))}
+                </ScrollView>
+            )}
 
             {/* メニューモーダル */}
             <Modal
@@ -363,11 +409,45 @@ const styles = StyleSheet.create({
     backButton: {
         padding: 4,
     },
+    closeButton: {
+        padding: 6,
+    },
     headerSpacer: {
         flex: 1,
     },
     menuButton: {
         padding: 4,
+    },
+    headerAuthorRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+        marginRight: 8,
+        minWidth: 0,
+        justifyContent: 'flex-start',
+    },
+    headerAuthorAvatar: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+    },
+    headerAuthorAvatarPlaceholder: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    headerAuthorName: {
+        marginLeft: 8,
+        fontSize: 15,
+        fontWeight: '600',
+        flex: 1,
+        textAlign: 'left',
+    },
+    singleRecordWrapper: {
+        width: SCREEN_WIDTH,
+        flex: 1,
     },
     horizontalScrollView: {
         flex: 1,
