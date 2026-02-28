@@ -239,7 +239,7 @@ export default function RecordDetailScreen({ route, navigation }) {
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
                             onPress={handleEdit}
                         >
-                            <Ionicons name="pencil" size={22} color={theme.colors.primary} />
+                            <Ionicons name="pencil-sharp" size={22} color={theme.colors.primary} />
                             <Text style={[styles.menuItemText, { color: theme.colors.text }]}>
                                 {t('edit')}
                             </Text>

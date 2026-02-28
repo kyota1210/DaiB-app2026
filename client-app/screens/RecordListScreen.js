@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useContext, useRef } from 'react';
-import { StyleSheet, Text, View, Alert, ActivityIndicator, TouchableOpacity, Image, ScrollView, Dimensions, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, Text, View, Alert, ActivityIndicator, TouchableOpacity, Image, ScrollView, Dimensions, Modal, TextInput, KeyboardAvoidingView, Platform, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { updateCategory } from '../api/categories';
@@ -92,6 +92,7 @@ export default function RecordListScreen({ navigation }) {
     const [showCategoryErrorModal, setShowCategoryErrorModal] = useState(false);
     const [categoryErrorMessage, setCategoryErrorMessage] = useState('');
     const [updatingCategory, setUpdatingCategory] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
 
     const { categories, recordsByCategory, records, loadCategories, loadRecords, loadingCategories, loadingRecords } = useRecordsAndCategories();
     const { userInfo, userToken } = useContext(AuthContext);
@@ -355,6 +356,22 @@ export default function RecordListScreen({ navigation }) {
         }
     }, [selectedCategory, categories.length]);
 
+    // プルダウンで一覧を更新
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        const start = Date.now();
+        try {
+            await Promise.all([loadCategories(), loadRecords()]);
+        } finally {
+            const elapsed = Date.now() - start;
+            const remaining = Math.max(0, 1000 - elapsed);
+            if (remaining > 0) {
+                await new Promise((r) => setTimeout(r, remaining));
+            }
+            setRefreshing(false);
+        }
+    }, [loadCategories, loadRecords]);
+
     // 画面フォーカス時にキャッシュを更新（キャッシュがあれば即表示し、バックグラウンドで再取得）
     useFocusEffect(
         useCallback(() => {
@@ -503,6 +520,13 @@ export default function RecordListScreen({ navigation }) {
                 {/* カテゴリタブUI */}
                 {renderCategoryTabs()}
 
+                {/* プルダウン更新中のローディング表示 */}
+                {refreshing && (
+                    <View style={styles.refreshingIndicator}>
+                        <ActivityIndicator size="small" color={theme.colors.primary} />
+                    </View>
+                )}
+
                 {/* 横スワイプ可能なカテゴリビュー */}
                 <ScrollView
                     ref={horizontalScrollViewRef}
@@ -527,6 +551,14 @@ export default function RecordListScreen({ navigation }) {
                                 scrollEventThrottle={16}
                                 contentContainerStyle={styles.scrollContent}
                                 style={styles.categoryPage}
+                                refreshControl={
+                                    <RefreshControl
+                                        refreshing={refreshing}
+                                        onRefresh={onRefresh}
+                                        tintColor={theme.colors.primary}
+                                        colors={[theme.colors.primary]}
+                                    />
+                                }
                             >
                                 <View style={styles.gridContainer}>
                                     {renderRecords(categoryRecords)}
@@ -779,6 +811,11 @@ const styles = StyleSheet.create({
     mainContent: {
         flex: 1,
         position: 'relative',
+    },
+    refreshingIndicator: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 8,
     },
     categoryTabsContainer: {
         paddingVertical: 6,
