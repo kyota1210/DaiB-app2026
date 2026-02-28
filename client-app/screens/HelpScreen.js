@@ -10,10 +10,10 @@ const HelpScreen = ({ navigation }) => {
     const { t } = useLanguage();
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+        <SafeAreaView style={[styles.container, { backgroundColor: '#000000' }]} edges={['top']}>
             {/* ヘッダー */}
             <View style={[styles.header, { 
-                backgroundColor: theme.colors.background,
+                backgroundColor: '#000000',
                 borderBottomColor: theme.colors.border 
             }]}>
                 <TouchableOpacity 
@@ -29,10 +29,10 @@ const HelpScreen = ({ navigation }) => {
             </View>
 
             <ScrollView 
-                style={[styles.scrollView, { backgroundColor: theme.colors.secondaryBackground }]}
+                style={[styles.scrollView, { backgroundColor: '#000000' }]}
                 contentContainerStyle={styles.contentContainer}
             >
-                <View style={[styles.content, { backgroundColor: theme.colors.card }]}>
+                <View style={[styles.content, { backgroundColor: '#000000' }]}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
                         基本的な使い方
                     </Text>

@@ -48,10 +48,10 @@ const PremiumPlanScreen = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+        <SafeAreaView style={[styles.container, { backgroundColor: '#000000' }]} edges={['top']}>
             {/* トップナビゲーションバー */}
             <View style={[styles.topNavBar, {
-                backgroundColor: theme.colors.background,
+                backgroundColor: '#000000',
                 borderBottomColor: theme.colors.border
             }]}>
                 <TouchableOpacity 
@@ -64,9 +64,9 @@ const PremiumPlanScreen = ({ navigation }) => {
                 <View style={styles.placeholder} />
             </View>
 
-            <ScrollView style={[styles.scrollView, { backgroundColor: theme.colors.secondaryBackground }]}>
+            <ScrollView style={[styles.scrollView, { backgroundColor: '#000000' }]}>
                 {/* プランステータス */}
-                <View style={[styles.statusCard, { backgroundColor: theme.colors.card }]}>
+                <View style={[styles.statusCard, { backgroundColor: '#000000' }]}>
                     <View style={styles.statusIconContainer}>
                         <Ionicons 
                             name={isPremium ? "diamond" : "diamond-outline"} 
@@ -85,7 +85,7 @@ const PremiumPlanScreen = ({ navigation }) => {
                 {/* プレミアム機能 */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('premiumFeatures')}</Text>
-                    <View style={[styles.featureCard, { backgroundColor: theme.colors.card }]}>
+                    <View style={[styles.featureCard, { backgroundColor: '#000000' }]}>
                         <FeatureItem 
                             icon="cloud-upload" 
                             title={t('unlimitedStorage')} 
@@ -123,7 +123,7 @@ const PremiumPlanScreen = ({ navigation }) => {
                 {!isPremium && (
                     <View style={styles.section}>
                         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('pricingPlan')}</Text>
-                        <View style={[styles.priceCard, { backgroundColor: theme.colors.card }]}>
+                        <View style={[styles.priceCard, { backgroundColor: '#000000' }]}>
                             <View style={styles.priceRow}>
                                 <Text style={[styles.priceAmount, { color: theme.colors.primary }]}>¥980</Text>
                                 <Text style={[styles.priceUnit, { color: theme.colors.secondaryText }]}>{t('perMonth')}</Text>
@@ -146,7 +146,7 @@ const PremiumPlanScreen = ({ navigation }) => {
                     ) : (
                         <TouchableOpacity 
                             style={[styles.cancelButton, { 
-                                backgroundColor: theme.colors.card,
+                                backgroundColor: '#000000',
                                 borderColor: '#FF3B30'
                             }]}
                             onPress={handleCancel}

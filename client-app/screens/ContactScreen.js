@@ -43,10 +43,10 @@ const ContactScreen = ({ navigation }) => {
     const isFormValid = name.trim() && email.trim() && subject.trim() && message.trim();
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+        <SafeAreaView style={[styles.container, { backgroundColor: '#000000' }]} edges={['top']}>
             {/* ヘッダー */}
             <View style={[styles.header, { 
-                backgroundColor: theme.colors.background,
+                backgroundColor: '#000000',
                 borderBottomColor: theme.colors.border 
             }]}>
                 <TouchableOpacity 
@@ -67,11 +67,11 @@ const ContactScreen = ({ navigation }) => {
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
             >
                 <ScrollView 
-                    style={[styles.scrollView, { backgroundColor: theme.colors.secondaryBackground }]}
+                    style={[styles.scrollView, { backgroundColor: '#000000' }]}
                     contentContainerStyle={styles.contentContainer}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <View style={[styles.content, { backgroundColor: theme.colors.card }]}>
+                    <View style={[styles.content, { backgroundColor: '#000000' }]}>
                         <Text style={[styles.description, { color: theme.colors.secondaryText }]}>
                             ご質問やご意見がございましたら、以下のフォームからお気軽にお問い合わせください。
                         </Text>

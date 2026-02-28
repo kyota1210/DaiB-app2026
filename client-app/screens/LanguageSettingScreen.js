@@ -36,12 +36,12 @@ const LanguageSettingScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView 
-            style={[styles.container, { backgroundColor: theme.colors.background }]} 
+            style={[styles.container, { backgroundColor: '#000000' }]} 
             edges={['top']}
         >
             {/* ヘッダー */}
             <View style={[styles.header, { 
-                backgroundColor: theme.colors.background,
+                backgroundColor: '#000000',
                 borderBottomColor: theme.colors.border 
             }]}>
                 <TouchableOpacity 
@@ -57,7 +57,7 @@ const LanguageSettingScreen = ({ navigation }) => {
             </View>
 
             <ScrollView 
-                style={[styles.scrollView, { backgroundColor: theme.colors.secondaryBackground }]}
+                style={[styles.scrollView, { backgroundColor: '#000000' }]}
                 contentContainerStyle={styles.scrollContent}
             >
                 {/* 説明文 */}
@@ -68,7 +68,7 @@ const LanguageSettingScreen = ({ navigation }) => {
                 </View>
 
                 {/* 言語選択リスト */}
-                <View style={[styles.optionsContainer, { backgroundColor: theme.colors.card }]}>
+                <View style={[styles.optionsContainer, { backgroundColor: '#000000' }]}>
                     {languageOptions.map((option, index) => {
                         const isSelected = language === option.id;
                         const isLast = index === languageOptions.length - 1;
@@ -129,7 +129,7 @@ const LanguageSettingScreen = ({ navigation }) => {
                     <View style={[
                         styles.currentLanguageCard, 
                         { 
-                            backgroundColor: theme.colors.card,
+                            backgroundColor: '#000000',
                             borderColor: theme.colors.border 
                         }
                     ]}>

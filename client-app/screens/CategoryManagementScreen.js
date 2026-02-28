@@ -50,6 +50,11 @@ const CategoryManagementScreen = ({ navigation }) => {
             setShowErrorModal(true);
             return;
         }
+        if (categoryName.trim().length > 25) {
+            setErrorMessage('カテゴリー名は25文字以内で入力してください');
+            setShowErrorModal(true);
+            return;
+        }
 
         setSavingCategory(true);
         try {
@@ -76,6 +81,11 @@ const CategoryManagementScreen = ({ navigation }) => {
     const handleEditCategory = async () => {
         if (!categoryName.trim()) {
             setErrorMessage('カテゴリー名を入力してください');
+            setShowErrorModal(true);
+            return;
+        }
+        if (categoryName.trim().length > 25) {
+            setErrorMessage('カテゴリー名は25文字以内で入力してください');
             setShowErrorModal(true);
             return;
         }
@@ -145,10 +155,10 @@ const CategoryManagementScreen = ({ navigation }) => {
     const allCategories = [...defaultCategories, ...customCategories];
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+        <SafeAreaView style={[styles.container, { backgroundColor: '#000000' }]} edges={['top']}>
             {/* トップナビゲーションバー */}
             <View style={[styles.topNavBar, {
-                backgroundColor: theme.colors.background,
+                backgroundColor: '#000000',
                 borderBottomColor: theme.colors.border
             }]}>
                 <TouchableOpacity 
@@ -161,23 +171,25 @@ const CategoryManagementScreen = ({ navigation }) => {
                 <View style={styles.placeholder} />
             </View>
 
-            <ScrollView style={[styles.scrollView, { backgroundColor: theme.colors.secondaryBackground }]}>
+            <ScrollView style={[styles.scrollView, { backgroundColor: '#000000' }]}>
                 {/* カテゴリーリスト */}
                 <View style={styles.section}>
-                    <View style={[styles.categoryList, { backgroundColor: theme.colors.card }]}>
+                    <View style={[styles.categoryList, { backgroundColor: '#000000' }]}>
                         {allCategories.map((category) => (
                             <View key={category.id} style={[styles.categoryCard, {
                                 borderBottomColor: theme.colors.border
                             }]}>
                                 <View style={styles.categoryInfo}>
-                                    <View 
-                                        style={[
-                                            styles.categoryIconCircle, 
-                                            { backgroundColor: theme.colors.secondaryBackground }
-                                        ]}
-                                    >
-                                        <Ionicons name={category.icon} size={24} color={theme.colors.text} />
-                                    </View>
+                                    {category.id === 'all' && (
+                                        <View 
+                                            style={[
+                                                styles.categoryIconCircle, 
+                                                { backgroundColor: theme.colors.secondaryBackground }
+                                            ]}
+                                        >
+                                            <Ionicons name={category.icon} size={24} color={theme.colors.text} />
+                                        </View>
+                                    )}
                                     <Text style={[styles.categoryNameText, { color: theme.colors.text }]}>
                                         {category.name}
                                     </Text>
@@ -188,7 +200,7 @@ const CategoryManagementScreen = ({ navigation }) => {
                                             style={styles.actionButton}
                                             onPress={() => openEditModal(category)}
                                         >
-                                            <Ionicons name="create-outline" size={22} color={theme.colors.primary} />
+                                            <Ionicons name="pencil-sharp" size={22} color={theme.colors.primary} />
                                         </TouchableOpacity>
                                         <TouchableOpacity
                                             style={styles.actionButton}
@@ -228,7 +240,7 @@ const CategoryManagementScreen = ({ navigation }) => {
                     keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
                 >
                     <View style={styles.modalOverlayContent}>
-                        <View style={[styles.modalContent, { backgroundColor: theme.colors.card }]}>
+                        <View style={[styles.modalContent, { backgroundColor: '#000000' }]}>
                             <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
                                 <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
                                     {editingCategory ? 'カテゴリーを編集' : '新しいカテゴリー'}
@@ -257,6 +269,7 @@ const CategoryManagementScreen = ({ navigation }) => {
                                         placeholder="例: 読書、運動、料理"
                                         placeholderTextColor={theme.colors.inactive}
                                         autoFocus={true}
+                                        maxLength={25}
                                     />
                                 </View>
 

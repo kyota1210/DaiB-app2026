@@ -33,10 +33,10 @@ const ProfileScreen = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+        <SafeAreaView style={[styles.container, { backgroundColor: '#000000' }]} edges={['top']}>
             {/* トップナビゲーションバー */}
             <View style={[styles.topNavBar, { 
-                backgroundColor: theme.colors.background,
+                backgroundColor: '#000000',
                 borderBottomColor: theme.colors.border 
             }]}>
                 <TouchableOpacity 
@@ -49,11 +49,11 @@ const ProfileScreen = ({ navigation }) => {
                 <View style={styles.placeholder} />
             </View>
 
-            <ScrollView style={[styles.scrollView, { backgroundColor: theme.colors.secondaryBackground }]}>
+            <ScrollView style={[styles.scrollView, { backgroundColor: '#000000' }]}>
                 {/* アカウント設定セクション */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('accountSettings')}</Text>
-                    <View style={[styles.menuSection, { backgroundColor: theme.colors.card }]}>
+                    <View style={[styles.menuSection, { backgroundColor: '#000000' }]}>
                         <TouchableOpacity 
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
                             onPress={() => navigation.navigate('LoginInfo')}
@@ -76,7 +76,7 @@ const ProfileScreen = ({ navigation }) => {
                 {/* Otium設定セクション */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('otiumSettings')}</Text>
-                    <View style={[styles.menuSection, { backgroundColor: theme.colors.card }]}>
+                    <View style={[styles.menuSection, { backgroundColor: '#000000' }]}>
                         <TouchableOpacity 
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
                             onPress={() => navigation.navigate('CategoryManagement')}
@@ -96,7 +96,7 @@ const ProfileScreen = ({ navigation }) => {
                 {/* アプリ設定セクション */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('appSettings')}</Text>
-                    <View style={[styles.menuSection, { backgroundColor: theme.colors.card }]}>
+                    <View style={[styles.menuSection, { backgroundColor: '#000000' }]}>
                         <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}>
                             <Ionicons name="notifications-outline" size={24} color={theme.colors.icon} />
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('notificationSettings')}</Text>
@@ -116,7 +116,7 @@ const ProfileScreen = ({ navigation }) => {
                 {/* その他セクション */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('other')}</Text>
-                    <View style={[styles.menuSection, { backgroundColor: theme.colors.card }]}>
+                    <View style={[styles.menuSection, { backgroundColor: '#000000' }]}>
                         <TouchableOpacity 
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
                             onPress={() => navigation.navigate('Help')}

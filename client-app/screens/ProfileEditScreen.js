@@ -89,10 +89,10 @@ const ProfileEditScreen = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+        <SafeAreaView style={[styles.container, { backgroundColor: '#000000' }]} edges={['top']}>
             {/* トップナビゲーションバー */}
             <View style={[styles.topNavBar, {
-                backgroundColor: theme.colors.background,
+                backgroundColor: '#000000',
                 borderBottomColor: theme.colors.border
             }]}>
                 <TouchableOpacity 
@@ -126,7 +126,7 @@ const ProfileEditScreen = ({ navigation }) => {
             >
                 <ScrollView
                     ref={scrollViewRef}
-                    style={[styles.scrollView, { backgroundColor: theme.colors.secondaryBackground }]}
+                    style={[styles.scrollView, { backgroundColor: '#000000' }]}
                     contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={true}
@@ -157,7 +157,7 @@ const ProfileEditScreen = ({ navigation }) => {
                 </LinearGradient>
 
                 {/* フォーム */}
-                <View style={[styles.formSection, { backgroundColor: theme.colors.card }]}>
+                <View style={[styles.formSection, { backgroundColor: '#000000' }]}>
                     <View style={styles.inputGroup}>
                         <Text style={[styles.label, { color: theme.colors.text }]}>
                             {t('userName')}

@@ -10,7 +10,7 @@ const LoginInfoScreen = ({ navigation }) => {
     const { userInfo } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
-    const [email, setEmail] = useState(userInfo?.email || '');
+    const [email, setEmail] = useState('');
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -47,10 +47,10 @@ const LoginInfoScreen = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+        <SafeAreaView style={[styles.container, { backgroundColor: '#000000' }]} edges={['top']}>
             {/* トップナビゲーションバー */}
             <View style={[styles.topNavBar, {
-                backgroundColor: theme.colors.background,
+                backgroundColor: '#000000',
                 borderBottomColor: theme.colors.border
             }]}>
                 <TouchableOpacity 
@@ -63,11 +63,11 @@ const LoginInfoScreen = ({ navigation }) => {
                 <View style={styles.placeholder} />
             </View>
 
-            <ScrollView style={[styles.scrollView, { backgroundColor: theme.colors.secondaryBackground }]}>
+            <ScrollView style={[styles.scrollView, { backgroundColor: '#000000' }]}>
                 {/* メールアドレス変更 */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('emailSection')}</Text>
-                    <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+                    <View style={[styles.card, { backgroundColor: '#000000' }]}>
                         <View style={styles.inputGroup}>
                             <Text style={[styles.label, { color: theme.colors.text }]}>{t('currentEmail')}</Text>
                             <Text style={[styles.currentValue, { color: theme.colors.secondaryText }]}>
@@ -102,7 +102,7 @@ const LoginInfoScreen = ({ navigation }) => {
                 {/* パスワード変更 */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('passwordSection')}</Text>
-                    <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+                    <View style={[styles.card, { backgroundColor: '#000000' }]}>
                         <View style={styles.inputGroup}>
                             <Text style={[styles.label, { color: theme.colors.text }]}>{t('currentPassword')}</Text>
                             <TextInput
