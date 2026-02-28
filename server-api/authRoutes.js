@@ -118,6 +118,7 @@ router.post('/login', async (req, res) => {
             user: { 
                 id: fullUser.id, 
                 user_name: fullUser.user_name,
+                email: fullUser.email,
                 bio: fullUser.bio || null,
                 avatar_url: avatar ? avatar.image_url : null
             }

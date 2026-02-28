@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   },
   blurContainer: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 10,
     alignSelf: 'center',
     borderRadius: 20,
     overflow: 'hidden',
@@ -297,9 +297,9 @@ const styles = StyleSheet.create({
   },
   tabBarContainer: {
     flexDirection: 'row',
-    height: 60,
-    paddingTop: 10,
-    paddingBottom: 10,
+    height: 64,
+    paddingTop: 14,
+    paddingBottom: 12,
     paddingHorizontal: 24,
     justifyContent: 'center',
     alignItems: 'center',

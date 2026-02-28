@@ -438,36 +438,25 @@ export default function PhotoPickerScreen({ navigation, route }) {
                     </ScrollView>
                 </KeyboardAvoidingView>
 
-                {/* 成功モーダル */}
+                {/* 成功モーダル（シンプル表示） */}
                 <Modal
                     visible={showSuccessModal}
                     transparent={true}
                     animationType="fade"
                     onRequestClose={() => setShowSuccessModal(false)}
                 >
-                    <BlurView
-                        intensity={20}
-                        tint="dark"
-                        style={styles.modalOverlayBlur}
+                    <TouchableOpacity
+                        style={[styles.modalOverlaySimple, { paddingTop: insets.top + 12 }]}
+                        activeOpacity={1}
+                        onPress={() => setShowSuccessModal(false)}
                     >
-                        <TouchableOpacity
-                            style={styles.modalOverlayTouchable}
-                            activeOpacity={1}
-                            onPress={() => setShowSuccessModal(false)}
-                        >
-                            <View style={[styles.successModalContent, { backgroundColor: theme.colors.card }]}>
-                                <View style={[styles.successIconContainer, { backgroundColor: theme.colors.primary + '20' }]}>
-                                    <Ionicons name="checkmark-circle" size={48} color={theme.colors.primary} />
-                                </View>
-                                <Text style={[styles.successTitle, { color: theme.colors.text }]}>
-                                    {t('success')}
-                                </Text>
-                                <Text style={[styles.successMessage, { color: theme.colors.secondaryText }]}>
-                                    {isEditMode ? t('recordUpdated') : t('recordAdded')}
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
-                    </BlurView>
+                        <View style={[styles.successModalContent, { backgroundColor: theme.colors.card }]}>
+                            <Ionicons name="checkmark-circle" size={28} color={theme.colors.primary} style={styles.successIcon} />
+                            <Text style={[styles.successMessage, { color: theme.colors.text }]}>
+                                {isEditMode ? t('recordUpdated') : t('recordAdded')}
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
                 </Modal>
 
                 {/* エラーモーダル */}
@@ -658,6 +647,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    modalOverlaySimple: {
+        flex: 1,
+        width: '100%',
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.35)',
+    },
     modalContent: {
         backgroundColor: 'white',
         borderRadius: 20,
@@ -670,38 +666,27 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     successModalContent: {
-        borderRadius: 20,
-        padding: 32,
+        flexDirection: 'row',
         alignItems: 'center',
-        minWidth: 280,
-        maxWidth: '80%',
+        borderRadius: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        minWidth: 300,
+        maxWidth: '90%',
         shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 8,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-        elevation: 10,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+        elevation: 4,
     },
-    successIconContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    successTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 8,
-        textAlign: 'center',
+    successIcon: {
+        marginRight: 10,
     },
     successMessage: {
-        fontSize: 14,
-        textAlign: 'center',
-        lineHeight: 20,
+        fontSize: 15,
+        fontWeight: '500',
+        flex: 1,
+        flexShrink: 0,
     },
     errorModalContent: {
         borderRadius: 20,

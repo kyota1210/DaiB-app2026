@@ -237,10 +237,7 @@ const ProfileEditScreen = ({ navigation }) => {
                             <View style={[styles.successIconContainer, { backgroundColor: theme.colors.primary + '20' }]}>
                                 <Ionicons name="checkmark-circle" size={48} color={theme.colors.primary} />
                             </View>
-                            <Text style={[styles.successTitle, { color: theme.colors.text }]}>
-                                {t('saveCompleted')}
-                            </Text>
-                            <Text style={[styles.successMessage, { color: theme.colors.secondaryText }]}>
+                            <Text style={[styles.successMessage, { color: theme.colors.text }]}>
                                 {t('profileUpdated')}
                             </Text>
                         </View>
