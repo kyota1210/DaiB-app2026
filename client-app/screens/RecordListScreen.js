@@ -480,7 +480,9 @@ export default function RecordListScreen({ navigation }) {
                                     style={styles.userAvatar}
                                 />
                             ) : (
-                                <Ionicons name="person-circle-outline" size={80} color={theme.colors.icon} />
+                                <View style={styles.userAvatarPlaceholder}>
+                                    <Ionicons name="person-circle-outline" size={80} color={theme.colors.icon} />
+                                </View>
                             )}
                         </View>
                     </TouchableOpacity>
@@ -785,6 +787,12 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 40,
+    },
+    userAvatarPlaceholder: {
+        width: 80,
+        height: 80,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     iconLabel: {
         fontSize: 11,
