@@ -89,6 +89,9 @@ const translations = {
         editRecord: '記録を編集',
         creating: '作成中...',
         required: '*',
+        showInTimeline: 'スレッドに表示する',
+        showInTimelineYes: '表示する',
+        showInTimelineNo: '表示しない',
         
         // ログイン・サインアップ
         login: 'ログイン',
@@ -326,6 +329,9 @@ const translations = {
         editRecord: 'Edit Record',
         creating: 'Creating...',
         required: '*',
+        showInTimeline: 'Show in thread',
+        showInTimelineYes: 'Yes',
+        showInTimelineNo: 'No',
         
         // Login/Signup
         login: 'Login',

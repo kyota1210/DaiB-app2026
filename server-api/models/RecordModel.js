@@ -6,7 +6,7 @@ class RecordModel {
      */
     static async findAllByUserId(userId, categoryId = null) {
         let sql = `
-            SELECT r.id, r.title, r.description, r.created_at, r.date_logged, r.image_url, r.category_id,
+            SELECT r.id, r.title, r.description, r.created_at, r.date_logged, r.image_url, r.category_id, r.show_in_timeline,
                    c.name as category_name
             FROM records r
             LEFT JOIN categories c ON r.category_id = c.id
@@ -31,7 +31,7 @@ class RecordModel {
      */
     static async findById(id, userId) {
         const sql = `
-            SELECT r.id, r.title, r.description, r.created_at, r.date_logged, r.image_url, r.category_id,
+            SELECT r.id, r.title, r.description, r.created_at, r.date_logged, r.image_url, r.category_id, r.show_in_timeline,
                    c.name as category_name
             FROM records r
             LEFT JOIN categories c ON r.category_id = c.id
@@ -44,10 +44,10 @@ class RecordModel {
     /**
      * 新しい記録を作成
      */
-    static async create({ userId, title, description, dateLogged, imageUrl, categoryId }) {
+    static async create({ userId, title, description, dateLogged, imageUrl, categoryId, showInTimeline = 1 }) {
         const sql = `
-            INSERT INTO records (user_id, title, description, date_logged, invalidation_flag, image_url, category_id, created_at, updated_at) 
-            VALUES (?, ?, ?, ?, 0, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            INSERT INTO records (user_id, title, description, date_logged, invalidation_flag, image_url, category_id, show_in_timeline, created_at, updated_at) 
+            VALUES (?, ?, ?, ?, 0, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         `;
         const [result] = await db.query(sql, [
             userId,
@@ -55,7 +55,8 @@ class RecordModel {
             description,
             dateLogged,
             imageUrl,
-            categoryId || null
+            categoryId || null,
+            showInTimeline ? 1 : 0
         ]);
         return result.insertId;
     }
@@ -63,13 +64,17 @@ class RecordModel {
     /**
      * 記録を更新（IDと所有者を確認）
      */
-    static async update(id, userId, { title, description, categoryId, dateLogged, imageUrl }) {
+    static async update(id, userId, { title, description, categoryId, dateLogged, imageUrl, showInTimeline }) {
         let sql = 'UPDATE records SET title = ?, description = ?, category_id = ?, date_logged = ?, updated_at = CURRENT_TIMESTAMP';
         const params = [title, description, categoryId || null, dateLogged];
 
         if (imageUrl) {
             sql += ', image_url = ?';
             params.push(imageUrl);
+        }
+        if (showInTimeline !== undefined) {
+            sql += ', show_in_timeline = ?';
+            params.push(showInTimeline ? 1 : 0);
         }
 
         sql += ' WHERE id = ? AND user_id = ?';
@@ -110,6 +115,7 @@ class RecordModel {
             LEFT JOIN categories c ON c.id = r.category_id
             WHERE r.user_id IN (${placeholders})
               AND r.invalidation_flag = 0
+              AND r.show_in_timeline = 1
               AND r.created_at >= NOW() - INTERVAL 7 DAY
             ORDER BY r.created_at DESC
         `;

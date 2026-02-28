@@ -41,6 +41,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
     );
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [selectedCategoryId, setSelectedCategoryId] = useState(editRecord?.category_id || null);
+    const [showInTimeline, setShowInTimeline] = useState(editRecord ? (editRecord.show_in_timeline !== 0) : true);
     const [loading, setLoading] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showErrorModal, setShowErrorModal] = useState(false);
@@ -151,6 +152,9 @@ export default function PhotoPickerScreen({ navigation, route }) {
                 date_logged: dateLogged.toISOString().split('T')[0], 
                 category_id: selectedCategoryId,
             };
+            if (!isEditMode) {
+                recordData.show_in_timeline = showInTimeline;
+            }
             if (isNewImageSelected) {
                 recordData.imageUri = selectedImage;
             }
@@ -409,6 +413,45 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                         )}
                                     </View>
 
+                                    {/* スレッドに表示する（新規作成時のみ） */}
+                                    {!isEditMode && (
+                                        <View style={styles.inputGroup}>
+                                            <Text style={[styles.label, { color: theme.colors.secondaryText }]}>
+                                                {t('showInTimeline')}
+                                            </Text>
+                                            <View style={styles.showInTimelineRow}>
+                                                <TouchableOpacity
+                                                    style={[
+                                                        styles.showInTimelineOption,
+                                                        {
+                                                            backgroundColor: showInTimeline ? theme.colors.primary : theme.colors.secondaryBackground,
+                                                            borderColor: theme.colors.border,
+                                                        }
+                                                    ]}
+                                                    onPress={() => setShowInTimeline(true)}
+                                                >
+                                                    <Text style={[styles.showInTimelineOptionText, { color: showInTimeline ? '#fff' : theme.colors.text }]}>
+                                                        {t('showInTimelineYes')}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    style={[
+                                                        styles.showInTimelineOption,
+                                                        {
+                                                            backgroundColor: !showInTimeline ? theme.colors.primary : theme.colors.secondaryBackground,
+                                                            borderColor: theme.colors.border,
+                                                        }
+                                                    ]}
+                                                    onPress={() => setShowInTimeline(false)}
+                                                >
+                                                    <Text style={[styles.showInTimelineOptionText, { color: !showInTimeline ? '#fff' : theme.colors.text }]}>
+                                                        {t('showInTimelineNo')}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    )}
+
                                     {/* キャプション（内部スクロールなし＝親の ScrollView で全体スクロール） */}
                                     <View style={styles.captionGroup} ref={captionInputRef}>
                                         <TextInput
@@ -621,6 +664,21 @@ const styles = StyleSheet.create({
         marginRight: 6,
     },
     categoryName: {
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    showInTimelineRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 6,
+    },
+    showInTimelineOption: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 20,
+        borderWidth: 1,
+    },
+    showInTimelineOptionText: {
         fontSize: 14,
         fontWeight: '500',
     },

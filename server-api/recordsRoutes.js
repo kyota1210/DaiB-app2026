@@ -46,7 +46,7 @@ router.post('/', (req, res, next) => {
         return res.status(400).json({ message: 'リクエストデータが読み取れませんでした。' });
     }
 
-    const { title, description, date_logged, category_id } = req.body;
+    const { title, description, date_logged, category_id, show_in_timeline } = req.body;
     const user_id = req.user.id;
 
     // 要件: 日付のみ必須
@@ -57,6 +57,9 @@ router.post('/', (req, res, next) => {
     // タイトル未入力時はデフォルト値を設定
     const recordTitle = typeof title === 'string' && title.trim() ? title : '';
     const recordDescription = typeof description === 'string' ? description : '';
+
+    // スレッドに表示する: 未指定・'1'・true のとき 1、それ以外 0
+    const showInTimeline = (show_in_timeline === undefined || show_in_timeline === '' || show_in_timeline === '1' || show_in_timeline === true) ? 1 : 0;
 
     // 画像パスの生成（相対パス）
     let imageUrl = null;
@@ -71,7 +74,8 @@ router.post('/', (req, res, next) => {
             description: recordDescription,
             dateLogged: date_logged,
             imageUrl,
-            categoryId: category_id || null
+            categoryId: category_id || null,
+            showInTimeline
         });
 
         logger.info('記録作成成功', { 
@@ -165,8 +169,10 @@ router.put('/:id', (req, res, next) => {
     });
 }, async (req, res) => {
     const { id } = req.params;
-    const { title, description, category_id, date_logged } = req.body;
+    const { title, description, category_id, date_logged, show_in_timeline } = req.body;
     const user_id = req.user.id;
+
+    const showInTimeline = (show_in_timeline === undefined || show_in_timeline === '') ? undefined : ((show_in_timeline === '1' || show_in_timeline === true) ? 1 : 0);
 
     let imageUrl = null;
     if (req.file) {
@@ -179,7 +185,8 @@ router.put('/:id', (req, res, next) => {
             description,
             categoryId: category_id || null,
             dateLogged: date_logged,
-            imageUrl
+            imageUrl,
+            showInTimeline
         });
 
         if (!success) {

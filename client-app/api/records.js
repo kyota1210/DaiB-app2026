@@ -11,7 +11,8 @@ export const useRecordsApi = () => {
         formData.append('title', recordData.title);
         formData.append('description', recordData.description || '');
         formData.append('date_logged', recordData.date_logged);
-        
+        formData.append('show_in_timeline', recordData.show_in_timeline !== false && recordData.show_in_timeline !== 0 ? '1' : '0');
+
         // カテゴリーIDを追加
         if (recordData.category_id) {
             formData.append('category_id', recordData.category_id);
@@ -68,7 +69,10 @@ export const useRecordsApi = () => {
         formData.append('title', recordData.title);
         formData.append('description', recordData.description || '');
         formData.append('date_logged', recordData.date_logged);
-        
+        if (recordData.show_in_timeline !== undefined) {
+            formData.append('show_in_timeline', recordData.show_in_timeline !== false && recordData.show_in_timeline !== 0 ? '1' : '0');
+        }
+
         if (recordData.category_id) {
             formData.append('category_id', recordData.category_id);
         }
