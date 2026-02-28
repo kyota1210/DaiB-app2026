@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext, useEffect } from 'react';
+import React, { useState, useCallback, useContext, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -44,6 +44,8 @@ const ThreadScreen = ({ navigation }) => {
     const [scannedUser, setScannedUser] = useState(null);
     const [scanBusy, setScanBusy] = useState(false);
     const [scanNoUserFound, setScanNoUserFound] = useState(false);
+    /** 詳細/プロフィールから戻った次のフォーカスでは再取得しない（スクロール位置維持） */
+    const skipRefetchOnNextFocusRef = useRef(false);
 
     const loadData = useCallback(async () => {
         if (!userToken) return;
@@ -65,14 +67,18 @@ const ThreadScreen = ({ navigation }) => {
         }
     }, [userToken]);
 
-    // フォーカス時: 初回（データなし）のみローディング表示。戻ったときはバックグラウンドで再取得してスクロール位置を維持
+    // フォーカス時: 詳細/プロフィールから戻った場合は再取得せずスクロール位置を維持
     useFocusEffect(
         useCallback(() => {
+            if (skipRefetchOnNextFocusRef.current) {
+                skipRefetchOnNextFocusRef.current = false;
+                return;
+            }
             if (records.length === 0) {
                 setLoading(true);
             }
             loadData();
-        }, [loadData])
+        }, [loadData, records.length])
     );
 
     const onRefresh = useCallback(async () => {
@@ -142,6 +148,7 @@ const ThreadScreen = ({ navigation }) => {
 
     const openRecordDetail = (index) => {
         if (records.length === 0) return;
+        skipRefetchOnNextFocusRef.current = true;
         navigation.navigate('RecordDetail', {
             records,
             initialIndex: index,
@@ -157,6 +164,7 @@ const ThreadScreen = ({ navigation }) => {
 
         const openUserProfile = () => {
             if (item.author_id != null) {
+                skipRefetchOnNextFocusRef.current = true;
                 navigation.navigate('UserProfile', { userId: item.author_id });
             }
         };

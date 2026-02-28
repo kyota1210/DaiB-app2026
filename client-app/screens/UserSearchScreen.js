@@ -19,6 +19,21 @@ import { searchUsers } from '../api/user';
 import { follow, unfollow } from '../api/follows';
 import { getImageUrl } from '../utils/imageHelper';
 
+const normalizeForUserNameSearch = (s) => {
+    let v = String(s || '');
+    try {
+        v = v.normalize('NFKC');
+    } catch {}
+    // カタカナ(ァ-ヶ) → ひらがな(ぁ-ゖ)
+    v = Array.from(v).map((ch) => {
+        const code = ch.codePointAt(0);
+        if (code == null) return ch;
+        if (code >= 0x30A1 && code <= 0x30F6) return String.fromCodePoint(code - 0x60);
+        return ch;
+    }).join('');
+    return v.toLowerCase();
+};
+
 const UserSearchScreen = ({ navigation }) => {
     const { userToken } = useContext(AuthContext);
     const { theme } = useTheme();
@@ -36,8 +51,12 @@ const UserSearchScreen = ({ navigation }) => {
         try {
             const res = await searchUsers(userToken, q);
             const list = res.users || [];
-            setUsers(list);
-            setFollowingIds(new Set(list.filter((u) => u.is_following).map((u) => u.id)));
+            const nq = normalizeForUserNameSearch(q);
+            const filtered = nq
+                ? list.filter((u) => normalizeForUserNameSearch(u.user_name || '').includes(nq))
+                : [];
+            setUsers(filtered);
+            setFollowingIds(new Set(filtered.filter((u) => u.is_following).map((u) => u.id)));
         } catch (err) {
             console.error('search error', err);
             setUsers([]);

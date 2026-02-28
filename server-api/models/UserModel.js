@@ -4,6 +4,34 @@ const crypto = require('crypto');
 const SEARCH_KEY_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._';
 const SEARCH_KEY_RANDOM_LEN = 20;
 
+function normalizeNfkc(s) {
+    try {
+        return String(s || '').normalize('NFKC');
+    } catch {
+        return String(s || '');
+    }
+}
+
+function toHiragana(s) {
+    // カタカナ(ァ-ヶ) → ひらがな(ぁ-ゖ) は +0x60
+    return Array.from(String(s || '')).map((ch) => {
+        const code = ch.codePointAt(0);
+        if (code == null) return ch;
+        if (code >= 0x30A1 && code <= 0x30F6) return String.fromCodePoint(code - 0x60);
+        return ch;
+    }).join('');
+}
+
+function toKatakana(s) {
+    // ひらがな(ぁ-ゖ) → カタカナ(ァ-ヶ) は -0x60
+    return Array.from(String(s || '')).map((ch) => {
+        const code = ch.codePointAt(0);
+        if (code == null) return ch;
+        if (code >= 0x3041 && code <= 0x3096) return String.fromCodePoint(code + 0x60);
+        return ch;
+    }).join('');
+}
+
 class UserModel {
     /**
      * 検索キーを生成（ユーザーID + ランダム値で一意）
@@ -92,19 +120,54 @@ class UserModel {
     static async search(query, viewerId, limit = 50) {
         const q = (query || '').trim();
         if (!q) return [];
-        const like = `%${q}%`;
+
+        // ひらがな/カタカナ・英字大小の揺れを吸収するため、クエリ側を複数パターンでLIKE検索する。
+        // DB側に正規化済みカラムがない前提のため、ユーザー名検索は user_name のみ対象にする。
+        const qN = normalizeNfkc(q);
+        const qH = toHiragana(qN);
+        const qK = toKatakana(qN);
+        const qL = qN.toLowerCase();
+        const qHL = qH.toLowerCase();
+        const qKL = qK.toLowerCase();
+
+        const likeQ = `%${q}%`;
+        const likeH = `%${qH}%`;
+        const likeK = `%${qK}%`;
+        const likeL = `%${qL}%`;
+        const likeHL = `%${qHL}%`;
+        const likeKL = `%${qKL}%`;
+
         const sql = `
             SELECT u.id, u.user_name, u.bio, u.visibility
             FROM users u
             WHERE u.id != ?
             AND (
-                (u.visibility = 'public' AND (u.user_name LIKE ? OR u.bio LIKE ?))
+                (
+                    u.visibility = 'public'
+                    AND (
+                        u.user_name LIKE ?
+                        OR u.user_name LIKE ?
+                        OR u.user_name LIKE ?
+                        OR LOWER(u.user_name) LIKE ?
+                        OR LOWER(u.user_name) LIKE ?
+                        OR LOWER(u.user_name) LIKE ?
+                    )
+                )
                 OR (u.visibility = 'private' AND u.search_key = ?)
-                OR (u.search_key = ?)
             )
             LIMIT ?
         `;
-        const [rows] = await db.query(sql, [viewerId, like, like, q, q, limit]);
+        const [rows] = await db.query(sql, [
+            viewerId,
+            likeQ,
+            likeH,
+            likeK,
+            likeL,
+            likeHL,
+            likeKL,
+            q,
+            limit,
+        ]);
         return rows;
     }
 }

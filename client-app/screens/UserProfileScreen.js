@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext } from 'react';
+import React, { useState, useCallback, useContext, useRef } from 'react';
 import {
     View,
     Text,
@@ -37,6 +37,8 @@ const UserProfileScreen = ({ navigation, route }) => {
     const [loading, setLoading] = useState(true);
     const [recordsLoading, setRecordsLoading] = useState(false);
     const [followBusy, setFollowBusy] = useState(false);
+    /** 投稿詳細から戻った次のフォーカスでは再取得しない（スクロール位置維持） */
+    const skipRefetchOnNextFocusRef = useRef(false);
 
     const isMe = userInfo?.id != null && Number(userId) === Number(userInfo.id);
 
@@ -67,6 +69,10 @@ const UserProfileScreen = ({ navigation, route }) => {
 
     useFocusEffect(
         useCallback(() => {
+            if (skipRefetchOnNextFocusRef.current) {
+                skipRefetchOnNextFocusRef.current = false;
+                return;
+            }
             loadProfileAndRecords();
         }, [loadProfileAndRecords])
     );
@@ -165,6 +171,7 @@ const UserProfileScreen = ({ navigation, route }) => {
     const avatarUrl = getImageUrl(user.avatar_url);
 
     const openRecordDetail = (index) => {
+        skipRefetchOnNextFocusRef.current = true;
         const withAuthor = (records || []).map((r) => ({
             ...r,
             author_id: user.id,
