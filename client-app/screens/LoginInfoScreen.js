@@ -29,6 +29,14 @@ const LoginInfoScreen = ({ navigation }) => {
     };
 
     const handleUpdatePassword = () => {
+        if (newPassword.length < 8 || newPassword.length > 16) {
+            Alert.alert(t('error'), t('passwordLengthRule'));
+            return;
+        }
+        if (!/^[!-~]{8,16}$/.test(newPassword)) {
+            Alert.alert(t('error'), t('passwordInvalidChars'));
+            return;
+        }
         if (newPassword !== confirmPassword) {
             Alert.alert(t('error'), 'パスワードが一致しません');
             return;
@@ -131,6 +139,7 @@ const LoginInfoScreen = ({ navigation }) => {
                                 placeholder={t('newPasswordPlaceholder')}
                                 placeholderTextColor={theme.colors.inactive}
                                 secureTextEntry
+                                maxLength={16}
                             />
                         </View>
                         <View style={styles.inputGroup}>
@@ -146,6 +155,7 @@ const LoginInfoScreen = ({ navigation }) => {
                                 placeholder={t('confirmPasswordPlaceholder')}
                                 placeholderTextColor={theme.colors.inactive}
                                 secureTextEntry
+                                maxLength={16}
                             />
                         </View>
                         <TouchableOpacity 

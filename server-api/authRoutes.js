@@ -19,10 +19,23 @@ router.post('/signup', async (req, res) => {
     if (!email || !password) {
         return res.status(400).json({ message: 'メールアドレスとパスワードは必須です。' });
     }
+    const emailTrimmed = String(email).trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+        return res.status(400).json({ message: '正しいメールアドレスを入力してください。' });
+    }
+    if (!user_name || typeof user_name !== 'string' || !user_name.trim()) {
+        return res.status(400).json({ message: 'ユーザー名は必須です。' });
+    }
+    if (password.length < 8 || password.length > 16) {
+        return res.status(400).json({ message: 'パスワードは8文字以上16文字以内で入力してください。' });
+    }
+    if (!/^[!-~]{8,16}$/.test(password)) {
+        return res.status(400).json({ message: 'パスワードは半角英数字と記号のみ使用できます。' });
+    }
 
     try {
         // 既存ユーザーのチェック
-        const existingUser = await UserModel.findByEmail(email);
+        const existingUser = await UserModel.findByEmail(emailTrimmed);
         if (existingUser) {
             return res.status(409).json({ message: 'このメールアドレスは既に登録されています。' });
         }
@@ -32,7 +45,7 @@ router.post('/signup', async (req, res) => {
         
         // SQLはModelに任せる
         const userId = await UserModel.create({
-            email,
+            email: emailTrimmed,
             userName: user_name,
             passwordHash
         });
@@ -61,9 +74,17 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+        return res.status(400).json({ message: 'メールアドレスとパスワードは必須です。' });
+    }
+    const emailTrimmed = String(email).trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+        return res.status(400).json({ message: '正しいメールアドレスを入力してください。' });
+    }
+
     try {
         // メールアドレスでユーザーを検索
-        const user = await UserModel.findByEmail(email);
+        const user = await UserModel.findByEmail(emailTrimmed);
 
         if (!user) {
             // ユーザーが見つからない場合

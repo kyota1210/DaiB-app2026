@@ -145,8 +145,26 @@ const AuthStack = () => {
   const { t } = useLanguage();
   return (
     <Stack.Navigator>
-      <Stack.Screen name="Login" component={LoginScreen} options={{ title: t('login') }} />
-      <Stack.Screen name="Signup" component={SignupScreen} options={{ title: t('signup') }} />
+      <Stack.Screen
+        name="Login"
+        component={LoginScreen}
+        options={{
+          title: t('appName'),
+          headerStyle: { backgroundColor: '#000000' },
+          headerTintColor: '#ffffff',
+        }}
+      />
+      <Stack.Screen
+        name="Signup"
+        component={SignupScreen}
+        options={{
+          title: t('appName'),
+          headerStyle: { backgroundColor: '#000000' },
+          headerTintColor: '#ffffff',
+          headerBackVisible: false,
+          headerLeft: () => null,
+        }}
+      />
     </Stack.Navigator>
   );
 };

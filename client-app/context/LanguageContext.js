@@ -66,12 +66,27 @@ const translations = {
         login: 'ログイン',
         signup: '新規ユーザー登録',
         email: 'メールアドレス',
+        emailAddress: 'メールアドレス',
         password: 'パスワード',
-        displayName: '表示名（オプション）',
+        displayName: '表示名',
+        appName: 'Otium',
         loggingIn: 'ログイン中...',
         signingUp: '登録中...',
         goToSignup: '新規登録はこちら',
         backToLogin: 'ログイン画面に戻る',
+        emailPasswordRequired: 'メールアドレスとパスワードを入力してください',
+        userNameRequired: 'ユーザー名を入力してください',
+        invalidEmail: '正しいメールアドレスを入力してください',
+        passwordLengthRule: 'パスワードは8文字以上16文字以内で入力してください',
+        passwordInvalidChars: 'パスワードは半角英数字と記号のみ使用できます',
+        loginFailed: 'ログインに失敗しました',
+        signUpHere: '新規登録はこちら',
+        newUserRegistration: '新規登録',
+        displayNameOptional: '表示名',
+        signUp: '新規登録',
+        signupFailed: '登録に失敗しました',
+        signupLoginSuccess: '登録が完了しました',
+        redirectToMain: 'ホーム画面に移動します',
         
         // プロフィール編集
         userName: 'ユーザー名',
@@ -251,12 +266,27 @@ const translations = {
         login: 'Login',
         signup: 'Sign Up',
         email: 'Email Address',
+        emailAddress: 'Email Address',
         password: 'Password',
-        displayName: 'Display Name (Optional)',
+        displayName: 'Display Name',
+        appName: 'Otium',
         loggingIn: 'Logging in...',
         signingUp: 'Signing up...',
         goToSignup: 'Sign up here',
         backToLogin: 'Back to login',
+        emailPasswordRequired: 'Please enter email and password',
+        userNameRequired: 'Please enter user name',
+        invalidEmail: 'Please enter a valid email address',
+        passwordLengthRule: 'Password must be 8 to 16 characters',
+        passwordInvalidChars: 'Password can only contain half-width letters, numbers and symbols',
+        loginFailed: 'Login failed',
+        signUpHere: 'Sign up here',
+        newUserRegistration: 'Sign Up',
+        displayNameOptional: 'Display Name',
+        signUp: 'Sign Up',
+        signupFailed: 'Sign up failed',
+        signupLoginSuccess: 'Registration complete',
+        redirectToMain: 'Redirecting to home screen',
         
         // Profile edit
         userName: 'User Name',
@@ -412,6 +442,12 @@ export const LanguageProvider = ({ children }) => {
         return translations[activeLanguage]?.[key] || translations['ja'][key] || key;
     };
 
+    // 端末の設定言語に従う翻訳（ログイン・サインアップ画面用）
+    const tDevice = (key) => {
+        const locale = getSystemLanguage();
+        return translations[locale]?.[key] || translations['ja'][key] || key;
+    };
+
     // 初回読み込み時に言語設定を取得
     useEffect(() => {
         loadLanguage();
@@ -446,6 +482,7 @@ export const LanguageProvider = ({ children }) => {
                 activeLanguage,
                 changeLanguage,
                 t,
+                tDevice,
                 isLoading,
             }}
         >
