@@ -26,6 +26,9 @@ router.post('/signup', async (req, res) => {
     if (!user_name || typeof user_name !== 'string' || !user_name.trim()) {
         return res.status(400).json({ message: 'ユーザー名は必須です。' });
     }
+    if (user_name.trim().length > 25) {
+        return res.status(400).json({ message: 'ユーザー名は25文字以内で入力してください。' });
+    }
     if (password.length < 8 || password.length > 16) {
         return res.status(400).json({ message: 'パスワードは8文字以上16文字以内で入力してください。' });
     }

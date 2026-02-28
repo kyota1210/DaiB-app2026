@@ -52,6 +52,10 @@ export default function SignupScreen({ navigation }) {
             Alert.alert(tDevice('error'), tDevice('userNameRequired'));
             return;
         }
+        if (displayName.trim().length > 25) {
+            Alert.alert(tDevice('error'), tDevice('userNameMaxLength'));
+            return;
+        }
         setLoading(true);
 
         const result = await authContext.signUp(email, displayName, password);
@@ -125,6 +129,7 @@ export default function SignupScreen({ navigation }) {
                         placeholderTextColor={theme.colors.inactive}
                         value={displayName} 
                         onChangeText={setDisplayName}
+                        maxLength={25}
                         onFocus={() => scrollViewRef.current?.scrollTo({ y: 380, animated: true })}
                     />
 

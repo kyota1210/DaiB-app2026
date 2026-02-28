@@ -63,6 +63,10 @@ const ProfileEditScreen = ({ navigation }) => {
             Alert.alert(t('error'), t('userNameRequired'));
             return;
         }
+        if (userName.trim().length > 25) {
+            Alert.alert(t('error'), t('userNameMaxLength'));
+            return;
+        }
 
         setIsLoading(true);
         try {
@@ -172,6 +176,7 @@ const ProfileEditScreen = ({ navigation }) => {
                             onChangeText={setUserName}
                             placeholder={t('userNamePlaceholder')}
                             placeholderTextColor={theme.colors.inactive}
+                            maxLength={25}
                         />
                     </View>
                     <View style={styles.inputGroup}>

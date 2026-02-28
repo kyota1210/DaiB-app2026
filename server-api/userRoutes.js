@@ -42,7 +42,11 @@ router.put('/profile', authenticateToken, (req, res, next) => {
 
         // ユーザー名を更新
         if (user_name !== undefined) {
-            await UserModel.updateUserName(userId, user_name);
+            const trimmed = String(user_name).trim();
+            if (trimmed.length > 25) {
+                return res.status(400).json({ message: 'ユーザー名は25文字以内で入力してください。' });
+            }
+            await UserModel.updateUserName(userId, trimmed);
         }
 
         // 自己紹介を更新
