@@ -46,7 +46,7 @@ router.post('/', (req, res, next) => {
         return res.status(400).json({ message: 'リクエストデータが読み取れませんでした。' });
     }
 
-    const { title, description, date_logged, category_id, aspect_ratio, zoom_level, position_x, position_y } = req.body;
+    const { title, description, date_logged, category_id } = req.body;
     const user_id = req.user.id;
 
     // 要件: 日付のみ必須
@@ -59,12 +59,8 @@ router.post('/', (req, res, next) => {
     const recordDescription = typeof description === 'string' ? description : '';
 
     // 画像パスの生成（相対パス）
-    // DBには 'uploads/filename.jpg' の形式で保存する
-    // クライアント側で表示する際に、ベースURLと結合する
     let imageUrl = null;
     if (req.file) {
-        // req.file.path は 'uploads\filename.jpg' (Windows) のようになる場合があるため
-        // スラッシュに統一して保存するのが望ましい
         imageUrl = `uploads/${req.file.filename}`;
     }
 
@@ -75,11 +71,7 @@ router.post('/', (req, res, next) => {
             description: recordDescription,
             dateLogged: date_logged,
             imageUrl,
-            categoryId: category_id || null,
-            aspectRatio: aspect_ratio || '1:1',
-            zoomLevel: zoom_level ? parseFloat(zoom_level) : 1.0,
-            positionX: position_x ? parseInt(position_x) : 0,
-            positionY: position_y ? parseInt(position_y) : 0
+            categoryId: category_id || null
         });
 
         logger.info('記録作成成功', { 
@@ -113,7 +105,7 @@ router.get('/', async (req, res) => {
     const category_id = req.query.category_id; // カテゴリーフィルター
 
     // ホームで画像一覧を開いた操作を最小限でログ（同一ユーザーは60秒に1回まで）
-    logger.info('record list viewed', { userId: user_id });
+    // logger.info('record list viewed', { userId: user_id });
 
     try {
         const records = await RecordModel.findAllByUserId(user_id, category_id || null);
@@ -173,7 +165,7 @@ router.put('/:id', (req, res, next) => {
     });
 }, async (req, res) => {
     const { id } = req.params;
-    const { title, description, category_id, date_logged, aspect_ratio, zoom_level, position_x, position_y } = req.body;
+    const { title, description, category_id, date_logged } = req.body;
     const user_id = req.user.id;
 
     let imageUrl = null;
@@ -187,11 +179,7 @@ router.put('/:id', (req, res, next) => {
             description,
             categoryId: category_id || null,
             dateLogged: date_logged,
-            imageUrl,
-            aspectRatio: aspect_ratio,
-            zoomLevel: zoom_level !== undefined ? parseFloat(zoom_level) : undefined,
-            positionX: position_x !== undefined ? parseInt(position_x) : undefined,
-            positionY: position_y !== undefined ? parseInt(position_y) : undefined
+            imageUrl
         });
 
         if (!success) {

@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, Modal, Dimensions } from 'react-native';
+import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, Modal, Dimensions, LayoutAnimation } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,57 +13,60 @@ import { useFocusEffect } from '@react-navigation/native';
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-// 各レコードアイテムコンポーネント（トリミング済み画像をそのまま表示）
-const RecordItem = ({ item, theme, t }) => {
+// 各レコードアイテムコンポーネント（オリジナル画像を余白なく表示）
+const RecordItem = React.memo(function RecordItem({ item, theme, t }) {
     const [originalAspect, setOriginalAspect] = useState(null);
     const imageUrl = getImageUrl(item.image_url);
-    const date = new Date(item.date_logged);
-    const dateString = date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
-    const aspectRatio = item.aspect_ratio || '1:1';
+    const date = useMemo(() => new Date(item.date_logged), [item.date_logged]);
+    const dateString = useMemo(
+        () => date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' }),
+        [date]
+    );
+    const showImage = !!imageUrl;
 
-    // original のときだけ画像サイズ取得でコンテナ比を決める（1回だけ）
-    React.useEffect(() => {
-        if (imageUrl && aspectRatio === 'original') {
-            Image.getSize(imageUrl, (w, h) => setOriginalAspect(w / h), () => setOriginalAspect(1));
+    useEffect(() => {
+        if (imageUrl) {
+            Image.getSize(
+                imageUrl,
+                (w, h) => {
+                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                    setOriginalAspect(w / h);
+                },
+                () => {
+                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                    setOriginalAspect(1);
+                }
+            );
         } else {
             setOriginalAspect(null);
         }
-    }, [imageUrl, aspectRatio]);
+    }, [imageUrl]);
 
-    const containerAspect = aspectRatio === '1:1' ? 1
-        : originalAspect != null ? originalAspect : 1;
-    const showImage = imageUrl && (aspectRatio !== 'original' || originalAspect != null);
+    const containerHeight = originalAspect != null ? SCREEN_WIDTH / originalAspect : SCREEN_WIDTH;
 
     return (
         <ScrollView 
             style={styles.recordItem}
             contentContainerStyle={styles.recordItemContent}
             showsVerticalScrollIndicator={true}
+            removeClippedSubviews={true}
         >
             {showImage ? (
-                <View style={[
-                    styles.imageContainer,
-                    {
-                        width: SCREEN_WIDTH,
-                        height: SCREEN_WIDTH / containerAspect,
-                        backgroundColor: '#000',
-                        overflow: 'hidden',
-                    },
-                ]}>
-                    <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="contain" />
+                <View style={[styles.imageContainer, { width: SCREEN_WIDTH, height: containerHeight }]}>
+                    <Image
+                        source={{ uri: imageUrl }}
+                        style={styles.image}
+                        resizeMode="contain"
+                    />
                 </View>
-            ) : imageUrl && aspectRatio === 'original' ? (
-                <View style={[styles.imageContainer, { width: SCREEN_WIDTH, aspectRatio: 1, backgroundColor: '#000', minHeight: 200 }]}>
-                    <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="contain" />
-                </View>
-            ) : !imageUrl ? (
+            ) : (
                 <View style={[styles.placeholderImageContainer, { backgroundColor: theme.colors.border }]}>
                     <Ionicons name="image-outline" size={80} color={theme.colors.inactive} />
                     <Text style={[styles.placeholderText, { color: theme.colors.inactive }]}>
                         {t('noImage')}
                     </Text>
                 </View>
-            ) : null}
+            )}
 
             <View style={styles.infoContainer}>
                 <Text style={[styles.date, { color: theme.colors.secondaryText }]}>{dateString}</Text>
@@ -82,16 +85,20 @@ const RecordItem = ({ item, theme, t }) => {
             </View>
         </ScrollView>
     );
-};
+});
 
 export default function RecordDetailScreen({ route, navigation }) {
-    const { records, initialIndex } = route.params;
+    const { records: paramsRecords, initialIndex } = route.params;
+    const { records: contextRecords } = useRecordsAndCategories();
+    // 編集後に Context が更新されるため、Context の一覧を優先して表示する
+    const records = contextRecords?.length > 0 ? contextRecords : paramsRecords;
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
     const [showMenu, setShowMenu] = useState(false);
     const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
     const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [scrollAreaHeight, setScrollAreaHeight] = useState(SCREEN_HEIGHT);
     const scrollViewRef = useRef(null);
     const menuButtonRef = useRef(null);
     const { deleteRecord } = useRecordsApi();
@@ -99,7 +106,22 @@ export default function RecordDetailScreen({ route, navigation }) {
     const { theme } = useTheme();
     const { t } = useLanguage();
 
+    // 表示中のレコードIDを追跡し、Context 更新後も同じレコードを指すようにする
+    const currentRecordIdRef = useRef(records[initialIndex]?.id);
     const currentRecord = records[currentIndex];
+    if (currentRecord?.id) currentRecordIdRef.current = currentRecord.id;
+
+    useEffect(() => {
+        const id = currentRecordIdRef.current;
+        if (!id || !records?.length) return;
+        const idx = records.findIndex((r) => r.id === id);
+        if (idx >= 0 && idx !== currentIndex) {
+            setCurrentIndex(idx);
+            setTimeout(() => {
+                scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * idx, animated: false });
+            }, 0);
+        }
+    }, [records]);
 
     // 横スクロール終了時に現在のインデックスを更新
     const handleMomentumScrollEnd = (event) => {
@@ -182,9 +204,11 @@ export default function RecordDetailScreen({ route, navigation }) {
                 onMomentumScrollEnd={handleMomentumScrollEnd}
                 decelerationRate="fast"
                 style={styles.horizontalScrollView}
+                removeClippedSubviews={true}
+                onLayout={(e) => setScrollAreaHeight(e.nativeEvent.layout.height)}
             >
-                {records.map((record, index) => (
-                    <View key={record.id.toString()} style={styles.recordWrapper}>
+                {records.map((record) => (
+                    <View key={record.id.toString()} style={[styles.recordWrapper, { height: scrollAreaHeight }]}>
                         <RecordItem item={record} theme={theme} t={t} />
                     </View>
                 ))}
@@ -350,6 +374,7 @@ const styles = StyleSheet.create({
     },
     recordWrapper: {
         width: SCREEN_WIDTH,
+        // height は onLayout で取得した scrollAreaHeight を指定（ヘッダー分を除いた表示高さに合わせ、縦長コンテンツが最後までスクロールできるようにする）
     },
     recordItem: {
         flex: 1,
@@ -364,8 +389,8 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     imageContainer: {
-        width: '100%',
         backgroundColor: '#000',
+        overflow: 'hidden',
     },
     image: { 
         width: '100%', 

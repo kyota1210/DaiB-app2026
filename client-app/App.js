@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { StyleSheet } from 'react-native';
 import AppNavigator from './navigation/AppNavigator';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
@@ -25,15 +27,16 @@ const AppContent = () => {
 // アプリ全体をNavigationContainerでラップし、認証コンテキスト（状態管理）を設定するシンプルな役割
 export default function App() {
   return (
-    // 認証情報と機能（ログイン/ログアウト）をアプリ全体で利用可能にする
-    <AuthProvider>
-      <LanguageProvider>
-        <ThemeProvider>
-          <SafeAreaProvider>
-            <AppContent />
-          </SafeAreaProvider>
-        </ThemeProvider>
-      </LanguageProvider>
-    </AuthProvider>
+    <GestureHandlerRootView style={StyleSheet.absoluteFill}>
+      <AuthProvider>
+        <LanguageProvider>
+          <ThemeProvider>
+            <SafeAreaProvider>
+              <AppContent />
+            </SafeAreaProvider>
+          </ThemeProvider>
+        </LanguageProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }

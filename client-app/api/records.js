@@ -16,20 +16,6 @@ export const useRecordsApi = () => {
         if (recordData.category_id) {
             formData.append('category_id', recordData.category_id);
         }
-        
-        // トリミング範囲情報を追加
-        if (recordData.aspect_ratio) {
-            formData.append('aspect_ratio', recordData.aspect_ratio);
-        }
-        if (recordData.zoom_level !== undefined) {
-            formData.append('zoom_level', recordData.zoom_level.toString());
-        }
-        if (recordData.position_x !== undefined) {
-            formData.append('position_x', recordData.position_x.toString());
-        }
-        if (recordData.position_y !== undefined) {
-            formData.append('position_y', recordData.position_y.toString());
-        }
 
         if (recordData.imageUri) {
             // 画像ファイルの処理
@@ -85,20 +71,6 @@ export const useRecordsApi = () => {
         
         if (recordData.category_id) {
             formData.append('category_id', recordData.category_id);
-        }
-        
-        // トリミング範囲情報を追加
-        if (recordData.aspect_ratio) {
-            formData.append('aspect_ratio', recordData.aspect_ratio);
-        }
-        if (recordData.zoom_level !== undefined) {
-            formData.append('zoom_level', recordData.zoom_level.toString());
-        }
-        if (recordData.position_x !== undefined) {
-            formData.append('position_x', recordData.position_x.toString());
-        }
-        if (recordData.position_y !== undefined) {
-            formData.append('position_y', recordData.position_y.toString());
         }
 
         if (recordData.imageUri && !recordData.imageUri.startsWith('http') && !recordData.imageUri.startsWith('uploads/')) {
