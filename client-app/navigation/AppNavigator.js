@@ -15,7 +15,6 @@ import SignupScreen from '../screens/SignupScreen';
 import RecordListScreen from '../screens/RecordListScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ThreadScreen from '../screens/ThreadScreen';
-// ↓ 追加
 import RecordDetailScreen from '../screens/RecordDetailScreen';
 import ProfileEditScreen from '../screens/ProfileEditScreen';
 import LoginInfoScreen from '../screens/LoginInfoScreen';

@@ -46,7 +46,6 @@ const translations = {
         
         // 記録画面
         noRecords: 'まだ記録がありません。',
-        totalArchives: 'Total Archives',
         recordDetail: '記録の詳細',
         
         // 作成・編集画面
@@ -81,7 +80,6 @@ const translations = {
         passwordLengthRule: 'パスワードは8文字以上16文字以内で入力してください',
         passwordInvalidChars: 'パスワードは半角英数字と記号のみ使用できます',
         loginFailed: 'ログインに失敗しました',
-        signUpHere: '新規登録はこちら',
         newUserRegistration: '新規登録',
         displayNameOptional: '表示名',
         signUp: '新規登録',
@@ -247,7 +245,6 @@ const translations = {
         
         // Records screen
         noRecords: 'No records yet.',
-        totalArchives: 'Total Archives',
         recordDetail: 'Record Detail',
         
         // Create/Edit screen
@@ -282,7 +279,6 @@ const translations = {
         passwordLengthRule: 'Password must be 8 to 16 characters',
         passwordInvalidChars: 'Password can only contain half-width letters, numbers and symbols',
         loginFailed: 'Login failed',
-        signUpHere: 'Sign up here',
         newUserRegistration: 'Sign Up',
         displayNameOptional: 'Display Name',
         signUp: 'Sign Up',

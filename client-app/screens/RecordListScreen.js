@@ -319,12 +319,6 @@ export default function RecordListScreen({ navigation }) {
         );
     };
 
-
-    // 縦スクロール時の処理（各カテゴリの画像グリッド内）
-    const handleVerticalScroll = (event, categoryId) => {
-        // スクロール処理（必要に応じて追加の処理を実装可能）
-    };
-
     // 横スワイプ時の処理
     const handleHorizontalScroll = (event) => {
         const offsetX = event.nativeEvent.contentOffset.x;
@@ -403,12 +397,6 @@ export default function RecordListScreen({ navigation }) {
             </View>
         );
     }
-
-    // データを3カラムに分割
-    // (この部分は不要になりましたが、削除することで他のコードに影響を与えないようコメントアウトします)
-    // const leftColumnData = records.filter((_, i) => i % 3 === 0);
-    // const midColumnData = records.filter((_, i) => i % 3 === 1);
-    // const rightColumnData = records.filter((_, i) => i % 3 === 2);
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
@@ -549,7 +537,7 @@ export default function RecordListScreen({ navigation }) {
                                         categoryScrollViewRefs.current[category.id] = ref;
                                     }
                                 }}
-                                onScroll={(e) => handleVerticalScroll(e, category.id)}
+                                onScroll={() => {}}
                                 scrollEventThrottle={16}
                                 contentContainerStyle={styles.scrollContent}
                                 style={styles.categoryPage}
