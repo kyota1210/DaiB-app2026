@@ -413,6 +413,14 @@ export default function RecordListScreen({ navigation }) {
         }, [loadCategories, loadRecords])
     );
 
+    // フォーカス時にデフォルト表示形式を反映（表示設定で変更した場合など）
+    useFocusEffect(
+        useCallback(() => {
+            const defaultMode = userInfo?.default_view_mode || 'grid';
+            setViewMode(defaultMode);
+        }, [userInfo?.default_view_mode])
+    );
+
     // 初期表示時に選択されたカテゴリのページにスクロール
     React.useEffect(() => {
         if (categories.length > 0 && horizontalScrollViewRef.current) {

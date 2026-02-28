@@ -85,7 +85,10 @@ const ProfileScreen = ({ navigation }) => {
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('categoryManagement')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}>
+                        <TouchableOpacity
+                            style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
+                            onPress={() => navigation.navigate('DisplaySettings')}
+                        >
                             <Ionicons name="options-outline" size={24} color={theme.colors.icon} />
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('displaySettings')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />

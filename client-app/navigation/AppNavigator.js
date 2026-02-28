@@ -24,6 +24,7 @@ import UserProfileScreen from '../screens/UserProfileScreen';
 import PremiumPlanScreen from '../screens/PremiumPlanScreen';
 import CategoryManagementScreen from '../screens/CategoryManagementScreen';
 import LanguageSettingScreen from '../screens/LanguageSettingScreen';
+import DisplaySettingsScreen from '../screens/DisplaySettingsScreen';
 import PhotoPickerScreen from '../screens/PhotoPickerScreen';
 import HelpScreen from '../screens/HelpScreen';
 import AboutScreen from '../screens/AboutScreen';
@@ -227,6 +228,11 @@ const AppNavigator = () => {
           <Stack.Screen
             name="LanguageSetting"
             component={LanguageSettingScreen}
+            options={{ headerShown: false, presentation: 'card' }}
+          />
+          <Stack.Screen
+            name="DisplaySettings"
+            component={DisplaySettingsScreen}
             options={{ headerShown: false, presentation: 'card' }}
           />
           <Stack.Screen

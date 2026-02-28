@@ -124,7 +124,8 @@ router.post('/login', async (req, res) => {
                 user_name: fullUser.user_name,
                 email: fullUser.email,
                 bio: fullUser.bio || null,
-                avatar_url: avatar ? avatar.image_url : null
+                avatar_url: avatar ? avatar.image_url : null,
+                default_view_mode: fullUser.default_view_mode || 'grid'
             }
         });
 
@@ -161,7 +162,8 @@ router.get('/me', auth, async (req, res) => {
                 user_name: user.user_name,
                 email: user.email,
                 bio: user.bio || null,
-                avatar_url: avatar ? avatar.image_url : null
+                avatar_url: avatar ? avatar.image_url : null,
+                default_view_mode: user.default_view_mode || 'grid'
             }
         });
     } catch (error) {

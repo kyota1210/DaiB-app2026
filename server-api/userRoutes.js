@@ -157,6 +157,32 @@ router.get('/me', authenticateToken, async (req, res) => {
     }
 });
 
+// 表示設定の更新（一覧のデフォルト表示形式）
+router.put('/me/settings', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { default_view_mode } = req.body || {};
+        await UserModel.updateDefaultViewMode(userId, default_view_mode || 'grid');
+        const user = await UserModel.findById(userId);
+        const avatar = await UserAvatarModel.findByUserId(userId);
+        const [followingCount, followerCount] = await Promise.all([
+            FollowModel.getFollowingCount(userId),
+            FollowModel.getFollowerCount(userId),
+        ]);
+        res.status(200).json({
+            user: {
+                ...user,
+                avatar_url: avatar ? avatar.image_url : null,
+                following_count: followingCount,
+                follower_count: followerCount,
+            },
+        });
+    } catch (error) {
+        logger.error('表示設定更新エラー', { error: error.message, stack: error.stack });
+        res.status(500).json({ message: '更新に失敗しました', error: error.message });
+    }
+});
+
 // ユーザー検索（公開は部分一致、非公開は検索キーワード完全一致時のみ）
 router.get('/search', authenticateToken, async (req, res) => {
     try {

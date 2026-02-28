@@ -167,6 +167,25 @@ export const getOtherUserProfile = async (token, userId) => {
 };
 
 /**
+ * 表示設定を更新（一覧のデフォルト表示形式）
+ * @param {string} token - 認証トークン
+ * @param {string} defaultViewMode - 'grid' | 'list' | 'booklist' | 'tile'
+ */
+export const updateDisplaySettings = async (token, defaultViewMode) => {
+    const response = await fetch(`${API_BASE_URL}/users/me/settings`, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ default_view_mode: defaultViewMode }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || '設定の更新に失敗しました');
+    return data;
+};
+
+/**
  * 他ユーザーの投稿一覧取得（プロフィール画面用）
  * @param {string} token - 認証トークン
  * @param {number} userId - 対象ユーザーID

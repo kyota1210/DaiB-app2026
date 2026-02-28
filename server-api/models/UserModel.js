@@ -49,7 +49,7 @@ class UserModel {
      * @param {number} id 
      */
     static async findById(id) {
-        const sql = 'SELECT id, user_name, email, bio, visibility, search_key FROM users WHERE id = ?';
+        const sql = 'SELECT id, user_name, email, bio, default_view_mode, visibility, search_key FROM users WHERE id = ?';
         const [rows] = await db.query(sql, [id]);
         return rows[0]; // ユーザーが見つかればオブジェクト、なければundefinedを返す
     }
@@ -96,6 +96,19 @@ class UserModel {
     static async updateBio(id, bio) {
         const sql = 'UPDATE users SET bio = ? WHERE id = ?';
         const [result] = await db.query(sql, [bio, id]);
+        return result.affectedRows;
+    }
+
+    /**
+     * 一覧のデフォルト表示形式を更新
+     * @param {number} id - ユーザーID
+     * @param {string} defaultViewMode - 'grid' | 'list' | 'booklist' | 'tile'
+     */
+    static async updateDefaultViewMode(id, defaultViewMode) {
+        const valid = ['grid', 'list', 'booklist', 'tile'].includes(defaultViewMode);
+        const mode = valid ? defaultViewMode : 'grid';
+        const sql = 'UPDATE users SET default_view_mode = ? WHERE id = ?';
+        const [result] = await db.query(sql, [mode, id]);
         return result.affectedRows;
     }
 
