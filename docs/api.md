@@ -54,8 +54,13 @@ Authorization: Bearer <JWT_TOKEN>
 }
 ```
 
+**バリデーション**:
+- メールアドレス: 必須、正しい形式
+- ユーザー名: 必須、25文字以内
+- パスワード: 8文字以上16文字以内、半角英数字と記号のみ
+
 **エラーレスポンス**:
-- `400`: メールアドレスまたはパスワードが未入力
+- `400`: メールアドレス・パスワード・ユーザー名のバリデーションエラー
 - `409`: メールアドレスが既に登録済み
 - `500`: サーバーエラー
 
@@ -80,7 +85,12 @@ Authorization: Bearer <JWT_TOKEN>
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "user": {
     "id": 1,
-    "user_name": "山田太郎"
+    "user_name": "山田太郎",
+    "email": "user@example.com",
+    "bio": null,
+    "avatar_url": "uploads/avatar-1234567890.jpg",
+    "default_view_mode": "grid",
+    "default_sort_order": "date_logged"
   }
 }
 ```
@@ -108,7 +118,10 @@ Authorization: Bearer <JWT_TOKEN>
     "id": 1,
     "user_name": "山田太郎",
     "email": "user@example.com",
-    "avatar_url": "uploads/avatar-1234567890.jpg"
+    "bio": null,
+    "avatar_url": "uploads/avatar-1234567890.jpg",
+    "default_view_mode": "grid",
+    "default_sort_order": "date_logged"
   }
 }
 ```
@@ -137,10 +150,7 @@ Authorization: Bearer <JWT_TOKEN>
   - `date_logged` (string, 必須): 記録日付（YYYY-MM-DD形式）
   - `category_id` (integer, 任意): カテゴリーID
   - `image` (file, 任意): 画像ファイル
-  - `aspect_ratio` (string, 任意): アスペクト比（デフォルト: "1:1"）
-  - `zoom_level` (float, 任意): ズームレベル（デフォルト: 1.0）
-  - `position_x` (integer, 任意): X座標（デフォルト: 0）
-  - `position_y` (integer, 任意): Y座標（デフォルト: 0）
+  - `show_in_timeline` (boolean/string, 任意): スレッドタイムラインに表示するか（デフォルト: true）
 
 **レスポンス（成功: 201）**:
 ```json
@@ -177,11 +187,7 @@ Authorization: Bearer <JWT_TOKEN>
     "image_url": "uploads/1234567890-filename.jpg",
     "category_id": 1,
     "category_name": "仕事",
-    "category_icon": "briefcase",
-    "aspect_ratio": "1:1",
-    "zoom_level": 1.0,
-    "position_x": 0,
-    "position_y": 0,
+    "show_in_timeline": 1,
     "created_at": "2025-12-07T10:30:00.000Z"
   },
   {
@@ -192,11 +198,7 @@ Authorization: Bearer <JWT_TOKEN>
     "image_url": "uploads/1234567891-filename.jpg",
     "category_id": null,
     "category_name": null,
-    "category_icon": null,
-    "aspect_ratio": "16:9",
-    "zoom_level": 1.5,
-    "position_x": 10,
-    "position_y": 20,
+    "show_in_timeline": 1,
     "created_at": "2025-12-06T15:20:00.000Z"
   }
 ]
@@ -227,11 +229,7 @@ Authorization: Bearer <JWT_TOKEN>
   "image_url": "uploads/1234567890-filename.jpg",
   "category_id": 1,
   "category_name": "仕事",
-  "category_icon": "briefcase",
-  "aspect_ratio": "1:1",
-  "zoom_level": 1.0,
-  "position_x": 0,
-  "position_y": 0,
+  "show_in_timeline": 1,
   "created_at": "2025-12-07T10:30:00.000Z"
 }
 ```
@@ -259,10 +257,7 @@ Authorization: Bearer <JWT_TOKEN>
   - `date_logged` (string, 必須): 記録日付（YYYY-MM-DD形式）
   - `category_id` (integer, 任意): カテゴリーID（null可）
   - `image` (file, 任意): 新しい画像ファイル（更新する場合）
-  - `aspect_ratio` (string, 任意): アスペクト比
-  - `zoom_level` (float, 任意): ズームレベル
-  - `position_x` (integer, 任意): X座標
-  - `position_y` (integer, 任意): Y座標
+  - `show_in_timeline` (boolean/string, 任意): スレッドタイムラインに表示するか
 
 **レスポンス（成功: 200）**:
 ```json
@@ -320,22 +315,18 @@ Authorization: Bearer <JWT_TOKEN>
     {
       "id": 1,
       "name": "仕事",
-      "icon": "briefcase",
       "created_at": "2025-12-01T10:00:00.000Z",
       "updated_at": "2025-12-01T10:00:00.000Z"
     },
     {
       "id": 2,
       "name": "プライベート",
-      "icon": "home",
       "created_at": "2025-12-02T10:00:00.000Z",
       "updated_at": "2025-12-02T10:00:00.000Z"
     }
   ]
 }
 ```
-
-**注意**: カテゴリーの画像と色設定機能は削除されました。`color`と`image_url`フィールドは返されません。
 
 ---
 
@@ -347,8 +338,7 @@ Authorization: Bearer <JWT_TOKEN>
 **リクエストボディ**:
 ```json
 {
-  "name": "仕事",
-  "icon": "briefcase"
+  "name": "仕事"
 }
 ```
 
@@ -359,7 +349,6 @@ Authorization: Bearer <JWT_TOKEN>
   "category": {
     "id": 1,
     "name": "仕事",
-    "icon": "briefcase",
     "created_at": "2025-12-07T10:00:00.000Z",
     "updated_at": "2025-12-07T10:00:00.000Z"
   }
@@ -367,7 +356,7 @@ Authorization: Bearer <JWT_TOKEN>
 ```
 
 **エラーレスポンス**:
-- `400`: カテゴリー名、アイコンが未入力
+- `400`: カテゴリー名が未入力
 - `401`: 認証トークンが無効
 - `500`: サーバーエラー
 
@@ -384,8 +373,7 @@ Authorization: Bearer <JWT_TOKEN>
 **リクエストボディ**:
 ```json
 {
-  "name": "仕事（更新）",
-  "icon": "briefcase"
+  "name": "仕事（更新）"
 }
 ```
 
@@ -396,7 +384,6 @@ Authorization: Bearer <JWT_TOKEN>
   "category": {
     "id": 1,
     "name": "仕事（更新）",
-    "icon": "briefcase",
     "created_at": "2025-12-07T10:00:00.000Z",
     "updated_at": "2025-12-07T11:00:00.000Z"
   }
@@ -404,7 +391,7 @@ Authorization: Bearer <JWT_TOKEN>
 ```
 
 **エラーレスポンス**:
-- `400`: カテゴリー名、アイコンが未入力
+- `400`: カテゴリー名が未入力
 - `401`: 認証トークンが無効
 - `404`: カテゴリーが見つからない
 - `500`: サーバーエラー
@@ -440,7 +427,7 @@ Authorization: Bearer <JWT_TOKEN>
 すべてのエンドポイントで認証が必要です。
 
 #### GET /api/users/me
-ユーザー情報の取得
+ユーザー情報の取得（アバター・フォロー数含む）
 
 **認証**: 必要
 
@@ -451,7 +438,12 @@ Authorization: Bearer <JWT_TOKEN>
     "id": 1,
     "user_name": "山田太郎",
     "email": "user@example.com",
-    "avatar_url": "uploads/avatar-1234567890.jpg"
+    "bio": null,
+    "avatar_url": "uploads/avatar-1234567890.jpg",
+    "default_view_mode": "grid",
+    "default_sort_order": "date_logged",
+    "following_count": 5,
+    "follower_count": 3
   }
 }
 ```
@@ -471,7 +463,9 @@ Authorization: Bearer <JWT_TOKEN>
 **リクエスト**:
 - Content-Type: `multipart/form-data`
 - ボディ:
-  - `user_name` (string, 任意): ユーザー名
+  - `user_name` (string, 任意): ユーザー名（25文字以内）
+  - `bio` (string, 任意): 自己紹介
+  - `visibility` (string, 任意): 公開設定（`public` | `private`）
   - `avatar` (file, 任意): アバター画像
 
 **レスポンス（成功: 200）**:
@@ -482,17 +476,243 @@ Authorization: Bearer <JWT_TOKEN>
     "id": 1,
     "user_name": "山田花子",
     "email": "user@example.com",
+    "bio": "自己紹介文",
     "avatar_url": "uploads/avatar-1234567890.jpg"
   }
 }
 ```
 
 **エラーレスポンス**:
-- `400`: 画像アップロードエラー
+- `400`: 画像アップロードエラー、ユーザー名25文字超過
 - `401`: 認証トークンが無効
 - `500`: サーバーエラー
 
 **注意**: メールアドレスは変更できません。
+
+---
+
+#### PUT /api/users/me/settings
+表示設定の更新（一覧のデフォルト表示形式・並び順）
+
+**認証**: 必要
+
+**リクエストボディ**:
+```json
+{
+  "default_view_mode": "grid",
+  "default_sort_order": "date_logged"
+}
+```
+
+- `default_view_mode`: `grid` | `list` | `booklist` | `tile`
+- `default_sort_order`: `date_logged` | `created_at`
+
+**レスポンス（成功: 200）**:
+更新後のユーザー情報（GET /api/users/me と同形式）を返す。
+
+---
+
+#### GET /api/users/search
+ユーザー検索（公開は部分一致、非公開は検索キー完全一致時のみ）
+
+**認証**: 必要
+
+**クエリパラメータ**:
+- `q` (string): 検索文字列
+- `limit` (integer, 任意): 取得件数（デフォルト50、最大50）
+
+**レスポンス（成功: 200）**:
+```json
+{
+  "users": [
+    {
+      "id": 2,
+      "user_name": "山田花子",
+      "bio": null,
+      "avatar_url": "uploads/avatar-xxx.jpg",
+      "is_following": false
+    }
+  ]
+}
+```
+
+---
+
+#### GET /api/users/me/following
+フォロー中一覧
+
+**認証**: 必要
+
+**レスポンス（成功: 200）**:
+```json
+{
+  "users": [
+    {
+      "id": 2,
+      "user_name": "山田花子",
+      "bio": null,
+      "avatar_url": "uploads/avatar-xxx.jpg"
+    }
+  ]
+}
+```
+
+---
+
+#### GET /api/users/me/followers
+フォロワー一覧（自分がそのユーザーをフォローしているか含む）
+
+**認証**: 必要
+
+**レスポンス（成功: 200）**:
+```json
+{
+  "users": [
+    {
+      "id": 3,
+      "user_name": "佐藤一郎",
+      "bio": null,
+      "avatar_url": null,
+      "is_following": true
+    }
+  ]
+}
+```
+
+---
+
+#### GET /api/users/:id
+他ユーザーの公開プロフィール取得
+
+**認証**: 必要
+
+**パスパラメータ**:
+- `id` (integer): ユーザーID
+
+**レスポンス（成功: 200）**:
+```json
+{
+  "user": {
+    "id": 2,
+    "user_name": "山田花子",
+    "bio": "自己紹介",
+    "avatar_url": "uploads/avatar-xxx.jpg",
+    "is_following": false
+  }
+}
+```
+
+---
+
+#### GET /api/users/:id/records
+他ユーザーの投稿一覧取得（プロフィール画面用）
+
+**認証**: 必要
+
+**パスパラメータ**:
+- `id` (integer): ユーザーID
+
+**レスポンス（成功: 200）**:
+```json
+{
+  "records": [
+    {
+      "id": 10,
+      "title": "今日の振り返り",
+      "description": "良い一日だった",
+      "date_logged": "2025-12-07",
+      "image_url": "uploads/xxx.jpg",
+      "category_id": 1,
+      "category_name": "仕事",
+      "show_in_timeline": 1,
+      "created_at": "2025-12-07T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### フォローAPI（/api/follows）
+
+すべてのエンドポイントで認証が必要です。
+
+#### POST /api/follows
+フォローする
+
+**認証**: 必要
+
+**リクエストボディ**:
+```json
+{
+  "following_id": 2
+}
+```
+
+**レスポンス（成功: 201）**:
+```json
+{
+  "message": "フォローしました。",
+  "following": true
+}
+```
+
+**エラーレスポンス**:
+- `400`: following_id が不正、自分自身はフォロー不可
+- `404`: ユーザーが見つからない
+- `500`: サーバーエラー
+
+---
+
+#### DELETE /api/follows/:following_id
+フォロー解除
+
+**認証**: 必要
+
+**パスパラメータ**:
+- `following_id` (integer): フォロー解除するユーザーID
+
+**レスポンス（成功: 200）**:
+```json
+{
+  "message": "フォローを解除しました。",
+  "following": false
+}
+```
+
+---
+
+### スレッド・タイムラインAPI（/api/threads）
+
+すべてのエンドポイントで認証が必要です。
+
+#### GET /api/threads/timeline
+フォロー中ユーザーの直近7日間の記録を取得
+
+**認証**: 必要
+
+**レスポンス（成功: 200）**:
+```json
+{
+  "records": [
+    {
+      "id": 10,
+      "title": "今日の振り返り",
+      "description": "良い一日だった",
+      "date_logged": "2025-12-07",
+      "image_url": "uploads/xxx.jpg",
+      "category_id": 1,
+      "category_name": "仕事",
+      "author_id": 2,
+      "author_name": "山田花子",
+      "author_avatar_url": "uploads/avatar-xxx.jpg",
+      "created_at": "2025-12-07T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+**注意**: `show_in_timeline=1` の記録のみ、フォロー中のユーザーの直近7日間分が返されます。
 
 ---
 

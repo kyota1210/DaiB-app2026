@@ -157,12 +157,17 @@ router.get('/me', authenticateToken, async (req, res) => {
     }
 });
 
-// 表示設定の更新（一覧のデフォルト表示形式）
+// 表示設定の更新（一覧のデフォルト表示形式・デフォルト並び順）
 router.put('/me/settings', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
-        const { default_view_mode } = req.body || {};
-        await UserModel.updateDefaultViewMode(userId, default_view_mode || 'grid');
+        const { default_view_mode, default_sort_order } = req.body || {};
+        if (default_view_mode !== undefined) {
+            await UserModel.updateDefaultViewMode(userId, default_view_mode || 'grid');
+        }
+        if (default_sort_order !== undefined) {
+            await UserModel.updateDefaultSortOrder(userId, default_sort_order || 'date_logged');
+        }
         const user = await UserModel.findById(userId);
         const avatar = await UserAvatarModel.findByUserId(userId);
         const [followingCount, followerCount] = await Promise.all([

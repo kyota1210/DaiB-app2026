@@ -167,18 +167,21 @@ export const getOtherUserProfile = async (token, userId) => {
 };
 
 /**
- * 表示設定を更新（一覧のデフォルト表示形式）
+ * 表示設定を更新（一覧のデフォルト表示形式・デフォルト並び順）
  * @param {string} token - 認証トークン
- * @param {string} defaultViewMode - 'grid' | 'list' | 'booklist' | 'tile'
+ * @param {{ default_view_mode?: string, default_sort_order?: string }} settings - default_view_mode: 'grid'|'list'|'booklist'|'tile', default_sort_order: 'date_logged'|'created_at'
  */
-export const updateDisplaySettings = async (token, defaultViewMode) => {
+export const updateDisplaySettings = async (token, settings) => {
+    const body = {};
+    if (settings.default_view_mode !== undefined) body.default_view_mode = settings.default_view_mode;
+    if (settings.default_sort_order !== undefined) body.default_sort_order = settings.default_sort_order;
     const response = await fetch(`${API_BASE_URL}/users/me/settings`, {
         method: 'PUT',
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ default_view_mode: defaultViewMode }),
+        body: JSON.stringify(body),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || '設定の更新に失敗しました');

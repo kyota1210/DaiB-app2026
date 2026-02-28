@@ -125,7 +125,8 @@ router.post('/login', async (req, res) => {
                 email: fullUser.email,
                 bio: fullUser.bio || null,
                 avatar_url: avatar ? avatar.image_url : null,
-                default_view_mode: fullUser.default_view_mode || 'grid'
+                default_view_mode: fullUser.default_view_mode || 'grid',
+                default_sort_order: fullUser.default_sort_order || 'date_logged'
             }
         });
 
@@ -163,7 +164,8 @@ router.get('/me', auth, async (req, res) => {
                 email: user.email,
                 bio: user.bio || null,
                 avatar_url: avatar ? avatar.image_url : null,
-                default_view_mode: user.default_view_mode || 'grid'
+                default_view_mode: user.default_view_mode || 'grid',
+                default_sort_order: user.default_sort_order || 'date_logged'
             }
         });
     } catch (error) {

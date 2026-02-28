@@ -93,6 +93,7 @@ const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid
 export default function RecordListScreen({ navigation }) {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', 'booklist', 'tile'
+    const [sortOrder, setSortOrder] = useState('date_logged'); // 'date_logged' | 'created_at'
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
     const [categoryName, setCategoryName] = useState('');
@@ -413,13 +414,26 @@ export default function RecordListScreen({ navigation }) {
         }, [loadCategories, loadRecords])
     );
 
-    // フォーカス時にデフォルト表示形式を反映（表示設定で変更した場合など）
+    // フォーカス時にデフォルト表示形式・並び順を反映（表示設定で変更した場合など）
     useFocusEffect(
         useCallback(() => {
             const defaultMode = userInfo?.default_view_mode || 'grid';
             setViewMode(defaultMode);
-        }, [userInfo?.default_view_mode])
+            const defaultSort = userInfo?.default_sort_order || 'date_logged';
+            setSortOrder(defaultSort);
+        }, [userInfo?.default_view_mode, userInfo?.default_sort_order])
     );
+
+    // 並び順でソート（新しい順）
+    const sortRecords = useCallback((records, order) => {
+        if (!records || records.length === 0) return records;
+        const key = order === 'created_at' ? 'created_at' : 'date_logged';
+        return [...records].sort((a, b) => {
+            const ta = a[key] ? new Date(a[key]).getTime() : 0;
+            const tb = b[key] ? new Date(b[key]).getTime() : 0;
+            return tb - ta;
+        });
+    }, []);
 
     // 初期表示時に選択されたカテゴリのページにスクロール
     React.useEffect(() => {
@@ -451,6 +465,12 @@ export default function RecordListScreen({ navigation }) {
             <View style={[styles.topNavBar, { backgroundColor: theme.colors.background }]}>
                 <Text style={[styles.appName, { color: theme.colors.text }]}>Otium</Text>
                 <View style={styles.iconButtons}>
+                    <TouchableOpacity
+                        style={styles.viewModeButton}
+                        onPress={() => setSortOrder((prev) => (prev === 'date_logged' ? 'created_at' : 'date_logged'))}
+                    >
+                        <Ionicons name="swap-vertical-outline" size={24} color={theme.colors.icon} />
+                    </TouchableOpacity>
                     <TouchableOpacity 
                         style={styles.viewModeButton}
                         onPress={() => {
@@ -606,7 +626,7 @@ export default function RecordListScreen({ navigation }) {
                                 }
                             >
                                 <View style={styles.gridContainer}>
-                                    {renderRecords(categoryRecords)}
+                                    {renderRecords(sortRecords(categoryRecords, sortOrder))}
                                 </View>
                             </ScrollView>
                         );

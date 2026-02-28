@@ -8,6 +8,7 @@ Otiumアプリケーションは以下のエンティティで構成されてい
 2. **records** - 記録
 3. **categories** - カテゴリー
 4. **user_avatars** - ユーザーアバター画像
+5. **follows** - フォロー関係
 
 ## ER図
 
@@ -19,47 +20,39 @@ Otiumアプリケーションは以下のエンティティで構成されてい
 │   email (UNIQUE)                    │
 │   user_name                         │
 │   password_hash                     │
+│   bio                               │
+│   visibility                        │
+│   search_key                        │
+│   default_view_mode                 │
+│   default_sort_order                │
 │   created_at                        │
 │   updated_at                        │
 └──────────────┬──────────────────────┘
                │ 1
                │
-               │ N
-┌──────────────▼──────────────────────┐
-│           records                   │
-├─────────────────────────────────────┤
-│ * id (PK)                           │
-│   user_id (FK) → users.id           │
-│   title                             │
-│   description                       │
-│   date_logged                       │
-│   image_url                         │
-│   category_id (FK) → categories.id  │
-│   aspect_ratio                      │
-│   zoom_level                        │
-│   position_x                        │
-│   position_y                        │
-│   invalidation_flag                 │
-│   created_at                        │
-│   updated_at                        │
-│   delete_at                         │
-└──────────────┬──────────────────────┘
-               │
-               │ N
-               │
-┌──────────────▼──────────────────────┐
-│           categories                │
-├─────────────────────────────────────┤
-│ * id (PK)                           │
-│   user_id (FK) → users.id           │
-│   name                              │
-│   icon                              │
-│   created_at                        │
-│   updated_at                        │
-└──────────────┬──────────────────────┘
+     ┌─────────┼─────────┐
+     │         │         │ N
+     │ N       │         │
+┌────▼────┐ ┌─▼──────────────┐ ┌────▼────────┐
+│ follows │ │    records      │ │  categories  │
+├─────────┤ ├─────────────────┤ ├─────────────┤
+│ * id    │ │ * id (PK)       │ │ * id (PK)   │
+│ follower│ │   user_id (FK)  │ │   user_id   │
+│ _id(FK) │ │   title         │ │   name      │
+│ follow  │ │   description   │ │   created_at│
+│ ing_id  │ │   date_logged   │ │   updated_at│
+│ (FK)    │ │   image_url     │ └─────────────┘
+└─────────┘ │   category_id   │
+            │   show_in_timeline│
+            │   invalidation  │
+            │   _flag         │
+            │   created_at    │
+            │   updated_at    │
+            │   delete_at     │
+            └─────────────────┘
 
 ┌─────────────────────────────────────┐
-│        user_avatars                │
+│        user_avatars                 │
 ├─────────────────────────────────────┤
 │ * id (PK)                           │
 │   user_id (FK) → users.id           │
@@ -81,17 +74,24 @@ Otiumアプリケーションは以下のエンティティで構成されてい
 | email | VARCHAR(255) | UNIQUE, NOT NULL | メールアドレス（ログインID） |
 | user_name | VARCHAR(255) | NULL | ユーザー表示名 |
 | password_hash | VARCHAR(255) | NOT NULL | bcryptでハッシュ化されたパスワード |
+| bio | TEXT | NULL | 自己紹介 |
+| visibility | VARCHAR(20) | DEFAULT 'private' | 公開設定（`public` \| `private`） |
+| search_key | VARCHAR(100) | NULL, UNIQUE | 非公開時の検索キー（例: "123_abc123..."） |
+| default_view_mode | VARCHAR(20) | DEFAULT 'grid' | 一覧のデフォルト表示形式（`grid` \| `list` \| `booklist` \| `tile`） |
+| default_sort_order | VARCHAR(20) | DEFAULT 'date_logged' | 一覧のデフォルト並び順（`date_logged` \| `created_at`） |
 | created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | 作成日時 |
 | updated_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新日時 |
 
 **インデックス**:
 - PRIMARY KEY: `id`
 - UNIQUE INDEX: `email`
+- UNIQUE INDEX: `search_key`
 
 **関連**:
 - 1対多: records（1ユーザーは複数の記録を持つ）
 - 1対多: categories（1ユーザーは複数のカテゴリーを持つ）
 - 1対1: user_avatars（1ユーザーは1つのアバター画像を持つ）
+- 多対多: follows（フォロー関係）
 
 ---
 
@@ -108,10 +108,7 @@ Otiumアプリケーションは以下のエンティティで構成されてい
 | date_logged | DATE | NOT NULL | 記録日付 |
 | image_url | VARCHAR(500) | NULL | 画像ファイルのパス（例: "uploads/filename.jpg"） |
 | category_id | INT | FOREIGN KEY, NULL | カテゴリーID（外部キー → categories.id） |
-| aspect_ratio | VARCHAR(10) | DEFAULT '1:1' | 画像のアスペクト比（例: "1:1", "16:9"） |
-| zoom_level | DECIMAL(5,2) | DEFAULT 1.0 | 画像のズームレベル |
-| position_x | INT | DEFAULT 0 | 画像のX座標位置 |
-| position_y | INT | DEFAULT 0 | 画像のY座標位置 |
+| show_in_timeline | TINYINT(1) | DEFAULT 1 | スレッドタイムラインに表示するか（0: 非表示, 1: 表示） |
 | invalidation_flag | TINYINT(1) | DEFAULT 0 | 削除フラグ（0: 有効, 1: 削除済み） |
 | created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | 作成日時 |
 | updated_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新日時 |
@@ -131,6 +128,7 @@ Otiumアプリケーションは以下のエンティティで構成されてい
 - `invalidation_flag=1` の記録は表示されない（論理削除）
 - `category_id` が NULL の場合はカテゴリー未設定
 - `date_logged` は必須
+- `show_in_timeline=1` の記録のみ、フォロー中のユーザーのタイムラインに表示される
 
 ---
 
@@ -143,7 +141,6 @@ Otiumアプリケーションは以下のエンティティで構成されてい
 | id | INT | PRIMARY KEY, AUTO_INCREMENT | カテゴリーID（主キー） |
 | user_id | INT | FOREIGN KEY, NOT NULL | ユーザーID（外部キー → users.id） |
 | name | VARCHAR(255) | NOT NULL | カテゴリー名 |
-| icon | VARCHAR(50) | NOT NULL | アイコン名（例: "home", "work"） |
 | created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | 作成日時 |
 | updated_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新日時 |
 
@@ -158,6 +155,8 @@ Otiumアプリケーションは以下のエンティティで構成されてい
 **ビジネスルール**:
 - ユーザーごとに独立したカテゴリー
 - `name` は必須
+
+**注意**: アイコン・色設定は削除され、APIでは `name` のみ使用します。
 
 ---
 
@@ -184,6 +183,33 @@ Otiumアプリケーションは以下のエンティティで構成されてい
 **ビジネスルール**:
 - 1ユーザーにつき1アバター画像のみ設定可能
 - アバター画像は任意（設定されていない場合もある）
+
+---
+
+### 6. follows（フォロー関係）
+
+ユーザー間のフォロー関係を管理するテーブル
+
+| カラム名 | データ型 | 制約 | 説明 |
+|---------|---------|------|------|
+| id | INT | PRIMARY KEY, AUTO_INCREMENT | フォローID（主キー） |
+| follower_id | INT | FOREIGN KEY, NOT NULL | フォローするユーザーID（外部キー → users.id） |
+| following_id | INT | FOREIGN KEY, NOT NULL | フォローされるユーザーID（外部キー → users.id） |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | 作成日時 |
+
+**インデックス**:
+- PRIMARY KEY: `id`
+- UNIQUE KEY: `(follower_id, following_id)`（重複フォロー防止）
+- FOREIGN KEY: `follower_id` REFERENCES `users(id)` ON DELETE CASCADE
+- FOREIGN KEY: `following_id` REFERENCES `users(id)` ON DELETE CASCADE
+- INDEX: `follower_id`、`following_id`
+
+**制約**:
+- 自分自身はフォローできない（`follower_id != following_id`）
+
+**関連**:
+- 多対1: users（follower として）
+- 多対1: users（following として）
 
 ---
 
@@ -268,11 +294,15 @@ Otiumアプリケーションは以下のエンティティで構成されてい
 
 ## データベース初期化
 
-テーブル作成スクリプトは `server-api/scripts/` ディレクトリにあります：
+テーブル作成・マイグレーションスクリプトは `server-api/scripts/` ディレクトリにあります：
 
 - `create_categories_table.js` - categories テーブル作成
 - `create_user_avatars_table.js` - user_avatars テーブル作成
-
-**注意**: `category_images`テーブルは削除されました。関連するマイグレーションスクリプトは `migrate_drop_category_images_table.js` を参照してください。
+- `create_follows_table.js` - follows テーブル作成
+- `add_bio_column_to_users.js` - users に bio カラム追加
+- `add_visibility_columns_to_users.js` - users に visibility, search_key 追加
+- `add_default_view_mode_to_users.js` - users に default_view_mode 追加
+- `add_default_sort_order_to_users.js` - users に default_sort_order 追加
+- `add_show_in_timeline_to_records.js` - records に show_in_timeline 追加
 
 データベース設計ファイル（A5:SQL Mk-2形式）は `Doc/DDL/otium.a5er` にあります。

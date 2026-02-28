@@ -14,12 +14,19 @@ const VIEW_MODES = [
     { id: 'tile', icon: 'apps-outline', iconSelected: 'apps' },
 ];
 
+const SORT_OPTIONS = [
+    { id: 'date_logged' },
+    { id: 'created_at' },
+];
+
 const DisplaySettingsScreen = ({ navigation }) => {
     const { theme } = useTheme();
     const { t } = useLanguage();
     const { userInfo, userToken, authContext } = useContext(AuthContext);
     const currentMode = userInfo?.default_view_mode || 'grid';
+    const currentSortOrder = userInfo?.default_sort_order || 'date_logged';
     const [selectedMode, setSelectedMode] = useState(currentMode);
+    const [selectedSortOrder, setSelectedSortOrder] = useState(currentSortOrder);
     const [saving, setSaving] = useState(false);
 
     const getViewModeLabel = (id) => {
@@ -32,14 +39,27 @@ const DisplaySettingsScreen = ({ navigation }) => {
         }
     };
 
+    const getSortOrderLabel = (id) => {
+        switch (id) {
+            case 'date_logged': return t('sortByDateLogged');
+            case 'created_at': return t('sortByCreatedAt');
+            default: return id;
+        }
+    };
+
+    const hasChanges = selectedMode !== currentMode || selectedSortOrder !== currentSortOrder;
+
     const handleSave = async () => {
-        if (saving || selectedMode === currentMode) {
+        if (saving || !hasChanges) {
             navigation.goBack();
             return;
         }
         setSaving(true);
         try {
-            const res = await updateDisplaySettings(userToken, selectedMode);
+            const res = await updateDisplaySettings(userToken, {
+                default_view_mode: selectedMode,
+                default_sort_order: selectedSortOrder,
+            });
             if (res?.user) {
                 authContext.updateUserInfo(res.user);
             }
@@ -61,12 +81,12 @@ const DisplaySettingsScreen = ({ navigation }) => {
                 <TouchableOpacity
                     style={styles.saveButton}
                     onPress={handleSave}
-                    disabled={saving || selectedMode === currentMode}
+                    disabled={saving || !hasChanges}
                 >
                     {saving ? (
                         <ActivityIndicator size="small" color={theme.colors.primary} />
                     ) : (
-                        <Text style={[styles.saveButtonText, { color: selectedMode !== currentMode ? theme.colors.primary : theme.colors.inactive }]}>
+                        <Text style={[styles.saveButtonText, { color: hasChanges ? theme.colors.primary : theme.colors.inactive }]}>
                             {t('save')}
                         </Text>
                     )}
@@ -104,6 +124,45 @@ const DisplaySettingsScreen = ({ navigation }) => {
                                 </View>
                                 <Text style={[styles.optionTitle, { color: theme.colors.text }]}>
                                     {getViewModeLabel(option.id)}
+                                </Text>
+                                {isSelected && (
+                                    <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />
+                                )}
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+
+                <View style={[styles.descriptionSection, { paddingTop: 8 }]}>
+                    <Text style={[styles.descriptionText, { color: theme.colors.secondaryText }]}>
+                        {t('selectDefaultSortOrder')}
+                    </Text>
+                </View>
+
+                <View style={[styles.optionsContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+                    {SORT_OPTIONS.map((option, index) => {
+                        const isSelected = selectedSortOrder === option.id;
+                        const isLast = index === SORT_OPTIONS.length - 1;
+
+                        return (
+                            <TouchableOpacity
+                                key={option.id}
+                                style={[
+                                    styles.optionItem,
+                                    !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border },
+                                ]}
+                                onPress={() => setSelectedSortOrder(option.id)}
+                                activeOpacity={0.7}
+                            >
+                                <View style={styles.optionIconContainer}>
+                                    <Ionicons
+                                        name="calendar-outline"
+                                        size={24}
+                                        color={isSelected ? theme.colors.primary : theme.colors.icon}
+                                    />
+                                </View>
+                                <Text style={[styles.optionTitle, { color: theme.colors.text }]}>
+                                    {getSortOrderLabel(option.id)}
                                 </Text>
                                 {isSelected && (
                                     <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />

@@ -49,7 +49,7 @@ class UserModel {
      * @param {number} id 
      */
     static async findById(id) {
-        const sql = 'SELECT id, user_name, email, bio, default_view_mode, visibility, search_key FROM users WHERE id = ?';
+        const sql = 'SELECT id, user_name, email, bio, default_view_mode, default_sort_order, visibility, search_key FROM users WHERE id = ?';
         const [rows] = await db.query(sql, [id]);
         return rows[0]; // ユーザーが見つかればオブジェクト、なければundefinedを返す
     }
@@ -109,6 +109,19 @@ class UserModel {
         const mode = valid ? defaultViewMode : 'grid';
         const sql = 'UPDATE users SET default_view_mode = ? WHERE id = ?';
         const [result] = await db.query(sql, [mode, id]);
+        return result.affectedRows;
+    }
+
+    /**
+     * 一覧のデフォルト並び順を更新
+     * @param {number} id - ユーザーID
+     * @param {string} defaultSortOrder - 'date_logged' | 'created_at'
+     */
+    static async updateDefaultSortOrder(id, defaultSortOrder) {
+        const valid = ['date_logged', 'created_at'].includes(defaultSortOrder);
+        const order = valid ? defaultSortOrder : 'date_logged';
+        const sql = 'UPDATE users SET default_sort_order = ? WHERE id = ?';
+        const [result] = await db.query(sql, [order, id]);
         return result.affectedRows;
     }
 
