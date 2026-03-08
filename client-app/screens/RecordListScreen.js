@@ -924,7 +924,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         height: 2,
-        backgroundColor: '#4CAF50',
+        backgroundColor: '#4E5F5C',
         borderRadius: 1,
     },
     categoryTabText: {
