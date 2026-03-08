@@ -801,6 +801,7 @@ const styles = StyleSheet.create({
     appName: {
         fontSize: 24,
         fontWeight: 'bold',
+        fontFamily: 'Nunito_900Black', // 丸み・最太のフォント
     },
     iconButtons: {
         flexDirection: 'row',
