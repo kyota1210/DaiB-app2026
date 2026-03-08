@@ -3,22 +3,22 @@ import React, { createContext, useContext } from 'react';
 export const ThemeContext = createContext();
 
 const colors = {
-    background: '#000',
-    secondaryBackground: '#1c1c1e',
-    text: '#fff',
-    secondaryText: '#a0a0a0',
-    border: '#38383a',
+    background: '#E8E6E1',
+    secondaryBackground: '#D4D2CD',
+    text: '#1c1c1e',
+    secondaryText: '#6b6b6e',
+    border: '#b8b6b1',
     primary: '#0a84ff',
-    card: '#1c1c1e',
-    icon: '#fff',
-    inactive: '#666',
+    card: '#F5F3EE',
+    icon: '#1c1c1e',
+    inactive: '#8e8e93',
 };
 
 const theme = {
-    mode: 'dark',
-    activeTheme: 'dark',
+    mode: 'light',
+    activeTheme: 'light',
     colors,
-    isDark: true,
+    isDark: false,
 };
 
 const contextValue = { theme, isLoading: false };

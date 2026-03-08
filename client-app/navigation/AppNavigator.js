@@ -38,12 +38,12 @@ const CustomTabBar = React.memo(({ state, descriptors, navigation }) => {
   const { theme } = useTheme();
 
   return (
-    <BlurView intensity={80} tint="dark" style={styles.blurContainer}>
+    <BlurView intensity={80} tint="light" style={styles.blurContainer}>
       <View style={styles.tabBarContainer}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const isFocused = state.index === index;
-          const color = isFocused ? '#fff' : theme.colors.inactive;
+          const color = isFocused ? theme.colors.text : theme.colors.inactive;
 
           const onPress = () => {
             const event = navigation.emit({
@@ -82,7 +82,7 @@ const CustomTabBar = React.memo(({ state, descriptors, navigation }) => {
               style={styles.tabBarButton}
             >
               {isFocused ? (
-                <BlurView intensity={20} tint="dark" style={styles.iconGlassContainer}>
+                <BlurView intensity={20} tint="light" style={styles.iconGlassContainer}>
                   {IconComponent && <IconComponent name={iconName} size={30} color={color} />}
                 </BlurView>
               ) : (
@@ -119,8 +119,8 @@ const AuthStack = () => {
         component={LoginScreen}
         options={{
           title: t('appName'),
-          headerStyle: { backgroundColor: '#000' },
-          headerTintColor: '#fff',
+          headerStyle: { backgroundColor: '#E8E6E1' },
+          headerTintColor: '#1c1c1e',
         }}
       />
       <Stack.Screen
@@ -128,8 +128,8 @@ const AuthStack = () => {
         component={SignupScreen}
         options={{
           title: t('appName'),
-          headerStyle: { backgroundColor: '#000' },
-          headerTintColor: '#fff',
+          headerStyle: { backgroundColor: '#E8E6E1' },
+          headerTintColor: '#1c1c1e',
           headerBackVisible: false,
           headerLeft: () => null,
         }}
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderColor: 'rgba(0, 0, 0, 0.08)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
@@ -232,8 +232,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(0, 0, 0, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
   },
 });
 
