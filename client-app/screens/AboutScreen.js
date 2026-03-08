@@ -19,7 +19,7 @@ const AboutScreen = ({ navigation }) => {
             >
                 <View style={[styles.content, { backgroundColor: theme.colors.background }]}>
                     <Text style={[styles.appName, { color: theme.colors.text }]}>
-                        Otium
+                        DaiB
                     </Text>
                     <Text style={[styles.version, { color: theme.colors.secondaryText }]}>
                         バージョン 1.0.0
@@ -29,7 +29,7 @@ const AboutScreen = ({ navigation }) => {
                         アプリについて
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        Otium（オーティアム）は、日々の記録を写真と共に作成・管理できるモバイルアプリケーションです。JWT認証により、各ユーザーは自分の記録のみにアクセスでき、セキュアな環境で記録を管理できます。
+                        DaiB（デイビー）は、日々の記録を写真と共に作成・管理できるモバイルアプリケーションです。JWT認証により、各ユーザーは自分の記録のみにアクセスでき、セキュアな環境で記録を管理できます。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
@@ -58,7 +58,7 @@ const AboutScreen = ({ navigation }) => {
                     </Text>
 
                     <Text style={[styles.footer, { color: theme.colors.inactive }]}>
-                        © 2026 Otium. All rights reserved.
+                        © 2026 DaiB. All rights reserved.
                     </Text>
                 </View>
             </ScrollView>

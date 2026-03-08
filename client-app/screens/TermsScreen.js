@@ -26,7 +26,7 @@ const TermsScreen = ({ navigation }) => {
                         第1条（適用）
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        本利用規約（以下「本規約」といいます。）は、Otium（以下「当アプリ」といいます。）の利用条件を定めるものです。登録ユーザーの皆さま（以下「ユーザー」といいます。）には、本規約に従って、当アプリをご利用いただきます。
+                        本利用規約（以下「本規約」といいます。）は、DaiB（以下「当アプリ」といいます。）の利用条件を定めるものです。登録ユーザーの皆さま（以下「ユーザー」といいます。）には、本規約に従って、当アプリをご利用いただきます。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>

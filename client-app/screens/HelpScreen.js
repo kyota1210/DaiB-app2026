@@ -22,7 +22,7 @@ const HelpScreen = ({ navigation }) => {
                         基本的な使い方
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        Otiumは、日々の記録を写真と共に管理できるアプリです。
+                        DaiBは、日々の記録を写真と共に管理できるアプリです。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>

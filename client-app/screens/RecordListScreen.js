@@ -463,7 +463,7 @@ export default function RecordListScreen({ navigation }) {
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
             {/* トップナビゲーションバー */}
             <View style={[styles.topNavBar, { backgroundColor: theme.colors.background }]}>
-                <Text style={[styles.appName, { color: theme.colors.text }]}>Otium</Text>
+                <Text style={[styles.appName, { color: theme.colors.text }]}>DaiB</Text>
                 <View style={styles.iconButtons}>
                     <TouchableOpacity
                         style={styles.viewModeButton}

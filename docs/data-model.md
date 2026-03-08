@@ -2,7 +2,7 @@
 
 ## エンティティ一覧
 
-Otiumアプリケーションは以下のエンティティで構成されています：
+DaiBアプリケーションは以下のエンティティで構成されています：
 
 1. **users** - ユーザー情報
 2. **records** - 記録
@@ -305,4 +305,4 @@ Otiumアプリケーションは以下のエンティティで構成されてい
 - `add_default_sort_order_to_users.js` - users に default_sort_order 追加
 - `add_show_in_timeline_to_records.js` - records に show_in_timeline 追加
 
-データベース設計ファイル（A5:SQL Mk-2形式）は `Doc/DDL/otium.a5er` にあります。
+データベース設計ファイル（A5:SQL Mk-2形式）は `Doc/DDL/daib.a5er` にあります。

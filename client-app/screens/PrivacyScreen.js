@@ -23,7 +23,7 @@ const PrivacyScreen = ({ navigation }) => {
                     </Text>
 
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        Otium（以下「当アプリ」といいます。）は、ユーザーの個人情報の保護を重要視しています。本プライバシーポリシーは、当アプリがどのように個人情報を収集、使用、保護するかについて説明します。
+                        DaiB（以下「当アプリ」といいます。）は、ユーザーの個人情報の保護を重要視しています。本プライバシーポリシーは、当アプリがどのように個人情報を収集、使用、保護するかについて説明します。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>

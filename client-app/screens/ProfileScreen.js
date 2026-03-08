@@ -58,7 +58,7 @@ const ProfileScreen = ({ navigation }) => {
                 </View>
 
                 <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('otiumSettings')}</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('daibSettings')}</Text>
                     <View style={[styles.menuSection, { backgroundColor: theme.colors.background }]}>
                         <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
