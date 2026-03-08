@@ -132,6 +132,7 @@ export default {
     visibilityPublicHint: 'Searchable and followable by anyone',
     visibilityPrivate: 'Private',
     visibilityPrivateHint: 'Only those who know the search key',
+    visibilityPublicSearchHint: 'Your profile can be found by other users when they search by your user name.',
     searchKeyword: 'Search key',
     searchKeywordPlaceholder: 'Enter keyword (max 64 characters)',
     searchKeywordHint: 'Only people who search this keyword can find you.',

@@ -132,6 +132,7 @@ export default {
     visibilityPublicHint: '誰でも検索・フォロー可',
     visibilityPrivate: '非公開',
     visibilityPrivateHint: '検索キーを知る人のみ',
+    visibilityPublicSearchHint: '他ユーザーからユーザー名で検索可能になります。',
     searchKeyword: '検索キー',
     searchKeywordPlaceholder: 'キーワードを入力（64文字まで）',
     searchKeywordHint: 'このキーワードで検索した人だけがあなたを見つけられます。',

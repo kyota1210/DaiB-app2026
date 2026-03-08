@@ -1,7 +1,6 @@
 import React, { useContext, useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import ScreenHeader from '../components/ScreenHeader';
 import ResultModal from '../components/ResultModal';
 import { AuthContext } from '../context/AuthContext';
@@ -129,12 +128,7 @@ const ProfileEditScreen = ({ navigation }) => {
                     showsVerticalScrollIndicator={true}
                 >
                     {/* アバター */}
-                <LinearGradient
-                    colors={['#667eea', '#48bb78', '#38b2ac']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.avatarSection}
-                >
+                <View style={[styles.avatarSection, { backgroundColor: theme.colors.background }]}>
                     <TouchableOpacity 
                         style={styles.avatarContainer}
                         onPress={handlePickImage}
@@ -142,16 +136,16 @@ const ProfileEditScreen = ({ navigation }) => {
                         {avatarUri ? (
                             <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
                         ) : (
-                            <View style={styles.avatarPlaceholder}>
-                                <Ionicons name="person" size={50} color="#fff" />
+                            <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.secondaryBackground, borderColor: theme.colors.border }]}>
+                                <Ionicons name="person" size={32} color={theme.colors.inactive} />
                             </View>
                         )}
-                        <View style={styles.cameraIconContainer}>
-                            <Ionicons name="camera" size={20} color="#fff" />
+                        <View style={[styles.cameraIconContainer, { backgroundColor: theme.colors.primary, borderColor: theme.colors.background }]}>
+                            <Ionicons name="camera" size={16} color="#fff" />
                         </View>
                     </TouchableOpacity>
-                    <Text style={styles.avatarHint}>{t('tapToSelectPhoto')}</Text>
-                </LinearGradient>
+                    <Text style={[styles.avatarHint, { color: theme.colors.secondaryText }]}>{t('tapToSelectPhoto')}</Text>
+                </View>
 
                 {/* フォーム */}
                 <View style={[styles.formSection, { backgroundColor: theme.colors.background }]}>
@@ -198,7 +192,7 @@ const ProfileEditScreen = ({ navigation }) => {
                             placeholder={t('bioPlaceholder')}
                             placeholderTextColor={theme.colors.inactive}
                             multiline
-                            numberOfLines={3}
+                            numberOfLines={5}
                             maxLength={100}
                         />
                     </View>
@@ -229,6 +223,11 @@ const ProfileEditScreen = ({ navigation }) => {
                             </TouchableOpacity>
                         </View>
                     </View>
+                    {visibility === 'public' && (
+                        <View style={styles.inputGroup}>
+                            <Text style={[styles.hintText, { color: theme.colors.secondaryText }]}>{t('visibilityPublicSearchHint')}</Text>
+                        </View>
+                    )}
                     {visibility === 'private' && (
                         <View style={styles.inputGroup}>
                             <Text style={[styles.hintText, { color: theme.colors.secondaryText }]}>{t('searchKeyQrHint')}</Text>
@@ -273,60 +272,56 @@ const styles = StyleSheet.create({
     },
     avatarSection: {
         alignItems: 'center',
-        paddingVertical: 32,
+        paddingTop: 16,
+        paddingBottom: 6,
         paddingHorizontal: 20,
-        position: 'relative',
     },
     avatarContainer: {
-        width: 150,
-        height: 150,
-        borderRadius: 75,
+        width: 96,
+        height: 96,
+        borderRadius: 48,
         position: 'relative',
-        marginBottom: 16,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 5,
+        marginBottom: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 3,
     },
     avatarImage: {
-        width: 150,
-        height: 150,
-        borderRadius: 75,
+        width: 96,
+        height: 96,
+        borderRadius: 48,
         backgroundColor: '#fff',
     },
     avatarPlaceholder: {
-        width: 150,
-        height: 150,
-        borderRadius: 75,
-        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+        width: 96,
+        height: 96,
+        borderRadius: 48,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 4,
-        borderColor: '#fff',
+        borderWidth: 2,
     },
     cameraIconContainer: {
         position: 'absolute',
         right: 0,
         bottom: 0,
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#007AFF',
+        width: 28,
+        height: 28,
+        borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 3,
-        borderColor: '#fff',
+        borderWidth: 2,
     },
     avatarHint: {
-        fontSize: 14,
-        color: '#fff',
-        marginTop: 4,
+        fontSize: 13,
+        marginTop: 2,
     },
     formSection: {
         marginTop: 0,
         paddingHorizontal: 20,
-        paddingVertical: 16,
+        paddingTop: 6,
+        paddingBottom: 16,
     },
     inputGroup: {
         marginBottom: 24,
@@ -349,7 +344,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         fontSize: 16,
         borderWidth: 1,
-        minHeight: 80,
+        minHeight: 140,
         textAlignVertical: 'top',
     },
     visibilityRow: {
