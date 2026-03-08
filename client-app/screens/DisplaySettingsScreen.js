@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { AuthContext } from '../context/AuthContext';
 import { updateDisplaySettings } from '../api/user';
+import ScreenHeader from '../components/ScreenHeader';
 
 const VIEW_MODES = [
     { id: 'grid', icon: 'grid-outline', iconSelected: 'grid' },
@@ -71,27 +72,29 @@ const DisplaySettingsScreen = ({ navigation }) => {
         }
     };
 
+    const saveAction = (
+        <TouchableOpacity
+            style={styles.saveButton}
+            onPress={handleSave}
+            disabled={saving || !hasChanges}
+        >
+            {saving ? (
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+            ) : (
+                <Text style={[styles.saveButtonText, { color: hasChanges ? theme.colors.primary : theme.colors.inactive }]}>
+                    {t('save')}
+                </Text>
+            )}
+        </TouchableOpacity>
+    );
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
-            <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{t('displaySettings')}</Text>
-                <TouchableOpacity
-                    style={styles.saveButton}
-                    onPress={handleSave}
-                    disabled={saving || !hasChanges}
-                >
-                    {saving ? (
-                        <ActivityIndicator size="small" color={theme.colors.primary} />
-                    ) : (
-                        <Text style={[styles.saveButtonText, { color: hasChanges ? theme.colors.primary : theme.colors.inactive }]}>
-                            {t('save')}
-                        </Text>
-                    )}
-                </TouchableOpacity>
-            </View>
+            <ScreenHeader
+                title={t('displaySettings')}
+                onBack={() => navigation.goBack()}
+                rightAction={saveAction}
+            />
 
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
                 <View style={styles.descriptionSection}>
@@ -178,15 +181,6 @@ const DisplaySettingsScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 8,
-        paddingVertical: 12,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-    },
-    backButton: { padding: 8 },
-    headerTitle: { flex: 1, fontSize: 18, fontWeight: '600', textAlign: 'center' },
     saveButton: { minWidth: 56, alignItems: 'flex-end', padding: 8 },
     saveButtonText: { fontSize: 16, fontWeight: '600' },
     scrollView: { flex: 1 },

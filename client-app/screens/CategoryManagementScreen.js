@@ -1,7 +1,6 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
@@ -9,6 +8,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext';
 import { createCategory, updateCategory, deleteCategory } from '../api/categories';
+import ScreenHeader from '../components/ScreenHeader';
+import ResultModal from '../components/ResultModal';
 
 const CategoryManagementScreen = ({ navigation }) => {
     const { userToken } = useContext(AuthContext);
@@ -155,26 +156,13 @@ const CategoryManagementScreen = ({ navigation }) => {
     const allCategories = [...defaultCategories, ...customCategories];
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: '#000000' }]} edges={['top']}>
-            {/* トップナビゲーションバー */}
-            <View style={[styles.topNavBar, {
-                backgroundColor: '#000000',
-                borderBottomColor: theme.colors.border
-            }]}>
-                <TouchableOpacity 
-                    style={styles.backButton}
-                    onPress={() => navigation.goBack()}
-                >
-                    <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.colors.text }]}>カテゴリー管理</Text>
-                <View style={styles.placeholder} />
-            </View>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ScreenHeader title="カテゴリー管理" onBack={() => navigation.goBack()} />
 
-            <ScrollView style={[styles.scrollView, { backgroundColor: '#000000' }]}>
+            <ScrollView style={[styles.scrollView, { backgroundColor: theme.colors.background }]}>
                 {/* カテゴリーリスト */}
                 <View style={styles.section}>
-                    <View style={[styles.categoryList, { backgroundColor: '#000000' }]}>
+                    <View style={[styles.categoryList, { backgroundColor: theme.colors.background }]}>
                         {allCategories.map((category) => (
                             <View key={category.id} style={[styles.categoryCard, {
                                 borderBottomColor: theme.colors.border
@@ -240,7 +228,7 @@ const CategoryManagementScreen = ({ navigation }) => {
                     keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
                 >
                     <View style={styles.modalOverlayContent}>
-                        <View style={[styles.modalContent, { backgroundColor: '#000000' }]}>
+                        <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
                             <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
                                 <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
                                     {editingCategory ? 'カテゴリーを編集' : '新しいカテゴリー'}
@@ -305,125 +293,32 @@ const CategoryManagementScreen = ({ navigation }) => {
                 </KeyboardAvoidingView>
             </Modal>
 
-            {/* 成功モーダル */}
-            <Modal
+            <ResultModal
+                type="success"
                 visible={showSuccessModal}
-                transparent={true}
-                animationType="fade"
-                onRequestClose={() => setShowSuccessModal(false)}
-            >
-                <BlurView
-                    intensity={20}
-                    tint="dark"
-                    style={styles.successModalOverlay}
-                >
-                    <TouchableOpacity
-                        style={styles.modalOverlayTouchable}
-                        activeOpacity={1}
-                        onPress={() => setShowSuccessModal(false)}
-                    >
-                        <View style={[styles.successModalContent, { backgroundColor: theme.colors.card }]}>
-                            <View style={[styles.successIconContainer, { backgroundColor: theme.colors.primary + '20' }]}>
-                                <Ionicons name="checkmark-circle" size={48} color={theme.colors.primary} />
-                            </View>
-                            <Text style={[styles.successTitle, { color: theme.colors.text }]}>
-                                完了
-                            </Text>
-                            <Text style={[styles.successMessage, { color: theme.colors.secondaryText }]}>
-                                {successAction === 'delete' ? 'カテゴリーを削除しました' : successAction === 'update' ? 'カテゴリーを更新しました' : 'カテゴリーを追加しました'}
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
-                </BlurView>
-            </Modal>
+                title="完了"
+                message={successAction === 'delete' ? 'カテゴリーを削除しました' : successAction === 'update' ? 'カテゴリーを更新しました' : 'カテゴリーを追加しました'}
+                onClose={() => setShowSuccessModal(false)}
+            />
 
-            {/* エラーモーダル */}
-            <Modal
+            <ResultModal
+                type="error"
                 visible={showErrorModal}
-                transparent={true}
-                animationType="fade"
-                onRequestClose={() => setShowErrorModal(false)}
-            >
-                <BlurView
-                    intensity={20}
-                    tint="dark"
-                    style={styles.successModalOverlay}
-                >
-                    <TouchableOpacity
-                        style={styles.modalOverlayTouchable}
-                        activeOpacity={1}
-                        onPress={() => setShowErrorModal(false)}
-                    >
-                        <View style={[styles.errorModalContent, { backgroundColor: theme.colors.card }]}>
-                            <View style={[styles.errorIconContainer, { backgroundColor: '#FF3B30' + '20' }]}>
-                                <Ionicons name="close-circle" size={48} color="#FF3B30" />
-                            </View>
-                            <Text style={[styles.errorTitle, { color: theme.colors.text }]}>
-                                エラー
-                            </Text>
-                            <Text style={[styles.errorMessage, { color: theme.colors.secondaryText }]}>
-                                {errorMessage}
-                            </Text>
-                            <TouchableOpacity
-                                style={[styles.errorButton, { backgroundColor: theme.colors.primary }]}
-                                onPress={() => setShowErrorModal(false)}
-                            >
-                                <Text style={styles.errorButtonText}>OK</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </TouchableOpacity>
-                </BlurView>
-            </Modal>
+                title="エラー"
+                message={errorMessage}
+                onClose={() => setShowErrorModal(false)}
+            />
 
-            {/* 削除確認モーダル */}
-            <Modal
+            <ResultModal
+                type="confirm"
                 visible={showDeleteConfirmModal}
-                transparent={true}
-                animationType="fade"
-                onRequestClose={() => setShowDeleteConfirmModal(false)}
-            >
-                <BlurView
-                    intensity={20}
-                    tint="dark"
-                    style={styles.successModalOverlay}
-                >
-                    <TouchableOpacity
-                        style={styles.modalOverlayTouchable}
-                        activeOpacity={1}
-                        onPress={() => setShowDeleteConfirmModal(false)}
-                    >
-                        <View style={[styles.confirmModalContent, { backgroundColor: theme.colors.card }]}>
-                            <View style={[styles.confirmIconContainer, { backgroundColor: '#FF3B30' + '20' }]}>
-                                <Ionicons name="trash-outline" size={48} color="#FF3B30" />
-                            </View>
-                            <Text style={[styles.confirmTitle, { color: theme.colors.text }]}>
-                                カテゴリーを削除
-                            </Text>
-                            <Text style={[styles.confirmMessage, { color: theme.colors.secondaryText }]}>
-                                「{categoryToDelete?.name}」を削除しますか？
-                            </Text>
-                            <View style={styles.confirmButtonContainer}>
-                                <TouchableOpacity
-                                    style={[styles.confirmCancelButton, { borderColor: theme.colors.border }]}
-                                    onPress={() => setShowDeleteConfirmModal(false)}
-                                >
-                                    <Text style={[styles.confirmCancelButtonText, { color: theme.colors.text }]}>
-                                        キャンセル
-                                    </Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={styles.confirmDeleteButton}
-                                    onPress={confirmDeleteCategory}
-                                >
-                                    <Text style={styles.confirmDeleteButtonText}>
-                                        削除
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </TouchableOpacity>
-                </BlurView>
-            </Modal>
+                title="カテゴリーを削除"
+                message={`「${categoryToDelete?.name}」を削除しますか？`}
+                onClose={() => setShowDeleteConfirmModal(false)}
+                onConfirm={confirmDeleteCategory}
+                cancelLabel="キャンセル"
+                confirmLabel="削除"
+            />
         </SafeAreaView>
     );
 };
@@ -431,24 +326,6 @@ const CategoryManagementScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    topNavBar: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-    },
-    backButton: {
-        padding: 4,
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    placeholder: {
-        width: 32,
     },
     scrollView: {
         flex: 1,
@@ -612,161 +489,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#fff',
         letterSpacing: 0.2,
-    },
-    successModalOverlay: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalOverlayTouchable: {
-        flex: 1,
-        width: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    successModalContent: {
-        borderRadius: 20,
-        padding: 32,
-        alignItems: 'center',
-        minWidth: 280,
-        maxWidth: '80%',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 8,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-        elevation: 10,
-    },
-    successIconContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    successTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    successMessage: {
-        fontSize: 14,
-        textAlign: 'center',
-        lineHeight: 20,
-    },
-    errorModalContent: {
-        borderRadius: 20,
-        padding: 32,
-        alignItems: 'center',
-        minWidth: 280,
-        maxWidth: '80%',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 8,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-        elevation: 10,
-    },
-    errorIconContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    errorTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    errorMessage: {
-        fontSize: 14,
-        textAlign: 'center',
-        lineHeight: 20,
-        marginBottom: 24,
-    },
-    errorButton: {
-        paddingHorizontal: 32,
-        paddingVertical: 12,
-        borderRadius: 20,
-        minWidth: 120,
-    },
-    errorButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
-        textAlign: 'center',
-    },
-    confirmModalContent: {
-        borderRadius: 20,
-        padding: 32,
-        alignItems: 'center',
-        minWidth: 280,
-        maxWidth: '80%',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 8,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-        elevation: 10,
-    },
-    confirmIconContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    confirmTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    confirmMessage: {
-        fontSize: 14,
-        textAlign: 'center',
-        lineHeight: 20,
-        marginBottom: 24,
-    },
-    confirmButtonContainer: {
-        flexDirection: 'row',
-        gap: 12,
-        width: '100%',
-    },
-    confirmCancelButton: {
-        flex: 1,
-        paddingVertical: 12,
-        borderRadius: 20,
-        borderWidth: 1,
-        alignItems: 'center',
-    },
-    confirmCancelButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    confirmDeleteButton: {
-        flex: 1,
-        paddingVertical: 12,
-        borderRadius: 20,
-        backgroundColor: '#FF3B30',
-        alignItems: 'center',
-    },
-    confirmDeleteButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
     },
 });
 

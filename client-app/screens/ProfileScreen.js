@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ScreenHeader from '../components/ScreenHeader';
 
 const ProfileScreen = ({ navigation }) => {
     const { userInfo, authContext } = useContext(AuthContext);
@@ -16,10 +17,7 @@ const ProfileScreen = ({ navigation }) => {
             t('logout'),
             t('logoutConfirm'),
             [
-                {
-                    text: t('cancel'),
-                    style: 'cancel',
-                },
+                { text: t('cancel'), style: 'cancel' },
                 {
                     text: t('logout'),
                     style: 'destructive',
@@ -33,28 +31,14 @@ const ProfileScreen = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: '#000000' }]} edges={['top']}>
-            {/* トップナビゲーションバー */}
-            <View style={[styles.topNavBar, { 
-                backgroundColor: '#000000',
-                borderBottomColor: theme.colors.border 
-            }]}>
-                <TouchableOpacity 
-                    style={styles.backButton}
-                    onPress={() => navigation.goBack()}
-                >
-                    <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{t('settings')}</Text>
-                <View style={styles.placeholder} />
-            </View>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ScreenHeader title={t('settings')} onBack={() => navigation.goBack()} />
 
-            <ScrollView style={[styles.scrollView, { backgroundColor: '#000000' }]}>
-                {/* アカウント設定セクション */}
+            <ScrollView style={[styles.scrollView, { backgroundColor: theme.colors.background }]}>
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('accountSettings')}</Text>
-                    <View style={[styles.menuSection, { backgroundColor: '#000000' }]}>
-                        <TouchableOpacity 
+                    <View style={[styles.menuSection, { backgroundColor: theme.colors.background }]}>
+                        <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
                             onPress={() => navigation.navigate('LoginInfo')}
                         >
@@ -62,7 +46,7 @@ const ProfileScreen = ({ navigation }) => {
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('loginInfo')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
                             onPress={() => navigation.navigate('PremiumPlan')}
                         >
@@ -73,11 +57,10 @@ const ProfileScreen = ({ navigation }) => {
                     </View>
                 </View>
 
-                {/* Otium設定セクション */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('otiumSettings')}</Text>
-                    <View style={[styles.menuSection, { backgroundColor: '#000000' }]}>
-                        <TouchableOpacity 
+                    <View style={[styles.menuSection, { backgroundColor: theme.colors.background }]}>
+                        <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
                             onPress={() => navigation.navigate('CategoryManagement')}
                         >
@@ -96,16 +79,15 @@ const ProfileScreen = ({ navigation }) => {
                     </View>
                 </View>
 
-                {/* アプリ設定セクション */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('appSettings')}</Text>
-                    <View style={[styles.menuSection, { backgroundColor: '#000000' }]}>
+                    <View style={[styles.menuSection, { backgroundColor: theme.colors.background }]}>
                         <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}>
                             <Ionicons name="notifications-outline" size={24} color={theme.colors.icon} />
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('notificationSettings')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
                             onPress={() => navigation.navigate('LanguageSetting')}
                         >
@@ -116,11 +98,10 @@ const ProfileScreen = ({ navigation }) => {
                     </View>
                 </View>
 
-                {/* その他セクション */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('other')}</Text>
-                    <View style={[styles.menuSection, { backgroundColor: '#000000' }]}>
-                        <TouchableOpacity 
+                    <View style={[styles.menuSection, { backgroundColor: theme.colors.background }]}>
+                        <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
                             onPress={() => navigation.navigate('Help')}
                         >
@@ -128,7 +109,7 @@ const ProfileScreen = ({ navigation }) => {
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('help')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
                             onPress={() => navigation.navigate('About')}
                         >
@@ -136,7 +117,7 @@ const ProfileScreen = ({ navigation }) => {
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('about')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
                             onPress={() => navigation.navigate('Terms')}
                         >
@@ -144,7 +125,7 @@ const ProfileScreen = ({ navigation }) => {
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('terms')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
                             onPress={() => navigation.navigate('Privacy')}
                         >
@@ -152,7 +133,7 @@ const ProfileScreen = ({ navigation }) => {
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('privacy')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.menuItem}
                             onPress={() => navigation.navigate('Contact')}
                         >
@@ -163,13 +144,8 @@ const ProfileScreen = ({ navigation }) => {
                     </View>
                 </View>
 
-                {/* ログアウトボタン */}
                 <View style={styles.logoutSection}>
-                    <TouchableOpacity 
-                        style={styles.logoutButton} 
-                        onPress={handleLogout}
-                        activeOpacity={0.6}
-                    >
+                    <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.6}>
                         <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
                         <Text style={styles.logoutText}>{t('logout')}</Text>
                     </TouchableOpacity>
@@ -182,24 +158,6 @@ const ProfileScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    topNavBar: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-    },
-    backButton: {
-        padding: 4,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-    },
-    placeholder: {
-        width: 32,
     },
     scrollView: {
         flex: 1,
@@ -224,19 +182,10 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#f0f0f0',
     },
-    menuTextContainer: {
-        flex: 1,
-        marginLeft: 12,
-    },
     menuText: {
         flex: 1,
         fontSize: 16,
         marginLeft: 12,
-    },
-    menuSubText: {
-        fontSize: 14,
-        color: '#666',
-        marginTop: 2,
     },
     logoutSection: {
         marginTop: 40,

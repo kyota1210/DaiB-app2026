@@ -1,8 +1,9 @@
 import React, { useContext, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, Image, ActivityIndicator, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
+import ScreenHeader from '../components/ScreenHeader';
+import ResultModal from '../components/ResultModal';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -94,35 +95,26 @@ const ProfileEditScreen = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: '#000000' }]} edges={['top']}>
-            {/* トップナビゲーションバー */}
-            <View style={[styles.topNavBar, {
-                backgroundColor: '#000000',
-                borderBottomColor: theme.colors.border
-            }]}>
-                <TouchableOpacity 
-                    style={styles.backButton}
-                    onPress={() => navigation.goBack()}
-                >
-                    <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
-                    {t('profileSettings')}
-                </Text>
-                <TouchableOpacity 
-                    style={styles.saveButton}
-                    onPress={handleSave}
-                    disabled={isLoading}
-                >
-                    {isLoading ? (
-                        <ActivityIndicator size="small" color={theme.colors.primary} />
-                    ) : (
-                        <Text style={[styles.saveButtonText, { color: theme.colors.primary }]}>
-                            {t('save')}
-                        </Text>
-                    )}
-                </TouchableOpacity>
-            </View>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ScreenHeader
+                title={t('profileSettings')}
+                onBack={() => navigation.goBack()}
+                rightAction={
+                    <TouchableOpacity
+                        style={styles.saveButton}
+                        onPress={handleSave}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? (
+                            <ActivityIndicator size="small" color={theme.colors.primary} />
+                        ) : (
+                            <Text style={[styles.saveButtonText, { color: theme.colors.primary }]}>
+                                {t('save')}
+                            </Text>
+                        )}
+                    </TouchableOpacity>
+                }
+            />
 
             <KeyboardAvoidingView
                 style={styles.keyboardAvoidingView}
@@ -131,7 +123,7 @@ const ProfileEditScreen = ({ navigation }) => {
             >
                 <ScrollView
                     ref={scrollViewRef}
-                    style={[styles.scrollView, { backgroundColor: '#000000' }]}
+                    style={[styles.scrollView, { backgroundColor: theme.colors.background }]}
                     contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={true}
@@ -162,7 +154,7 @@ const ProfileEditScreen = ({ navigation }) => {
                 </LinearGradient>
 
                 {/* フォーム */}
-                <View style={[styles.formSection, { backgroundColor: '#000000' }]}>
+                <View style={[styles.formSection, { backgroundColor: theme.colors.background }]}>
                     <View style={styles.inputGroup}>
                         <Text style={[styles.label, { color: theme.colors.text }]}>
                             {t('userName')}
@@ -246,37 +238,15 @@ const ProfileEditScreen = ({ navigation }) => {
                 </ScrollView>
             </KeyboardAvoidingView>
 
-            {/* 成功モーダル */}
-            <Modal
+            <ResultModal
+                type="success"
                 visible={showSuccessModal}
-                transparent={true}
-                animationType="fade"
-                onRequestClose={() => setShowSuccessModal(false)}
-            >
-                <BlurView
-                    intensity={20}
-                    tint="dark"
-                    style={styles.modalOverlay}
-                >
-                    <TouchableOpacity
-                        style={styles.modalOverlayTouchable}
-                        activeOpacity={1}
-                        onPress={() => {
-                            setShowSuccessModal(false);
-                            navigation.goBack();
-                        }}
-                    >
-                        <View style={[styles.successModalContent, { backgroundColor: theme.colors.card }]}>
-                            <View style={[styles.successIconContainer, { backgroundColor: theme.colors.primary + '20' }]}>
-                                <Ionicons name="checkmark-circle" size={48} color={theme.colors.primary} />
-                            </View>
-                            <Text style={[styles.successMessage, { color: theme.colors.text }]}>
-                                {t('profileUpdated')}
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
-                </BlurView>
-            </Modal>
+                title={t('profileUpdated')}
+                onClose={() => {
+                    setShowSuccessModal(false);
+                    navigation.goBack();
+                }}
+            />
         </SafeAreaView>
     );
 };
@@ -284,21 +254,6 @@ const ProfileEditScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    topNavBar: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-    },
-    backButton: {
-        padding: 4,
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
     },
     saveButton: {
         padding: 4,
@@ -419,51 +374,6 @@ const styles = StyleSheet.create({
     hintText: {
         fontSize: 12,
         marginTop: 6,
-    },
-    modalOverlay: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalOverlayTouchable: {
-        flex: 1,
-        width: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    successModalContent: {
-        borderRadius: 20,
-        padding: 32,
-        alignItems: 'center',
-        minWidth: 280,
-        maxWidth: '80%',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 8,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-        elevation: 10,
-    },
-    successIconContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    successTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    successMessage: {
-        fontSize: 14,
-        textAlign: 'center',
-        lineHeight: 20,
     },
 });
 

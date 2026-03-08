@@ -1,38 +1,23 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import ScreenHeader from '../components/ScreenHeader';
 
 const AboutScreen = ({ navigation }) => {
     const { theme } = useTheme();
     const { t } = useLanguage();
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: '#000000' }]} edges={['top']}>
-            {/* ヘッダー */}
-            <View style={[styles.header, { 
-                backgroundColor: '#000000',
-                borderBottomColor: theme.colors.border 
-            }]}>
-                <TouchableOpacity 
-                    style={styles.backButton}
-                    onPress={() => navigation.goBack()}
-                >
-                    <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
-                    {t('about')}
-                </Text>
-                <View style={styles.placeholder} />
-            </View>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ScreenHeader title={t('about')} onBack={() => navigation.goBack()} />
 
             <ScrollView 
-                style={[styles.scrollView, { backgroundColor: '#000000' }]}
+                style={[styles.scrollView, { backgroundColor: theme.colors.background }]}
                 contentContainerStyle={styles.contentContainer}
             >
-                <View style={[styles.content, { backgroundColor: '#000000' }]}>
+                <View style={[styles.content, { backgroundColor: theme.colors.background }]}>
                     <Text style={[styles.appName, { color: theme.colors.text }]}>
                         Otium
                     </Text>
@@ -84,24 +69,6 @@ const AboutScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-    },
-    backButton: {
-        padding: 4,
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    placeholder: {
-        width: 32,
     },
     scrollView: {
         flex: 1,

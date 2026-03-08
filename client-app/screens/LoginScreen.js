@@ -51,7 +51,7 @@ export default function LoginScreen({ navigation }) {
 
     return (
         <KeyboardAvoidingView
-            style={[styles.wrapper, { backgroundColor: '#000000' }]}
+            style={[styles.wrapper, { backgroundColor: theme.colors.background }]}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
         >

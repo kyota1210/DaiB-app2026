@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import ScreenHeader from '../components/ScreenHeader';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -120,13 +121,7 @@ const FollowListScreen = ({ navigation, route }) => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
-            <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{title}</Text>
-                <View style={styles.backBtn} />
-            </View>
+            <ScreenHeader title={title} onBack={() => navigation.goBack()} />
             {loading ? (
                 <View style={styles.centered}>
                     <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -151,16 +146,6 @@ const FollowListScreen = ({ navigation, route }) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 8,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-    },
-    backBtn: { padding: 8, minWidth: 40 },
-    headerTitle: { fontSize: 18, fontWeight: 'bold' },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     emptyList: { flex: 1 },
     emptyState: { padding: 24, alignItems: 'center' },

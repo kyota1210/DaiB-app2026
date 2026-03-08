@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
+import ScreenHeader from '../components/ScreenHeader';
 import { useLanguage } from '../context/LanguageContext';
 
 const PremiumPlanScreen = ({ navigation }) => {
@@ -48,25 +49,12 @@ const PremiumPlanScreen = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: '#000000' }]} edges={['top']}>
-            {/* トップナビゲーションバー */}
-            <View style={[styles.topNavBar, {
-                backgroundColor: '#000000',
-                borderBottomColor: theme.colors.border
-            }]}>
-                <TouchableOpacity 
-                    style={styles.backButton}
-                    onPress={() => navigation.goBack()}
-                >
-                    <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{t('premiumPlan')}</Text>
-                <View style={styles.placeholder} />
-            </View>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ScreenHeader title={t('premiumPlan')} onBack={() => navigation.goBack()} />
 
-            <ScrollView style={[styles.scrollView, { backgroundColor: '#000000' }]}>
+            <ScrollView style={[styles.scrollView, { backgroundColor: theme.colors.background }]}>
                 {/* プランステータス */}
-                <View style={[styles.statusCard, { backgroundColor: '#000000' }]}>
+                <View style={[styles.statusCard, { backgroundColor: theme.colors.background }]}>
                     <View style={styles.statusIconContainer}>
                         <Ionicons 
                             name={isPremium ? "diamond" : "diamond-outline"} 
@@ -85,7 +73,7 @@ const PremiumPlanScreen = ({ navigation }) => {
                 {/* プレミアム機能 */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('premiumFeatures')}</Text>
-                    <View style={[styles.featureCard, { backgroundColor: '#000000' }]}>
+                    <View style={[styles.featureCard, { backgroundColor: theme.colors.background }]}>
                         <FeatureItem 
                             icon="cloud-upload" 
                             title={t('unlimitedStorage')} 
@@ -123,7 +111,7 @@ const PremiumPlanScreen = ({ navigation }) => {
                 {!isPremium && (
                     <View style={styles.section}>
                         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('pricingPlan')}</Text>
-                        <View style={[styles.priceCard, { backgroundColor: '#000000' }]}>
+                        <View style={[styles.priceCard, { backgroundColor: theme.colors.background }]}>
                             <View style={styles.priceRow}>
                                 <Text style={[styles.priceAmount, { color: theme.colors.primary }]}>¥980</Text>
                                 <Text style={[styles.priceUnit, { color: theme.colors.secondaryText }]}>{t('perMonth')}</Text>
@@ -146,7 +134,7 @@ const PremiumPlanScreen = ({ navigation }) => {
                     ) : (
                         <TouchableOpacity 
                             style={[styles.cancelButton, { 
-                                backgroundColor: '#000000',
+                                backgroundColor: theme.colors.background,
                                 borderColor: '#FF3B30'
                             }]}
                             onPress={handleCancel}
@@ -178,24 +166,6 @@ const FeatureItem = ({ icon, title, description, theme }) => (
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    topNavBar: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-    },
-    backButton: {
-        padding: 4,
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    placeholder: {
-        width: 32,
     },
     scrollView: {
         flex: 1,

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, Modal, Dimensions, LayoutAnimation } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import ResultModal from '../components/ResultModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRecordsApi } from '../api/records';
 import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext';
@@ -303,93 +303,24 @@ export default function RecordDetailScreen({ route, navigation }) {
                 </TouchableOpacity>
             </Modal>
 
-            {/* 削除確認モーダル */}
-            <Modal
+            <ResultModal
+                type="confirm"
                 visible={showDeleteConfirmModal}
-                transparent={true}
-                animationType="fade"
-                onRequestClose={() => setShowDeleteConfirmModal(false)}
-            >
-                <BlurView
-                    intensity={20}
-                    tint="dark"
-                    style={styles.modalOverlayBlur}
-                >
-                    <TouchableOpacity
-                        style={styles.modalOverlayTouchable}
-                        activeOpacity={1}
-                        onPress={() => setShowDeleteConfirmModal(false)}
-                    >
-                        <View style={[styles.confirmModalContent, { backgroundColor: theme.colors.card }]}>
-                            <View style={[styles.confirmIconContainer, { backgroundColor: '#FF3B30' + '20' }]}>
-                                <Ionicons name="trash-outline" size={48} color="#FF3B30" />
-                            </View>
-                            <Text style={[styles.confirmTitle, { color: theme.colors.text }]}>
-                                {t('deleteConfirm')}
-                            </Text>
-                            <Text style={[styles.confirmMessage, { color: theme.colors.secondaryText }]}>
-                                {t('deleteConfirmMessage')}
-                            </Text>
-                            <View style={styles.confirmButtonContainer}>
-                                <TouchableOpacity
-                                    style={[styles.confirmCancelButton, { borderColor: theme.colors.border }]}
-                                    onPress={() => setShowDeleteConfirmModal(false)}
-                                >
-                                    <Text style={[styles.confirmCancelButtonText, { color: theme.colors.text }]}>
-                                        {t('cancel')}
-                                    </Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={styles.confirmDeleteButton}
-                                    onPress={confirmDelete}
-                                >
-                                    <Text style={styles.confirmDeleteButtonText}>
-                                        {t('delete')}
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </TouchableOpacity>
-                </BlurView>
-            </Modal>
+                title={t('deleteConfirm')}
+                message={t('deleteConfirmMessage')}
+                onClose={() => setShowDeleteConfirmModal(false)}
+                onConfirm={confirmDelete}
+                confirmLabel={t('delete')}
+                cancelLabel={t('cancel')}
+            />
 
-            {/* エラーモーダル */}
-            <Modal
+            <ResultModal
+                type="error"
                 visible={showErrorModal}
-                transparent={true}
-                animationType="fade"
-                onRequestClose={() => setShowErrorModal(false)}
-            >
-                <BlurView
-                    intensity={20}
-                    tint="dark"
-                    style={styles.modalOverlayBlur}
-                >
-                    <TouchableOpacity
-                        style={styles.modalOverlayTouchable}
-                        activeOpacity={1}
-                        onPress={() => setShowErrorModal(false)}
-                    >
-                        <View style={[styles.errorModalContent, { backgroundColor: theme.colors.card }]}>
-                            <View style={[styles.errorIconContainer, { backgroundColor: '#FF3B30' + '20' }]}>
-                                <Ionicons name="close-circle" size={48} color="#FF3B30" />
-                            </View>
-                            <Text style={[styles.errorTitle, { color: theme.colors.text }]}>
-                                {t('deleteFailed')}
-                            </Text>
-                            <Text style={[styles.errorMessage, { color: theme.colors.secondaryText }]}>
-                                {errorMessage}
-                            </Text>
-                            <TouchableOpacity
-                                style={[styles.errorButton, { backgroundColor: theme.colors.primary }]}
-                                onPress={() => setShowErrorModal(false)}
-                            >
-                                <Text style={styles.errorButtonText}>{t('ok')}</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </TouchableOpacity>
-                </BlurView>
-            </Modal>
+                title={t('deleteFailed')}
+                message={errorMessage}
+                onClose={() => setShowErrorModal(false)}
+            />
         </SafeAreaView>
     );
 }
@@ -523,126 +454,5 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginLeft: 12,
         fontWeight: '500',
-    },
-    modalOverlayBlur: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalOverlayTouchable: {
-        flex: 1,
-        width: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    confirmModalContent: {
-        borderRadius: 20,
-        padding: 32,
-        alignItems: 'center',
-        minWidth: 280,
-        maxWidth: '80%',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 8,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-        elevation: 10,
-    },
-    confirmIconContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    confirmTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    confirmMessage: {
-        fontSize: 14,
-        textAlign: 'center',
-        lineHeight: 20,
-        marginBottom: 24,
-    },
-    confirmButtonContainer: {
-        flexDirection: 'row',
-        gap: 12,
-        width: '100%',
-    },
-    confirmCancelButton: {
-        flex: 1,
-        paddingVertical: 12,
-        borderRadius: 20,
-        borderWidth: 1,
-        alignItems: 'center',
-    },
-    confirmCancelButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    confirmDeleteButton: {
-        flex: 1,
-        paddingVertical: 12,
-        borderRadius: 20,
-        backgroundColor: '#FF3B30',
-        alignItems: 'center',
-    },
-    confirmDeleteButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    errorModalContent: {
-        borderRadius: 20,
-        padding: 32,
-        alignItems: 'center',
-        minWidth: 280,
-        maxWidth: '80%',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 8,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-        elevation: 10,
-    },
-    errorIconContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    errorTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    errorMessage: {
-        fontSize: 14,
-        textAlign: 'center',
-        lineHeight: 20,
-        marginBottom: 24,
-    },
-    errorButton: {
-        paddingHorizontal: 32,
-        paddingVertical: 12,
-        borderRadius: 20,
-        minWidth: 120,
-    },
-    errorButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
-        textAlign: 'center',
     },
 });

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useCallback, useMemo, useContext } from 'react';
+import React, { createContext, useState, useCallback, useMemo, useContext, useRef } from 'react';
 import { AuthContext } from './AuthContext';
 import { useRecordsApi } from '../api/records';
 import { fetchCategories } from '../api/categories';
@@ -7,10 +7,6 @@ export const RecordsAndCategoriesContext = createContext(null);
 
 const ALL_CATEGORY = { id: 'all', name: 'All', icon: 'apps' };
 
-/**
- * 記録・カテゴリを保持し、画面遷移時にキャッシュを先に表示するための Context
- * - キャッシュがあれば即表示し、必要に応じてバックグラウンドで再取得
- */
 export function RecordsAndCategoriesProvider({ children }) {
     const { userToken } = useContext(AuthContext);
     const { fetchRecords } = useRecordsApi();
@@ -19,6 +15,9 @@ export function RecordsAndCategoriesProvider({ children }) {
     const [records, setRecords] = useState([]);
     const [loadingCategories, setLoadingCategories] = useState(false);
     const [loadingRecords, setLoadingRecords] = useState(false);
+
+    const hasCategoriesCache = useRef(false);
+    const hasRecordsCache = useRef(false);
 
     const recordsByCategory = useMemo(() => {
         if (!Array.isArray(records)) return {};
@@ -32,30 +31,30 @@ export function RecordsAndCategoriesProvider({ children }) {
 
     const loadCategories = useCallback(async () => {
         if (!userToken) return;
-        const hasCache = categories.length > 0;
-        if (!hasCache) setLoadingCategories(true);
+        if (!hasCategoriesCache.current) setLoadingCategories(true);
         try {
             const data = await fetchCategories(userToken);
             setCategories([ALL_CATEGORY, ...(data || [])]);
+            hasCategoriesCache.current = true;
         } catch (error) {
             console.error('カテゴリー取得エラー:', error);
         } finally {
             setLoadingCategories(false);
         }
-    }, [userToken, categories.length]);
+    }, [userToken]);
 
     const loadRecords = useCallback(async () => {
-        const hasCache = records.length > 0;
-        if (!hasCache) setLoadingRecords(true);
+        if (!hasRecordsCache.current) setLoadingRecords(true);
         try {
             const data = await fetchRecords(null);
             setRecords(Array.isArray(data) ? data : []);
+            hasRecordsCache.current = true;
         } catch (error) {
             console.error('記録取得エラー:', error);
         } finally {
             setLoadingRecords(false);
         }
-    }, [fetchRecords, records.length]);
+    }, [fetchRecords]);
 
     const value = useMemo(() => ({
         categories,

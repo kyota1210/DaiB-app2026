@@ -1,10 +1,10 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ScreenHeader from '../components/ScreenHeader';
 
 const LoginInfoScreen = ({ navigation }) => {
     const { userInfo } = useContext(AuthContext);
@@ -16,11 +16,10 @@ const LoginInfoScreen = ({ navigation }) => {
     const [confirmPassword, setConfirmPassword] = useState('');
 
     const handleUpdateEmail = () => {
-        // TODO: メールアドレス更新APIを呼び出す
         Alert.alert(t('confirm'), t('changeEmailConfirm'), [
             { text: t('cancel'), style: 'cancel' },
-            { 
-                text: t('update'), 
+            {
+                text: t('update'),
                 onPress: () => {
                     Alert.alert(t('completed'), t('emailChanged'));
                 }
@@ -41,7 +40,6 @@ const LoginInfoScreen = ({ navigation }) => {
             Alert.alert(t('error'), 'パスワードが一致しません');
             return;
         }
-        // TODO: パスワード更新APIを呼び出す
         Alert.alert(t('completed'), t('passwordChanged'), [
             {
                 text: t('ok'),
@@ -55,27 +53,13 @@ const LoginInfoScreen = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: '#000000' }]} edges={['top']}>
-            {/* トップナビゲーションバー */}
-            <View style={[styles.topNavBar, {
-                backgroundColor: '#000000',
-                borderBottomColor: theme.colors.border
-            }]}>
-                <TouchableOpacity 
-                    style={styles.backButton}
-                    onPress={() => navigation.goBack()}
-                >
-                    <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
-                </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{t('loginInfo')}</Text>
-                <View style={styles.placeholder} />
-            </View>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ScreenHeader title={t('loginInfo')} onBack={() => navigation.goBack()} />
 
-            <ScrollView style={[styles.scrollView, { backgroundColor: '#000000' }]}>
-                {/* メールアドレス変更 */}
+            <ScrollView style={[styles.scrollView, { backgroundColor: theme.colors.background }]}>
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('emailSection')}</Text>
-                    <View style={[styles.card, { backgroundColor: '#000000' }]}>
+                    <View style={[styles.card, { backgroundColor: theme.colors.background }]}>
                         <View style={styles.inputGroup}>
                             <Text style={[styles.label, { color: theme.colors.text }]}>{t('currentEmail')}</Text>
                             <Text style={[styles.currentValue, { color: theme.colors.secondaryText }]}>
@@ -88,7 +72,7 @@ const LoginInfoScreen = ({ navigation }) => {
                                 style={[styles.input, {
                                     backgroundColor: theme.colors.secondaryBackground,
                                     borderColor: theme.colors.border,
-                                    color: theme.colors.text
+                                    color: theme.colors.text,
                                 }]}
                                 value={email}
                                 onChangeText={setEmail}
@@ -98,7 +82,7 @@ const LoginInfoScreen = ({ navigation }) => {
                                 autoCapitalize="none"
                             />
                         </View>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={[styles.button, { backgroundColor: theme.colors.primary }]}
                             onPress={handleUpdateEmail}
                         >
@@ -107,17 +91,16 @@ const LoginInfoScreen = ({ navigation }) => {
                     </View>
                 </View>
 
-                {/* パスワード変更 */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('passwordSection')}</Text>
-                    <View style={[styles.card, { backgroundColor: '#000000' }]}>
+                    <View style={[styles.card, { backgroundColor: theme.colors.background }]}>
                         <View style={styles.inputGroup}>
                             <Text style={[styles.label, { color: theme.colors.text }]}>{t('currentPassword')}</Text>
                             <TextInput
                                 style={[styles.input, {
                                     backgroundColor: theme.colors.secondaryBackground,
                                     borderColor: theme.colors.border,
-                                    color: theme.colors.text
+                                    color: theme.colors.text,
                                 }]}
                                 value={currentPassword}
                                 onChangeText={setCurrentPassword}
@@ -132,7 +115,7 @@ const LoginInfoScreen = ({ navigation }) => {
                                 style={[styles.input, {
                                     backgroundColor: theme.colors.secondaryBackground,
                                     borderColor: theme.colors.border,
-                                    color: theme.colors.text
+                                    color: theme.colors.text,
                                 }]}
                                 value={newPassword}
                                 onChangeText={setNewPassword}
@@ -148,7 +131,7 @@ const LoginInfoScreen = ({ navigation }) => {
                                 style={[styles.input, {
                                     backgroundColor: theme.colors.secondaryBackground,
                                     borderColor: theme.colors.border,
-                                    color: theme.colors.text
+                                    color: theme.colors.text,
                                 }]}
                                 value={confirmPassword}
                                 onChangeText={setConfirmPassword}
@@ -158,7 +141,7 @@ const LoginInfoScreen = ({ navigation }) => {
                                 maxLength={16}
                             />
                         </View>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={[styles.button, { backgroundColor: theme.colors.primary }]}
                             onPress={handleUpdatePassword}
                         >
@@ -174,24 +157,6 @@ const LoginInfoScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    topNavBar: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-    },
-    backButton: {
-        padding: 4,
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    placeholder: {
-        width: 32,
     },
     scrollView: {
         flex: 1,
