@@ -17,7 +17,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getFollowing, getFollowers } from '../api/user';
-import { follow, unfollow } from '../api/follows';
+import { follow } from '../api/follows';
 import { getImageUrl } from '../utils/imageHelper';
 
 const FollowListScreen = ({ navigation, route }) => {
@@ -56,21 +56,8 @@ const FollowListScreen = ({ navigation, route }) => {
         fetchList();
     };
 
-    const handleFollow = async (userId, isCurrentlyFollowing, userName) => {
+    const handleFollow = async (userId, userName) => {
         if (busyId !== null) return;
-        if (isCurrentlyFollowing) {
-            const name = (userName || '').trim() || t('thisUser');
-            const message = t('unfollowConfirmMessageWithName').replace('{{name}}', name);
-            Alert.alert(
-                '',
-                message,
-                [
-                    { text: t('cancel'), style: 'cancel' },
-                    { text: t('unfollow'), style: 'destructive', onPress: () => doUnfollow(userId) },
-                ]
-            );
-            return;
-        }
         setBusyId(userId);
         try {
             await follow(userToken, userId);
@@ -81,24 +68,7 @@ const FollowListScreen = ({ navigation, route }) => {
                 Alert.alert('', message);
             }
         } catch (err) {
-            console.error('follow/unfollow error', err);
-        } finally {
-            setBusyId(null);
-        }
-    };
-
-    const doUnfollow = async (userId) => {
-        if (busyId !== null) return;
-        setBusyId(userId);
-        try {
-            await unfollow(userToken, userId);
-            if (mode === 'following') {
-                setUsers((prev) => prev.filter((u) => u.id !== userId));
-            } else {
-                setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, is_following: false } : u)));
-            }
-        } catch (err) {
-            console.error('follow/unfollow error', err);
+            console.error('follow error', err);
         } finally {
             setBusyId(null);
         }
@@ -110,8 +80,9 @@ const FollowListScreen = ({ navigation, route }) => {
 
     const renderUser = ({ item }) => {
         const avatarUrl = getImageUrl(item.avatar_url);
-        const isFollowing = mode === 'following' ? true : !!item.is_following;
+        const isFollowing = !!item.is_following;
         const isBusy = busyId === item.id;
+        const showFollowButton = mode === 'followers' && !isFollowing;
 
         return (
             <View style={[styles.row, { borderBottomColor: theme.colors.border }]}>
@@ -132,25 +103,13 @@ const FollowListScreen = ({ navigation, route }) => {
                         {item.bio ? <Text style={[styles.bio, { color: theme.colors.secondaryText }]} numberOfLines={2}>{item.bio}</Text> : null}
                     </View>
                 </TouchableOpacity>
-                {mode === 'following' ? (
+                {showFollowButton && (
                     <TouchableOpacity
-                        style={[styles.followButton, { backgroundColor: theme.colors.secondaryBackground }]}
-                        onPress={() => handleFollow(item.id, true, item.user_name)}
+                        style={[styles.followButton, { backgroundColor: theme.colors.primary }]}
+                        onPress={() => handleFollow(item.id, item.user_name)}
                         disabled={isBusy}
                     >
-                        {isBusy ? <ActivityIndicator size="small" color={theme.colors.text} /> : <Text style={[styles.followButtonText, { color: theme.colors.text }]}>{t('unfollow')}</Text>}
-                    </TouchableOpacity>
-                ) : (
-                    <TouchableOpacity
-                        style={[styles.followButton, isFollowing ? { backgroundColor: theme.colors.secondaryBackground } : { backgroundColor: theme.colors.primary }]}
-                        onPress={() => handleFollow(item.id, isFollowing, item.user_name)}
-                        disabled={isBusy}
-                    >
-                        {isBusy ? (
-                            <ActivityIndicator size="small" color={isFollowing ? theme.colors.text : '#fff'} />
-                        ) : (
-                            <Text style={[styles.followButtonText, { color: isFollowing ? theme.colors.text : '#fff' }]}>{isFollowing ? t('unfollow') : t('follow')}</Text>
-                        )}
+                        {isBusy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={[styles.followButtonText, { color: '#fff' }]}>{t('follow')}</Text>}
                     </TouchableOpacity>
                 )}
             </View>
