@@ -89,10 +89,13 @@ React Native（Expo）を採用します。
 ```
 client-app/
 ├── App.js                 # エントリーポイント
-├── screens/              # 画面コンポーネント
-├── navigation/           # ナビゲーション設定
-├── context/             # React Context
-├── api/                 # API通信
+├── api/                   # API通信（共通クライアント・各モジュール）
+├── components/            # 共通UIコンポーネント
+├── context/               # React Context（認証・テーマ・言語・記録&カテゴリー）
+├── locales/               # 多言語翻訳データ（ja.js / en.js）
+├── navigation/            # ナビゲーション設定
+├── screens/               # 画面コンポーネント
+├── utils/                 # ユーティリティ関数
 └── package.json
 ```
 
