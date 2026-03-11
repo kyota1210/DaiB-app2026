@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions, ScrollView as RNScrollView, TextInput, Platform, Modal, KeyboardAvoidingView, ActivityIndicator, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions, ScrollView as RNScrollView, TextInput, Platform, Modal, KeyboardAvoidingView, ActivityIndicator, Keyboard, TouchableWithoutFeedback, Switch } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -436,38 +436,16 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                     {/* スレッドに表示する（新規作成時のみ） */}
                                     {!isEditMode && (
                                         <View style={styles.inputGroup}>
-                                            <Text style={[styles.label, { color: theme.colors.secondaryText }]}>
-                                                {t('showInTimeline')}
-                                            </Text>
                                             <View style={styles.showInTimelineRow}>
-                                                <TouchableOpacity
-                                                    style={[
-                                                        styles.showInTimelineOption,
-                                                        {
-                                                            backgroundColor: showInTimeline ? theme.colors.primary : theme.colors.secondaryBackground,
-                                                            borderColor: theme.colors.border,
-                                                        }
-                                                    ]}
-                                                    onPress={() => setShowInTimeline(true)}
-                                                >
-                                                    <Text style={[styles.showInTimelineOptionText, { color: showInTimeline ? '#fff' : theme.colors.text }]}>
-                                                        {t('showInTimelineYes')}
-                                                    </Text>
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
-                                                    style={[
-                                                        styles.showInTimelineOption,
-                                                        {
-                                                            backgroundColor: !showInTimeline ? theme.colors.primary : theme.colors.secondaryBackground,
-                                                            borderColor: theme.colors.border,
-                                                        }
-                                                    ]}
-                                                    onPress={() => setShowInTimeline(false)}
-                                                >
-                                                    <Text style={[styles.showInTimelineOptionText, { color: !showInTimeline ? '#fff' : theme.colors.text }]}>
-                                                        {t('showInTimelineNo')}
-                                                    </Text>
-                                                </TouchableOpacity>
+                                                <Text style={[styles.label, { color: theme.colors.secondaryText, marginBottom: 0 }]}>
+                                                    {t('showInTimeline')}
+                                                </Text>
+                                                <Switch
+                                                    value={showInTimeline}
+                                                    onValueChange={setShowInTimeline}
+                                                    trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+                                                    thumbColor="#fff"
+                                                />
                                             </View>
                                         </View>
                                     )}
@@ -689,18 +667,8 @@ const styles = StyleSheet.create({
     },
     showInTimelineRow: {
         flexDirection: 'row',
-        gap: 12,
-        marginTop: 6,
-    },
-    showInTimelineOption: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 20,
-        borderWidth: 1,
-    },
-    showInTimelineOptionText: {
-        fontSize: 14,
-        fontWeight: '500',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
     captionInput: {
         fontSize: 16,

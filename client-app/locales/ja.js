@@ -180,7 +180,7 @@ export default {
     editCategory: 'カテゴリーを編集',
     addNewCategory: '新しいカテゴリーを追加',
     categoryName: 'カテゴリー名',
-    categoryNamePlaceholder: '例: 読書、運動、料理',
+    categoryNamePlaceholder: '例: 本、映画、音楽、植物',
     icon: 'アイコン',
     color: 'カラー',
     preview: 'プレビュー',

@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -12,6 +12,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import ResultModal from '../components/ResultModal';
 
 const CategoryManagementScreen = ({ navigation }) => {
+    const insets = useSafeAreaInsets();
     const { userToken } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
@@ -254,10 +255,11 @@ const CategoryManagementScreen = ({ navigation }) => {
                                         }]}
                                         value={categoryName}
                                         onChangeText={setCategoryName}
-                                        placeholder="例: 読書、運動、料理"
+                                        placeholder="例: 本、映画、音楽、植物"
                                         placeholderTextColor={theme.colors.inactive}
                                         autoFocus={true}
                                         maxLength={25}
+                                        textContentType="none"
                                     />
                                 </View>
 
@@ -293,13 +295,26 @@ const CategoryManagementScreen = ({ navigation }) => {
                 </KeyboardAvoidingView>
             </Modal>
 
-            <ResultModal
-                type="success"
+            {/* 成功モーダル（記録投稿完了と同様のコンパクト表示） */}
+            <Modal
                 visible={showSuccessModal}
-                title="完了"
-                message={successAction === 'delete' ? 'カテゴリーを削除しました' : successAction === 'update' ? 'カテゴリーを更新しました' : 'カテゴリーを追加しました'}
-                onClose={() => setShowSuccessModal(false)}
-            />
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowSuccessModal(false)}
+            >
+                <TouchableOpacity
+                    style={[styles.successOverlay, { paddingTop: insets.top + 12 }]}
+                    activeOpacity={1}
+                    onPress={() => setShowSuccessModal(false)}
+                >
+                    <View style={[styles.successModalContent, { backgroundColor: theme.colors.card }]}>
+                        <Ionicons name="checkmark-circle" size={28} color={theme.colors.primary} style={styles.successIcon} />
+                        <Text style={[styles.successMessage, { color: theme.colors.text }]}>
+                            {successAction === 'delete' ? 'カテゴリーを削除しました' : successAction === 'update' ? 'カテゴリーを更新しました' : 'カテゴリーを追加しました'}
+                        </Text>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
 
             <ResultModal
                 type="error"
@@ -489,6 +504,36 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#fff',
         letterSpacing: 0.2,
+    },
+    successOverlay: {
+        flex: 1,
+        width: '100%',
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.35)',
+    },
+    successModalContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        minWidth: 300,
+        maxWidth: '90%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+        elevation: 4,
+    },
+    successIcon: {
+        marginRight: 10,
+    },
+    successMessage: {
+        fontSize: 15,
+        fontWeight: '500',
+        flex: 1,
+        flexShrink: 0,
     },
 });
 

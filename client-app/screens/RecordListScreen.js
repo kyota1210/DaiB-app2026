@@ -5,7 +5,7 @@ import { BlurView } from 'expo-blur';
 import { updateCategory } from '../api/categories';
 import { useFocusEffect } from '@react-navigation/native';
 import { getImageUrl } from '../utils/imageHelper';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '../context/AuthContext';
 import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext';
 import { useTheme } from '../context/ThemeContext';
@@ -104,6 +104,7 @@ export default function RecordListScreen({ navigation }) {
     const [updatingCategory, setUpdatingCategory] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
 
+    const insets = useSafeAreaInsets();
     const { categories, recordsByCategory, records, loadCategories, loadRecords, loadingCategories, loadingRecords } = useRecordsAndCategories();
     const { userInfo, userToken } = useContext(AuthContext);
     const { theme } = useTheme();
@@ -667,9 +668,10 @@ export default function RecordListScreen({ navigation }) {
                                         }]}
                                         value={categoryName}
                                         onChangeText={setCategoryName}
-                                        placeholder="例: 読書、運動、料理"
+                                        placeholder="例: 本、映画、音楽、植物"
                                         placeholderTextColor={theme.colors.inactive}
                                         autoFocus={true}
+                                        textContentType="none"
                                     />
                                 </View>
 
@@ -706,36 +708,25 @@ export default function RecordListScreen({ navigation }) {
                 </KeyboardAvoidingView>
             </Modal>
 
-            {/* カテゴリー更新成功モーダル */}
+            {/* カテゴリー更新成功モーダル（記録投稿完了と同様のコンパクト表示） */}
             <Modal
                 visible={showCategorySuccessModal}
                 transparent={true}
                 animationType="fade"
                 onRequestClose={() => setShowCategorySuccessModal(false)}
             >
-                <BlurView
-                    intensity={20}
-                    tint="dark"
-                    style={styles.categoryModalOverlay}
+                <TouchableOpacity
+                    style={[styles.categorySuccessOverlay, { paddingTop: insets.top + 12 }]}
+                    activeOpacity={1}
+                    onPress={() => setShowCategorySuccessModal(false)}
                 >
-                    <TouchableOpacity
-                        style={styles.modalOverlayTouchable}
-                        activeOpacity={1}
-                        onPress={() => setShowCategorySuccessModal(false)}
-                    >
-                        <View style={[styles.categorySuccessModalContent, { backgroundColor: theme.colors.card }]}>
-                            <View style={[styles.categorySuccessIconContainer, { backgroundColor: theme.colors.primary + '20' }]}>
-                                <Ionicons name="checkmark-circle" size={48} color={theme.colors.primary} />
-                            </View>
-                            <Text style={[styles.categorySuccessTitle, { color: theme.colors.text }]}>
-                                完了
-                            </Text>
-                            <Text style={[styles.categorySuccessMessage, { color: theme.colors.secondaryText }]}>
-                                カテゴリーを更新しました
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
-                </BlurView>
+                    <View style={[styles.categorySuccessModalContent, { backgroundColor: theme.colors.card }]}>
+                        <Ionicons name="checkmark-circle" size={28} color={theme.colors.primary} style={styles.categorySuccessIcon} />
+                        <Text style={[styles.categorySuccessMessage, { color: theme.colors.text }]}>
+                            カテゴリーを更新しました
+                        </Text>
+                    </View>
+                </TouchableOpacity>
             </Modal>
 
             {/* カテゴリー更新エラーモーダル */}
@@ -1163,39 +1154,35 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    categorySuccessOverlay: {
+        flex: 1,
+        width: '100%',
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.35)',
+    },
     categorySuccessModalContent: {
-        borderRadius: 20,
-        padding: 32,
+        flexDirection: 'row',
         alignItems: 'center',
-        minWidth: 280,
-        maxWidth: '80%',
+        borderRadius: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        minWidth: 300,
+        maxWidth: '90%',
         shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 8,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-        elevation: 10,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+        elevation: 4,
     },
-    categorySuccessIconContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    categorySuccessTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 8,
-        textAlign: 'center',
+    categorySuccessIcon: {
+        marginRight: 10,
     },
     categorySuccessMessage: {
-        fontSize: 14,
-        textAlign: 'center',
-        lineHeight: 20,
+        fontSize: 15,
+        fontWeight: '500',
+        flex: 1,
+        flexShrink: 0,
     },
     categoryErrorModalContent: {
         borderRadius: 20,

@@ -19,7 +19,7 @@ const PrivacyScreen = ({ navigation }) => {
             >
                 <View style={[styles.content, { backgroundColor: theme.colors.background }]}>
                     <Text style={[styles.lastUpdated, { color: theme.colors.secondaryText }]}>
-                        最終更新日: 2026年1月24日
+                        最終更新日: 2026年3月11日
                     </Text>
 
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
@@ -30,13 +30,22 @@ const PrivacyScreen = ({ navigation }) => {
                         1. 収集する情報
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        当アプリは、以下の情報を収集します：
+                        当アプリは、サービスの提供に必要な範囲で、以下の情報を収集・保存します。
                     </Text>
                     <Text style={[styles.listItem, { color: theme.colors.secondaryText }]}>
-                        • アカウント情報：メールアドレス、パスワード（ハッシュ化）、ユーザー名、自己紹介{'\n'}
-                        • 記録情報：投稿した写真、タイトル、説明、日付、カテゴリー情報{'\n'}
-                        • デバイス情報：アプリの使用状況、エラーログ{'\n'}
-                        • 認証情報：JWTトークン（デバイスに安全に保存）
+                        • アカウント情報：メールアドレス、パスワード（ハッシュ化）、ユーザー名、自己紹介、プロフィール画像（アバター）{'\n'}
+                        • 記録情報：投稿した写真、タイトル、説明、日付、カテゴリー情報（1件の記録に複数カテゴリーを紐づけ可能）、「スレッドに表示する」の設定{'\n'}
+                        • フォロー関係：フォロー・フォロワー関係（誰をフォローしているか、誰にフォローされているか）{'\n'}
+                        • 認証情報：JWTトークン（端末の暗号化ストレージに保存）{'\n'}
+                        • 端末内の設定：表示言語の選択（端末内ストレージに保存）{'\n'}
+                        • サーバー側のログ：アクセス・エラー等の記録（運用・障害対応のため）
+                    </Text>
+                    <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
+                        また、以下の権限を利用します。いずれも該当機能利用時にのみ使用し、許可いただいた範囲を超えて取得することはありません。
+                    </Text>
+                    <Text style={[styles.listItem, { color: theme.colors.secondaryText }]}>
+                        • カメラ：QRコードスキャンによるフォロー機能で使用{'\n'}
+                        • フォトライブラリ：記録の写真投稿・プロフィール画像の設定で使用
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
@@ -46,10 +55,12 @@ const PrivacyScreen = ({ navigation }) => {
                         当アプリは、収集した情報を以下の目的で利用します：
                     </Text>
                     <Text style={[styles.listItem, { color: theme.colors.secondaryText }]}>
-                        • アプリサービスの提供・運営{'\n'}
+                        • アプリサービスの提供・運営（記録の作成・編集・削除、カテゴリー管理、一覧表示）{'\n'}
+                        • タイムライン機能の提供（「スレッドに表示する」が有効な記録を、フォローしているユーザーに表示）{'\n'}
+                        • フォロー機能の提供（フォロー・フォロワー一覧、他ユーザーのプロフィール・アバター表示）{'\n'}
                         • ユーザー認証・セキュリティの維持{'\n'}
                         • ユーザーサポート・お問い合わせ対応{'\n'}
-                        • サービスの改善・新機能の開発{'\n'}
+                        • サービスの改善・障害対応{'\n'}
                         • 不正利用の防止
                     </Text>
 
@@ -60,11 +71,12 @@ const PrivacyScreen = ({ navigation }) => {
                         当アプリは、ユーザーの個人情報を安全に保護するため、以下の対策を講じています：
                     </Text>
                     <Text style={[styles.listItem, { color: theme.colors.secondaryText }]}>
-                        • パスワードはbcryptによりハッシュ化して保存{'\n'}
+                        • パスワードはbcryptによりハッシュ化してサーバーに保存{'\n'}
                         • JWT認証によるセキュアなアクセス制御{'\n'}
+                        • 認証トークンは端末のSecureStore（暗号化ストレージ）に保存{'\n'}
+                        • 言語設定は端末のストレージに保存（サーバーへ送信しない）{'\n'}
                         • HTTPS通信によるデータの暗号化{'\n'}
-                        • データベースへの適切なアクセス制御{'\n'}
-                        • 定期的なセキュリティ監査
+                        • データベースへの適切なアクセス制御
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
@@ -113,7 +125,7 @@ const PrivacyScreen = ({ navigation }) => {
                         8. 第三者サービス
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        当アプリは、現在、外部の分析サービスや広告サービスを使用していません。将来的に使用する場合は、本ポリシーを更新して通知します。
+                        当アプリは、サービス提供のため当アプリが運用するサーバーと通信し、上記の情報を送受信します。現在、外部の分析サービス・広告サービス・SNS連携は使用していません。アプリの基盤としてExpo（React Native）等の技術を利用していますが、これらによる個人情報の第三者への送信は行っていません。将来的に第三者サービスを利用する場合は、本ポリシーを更新して通知します。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
