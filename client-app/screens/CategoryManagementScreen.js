@@ -7,7 +7,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext';
-import { createCategory, updateCategory, deleteCategory } from '../api/categories';
+import { createCategory, updateCategory, deleteCategory, reorderCategories } from '../api/categories';
 import ScreenHeader from '../components/ScreenHeader';
 import ResultModal from '../components/ResultModal';
 
@@ -36,6 +36,7 @@ const CategoryManagementScreen = ({ navigation }) => {
     const [errorMessage, setErrorMessage] = useState('');
     const [categoryToDelete, setCategoryToDelete] = useState(null);
     const [successAction, setSuccessAction] = useState(''); // 'add', 'update', 'delete'
+    const [reordering, setReordering] = useState(false);
 
     // 画面フォーカス時にキャッシュを更新（Context の loadCategories を使用）
     useFocusEffect(
@@ -154,6 +155,42 @@ const CategoryManagementScreen = ({ navigation }) => {
         setCategoryName('');
     };
 
+    const handleMoveUp = async (index) => {
+        if (index <= 0 || reordering || customCategories.length < 2) return;
+        const newOrder = [...customCategories];
+        [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+        const categoryIds = newOrder.map((c) => c.id);
+        setReordering(true);
+        try {
+            await reorderCategories(userToken, categoryIds);
+            await loadCategories();
+        } catch (error) {
+            console.error('並び替えエラー:', error);
+            setErrorMessage(error.message || '並び替えに失敗しました');
+            setShowErrorModal(true);
+        } finally {
+            setReordering(false);
+        }
+    };
+
+    const handleMoveDown = async (index) => {
+        if (index < 0 || index >= customCategories.length - 1 || reordering || customCategories.length < 2) return;
+        const newOrder = [...customCategories];
+        [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+        const categoryIds = newOrder.map((c) => c.id);
+        setReordering(true);
+        try {
+            await reorderCategories(userToken, categoryIds);
+            await loadCategories();
+        } catch (error) {
+            console.error('並び替えエラー:', error);
+            setErrorMessage(error.message || '並び替えに失敗しました');
+            setShowErrorModal(true);
+        } finally {
+            setReordering(false);
+        }
+    };
+
     const allCategories = [...defaultCategories, ...customCategories];
 
     return (
@@ -164,7 +201,7 @@ const CategoryManagementScreen = ({ navigation }) => {
                 {/* カテゴリーリスト */}
                 <View style={styles.section}>
                     <View style={[styles.categoryList, { backgroundColor: theme.colors.background }]}>
-                        {allCategories.map((category) => (
+                        {allCategories.map((category, index) => (
                             <View key={category.id} style={[styles.categoryCard, {
                                 borderBottomColor: theme.colors.border
                             }]}>
@@ -185,6 +222,28 @@ const CategoryManagementScreen = ({ navigation }) => {
                                 </View>
                                 {!category.isDefault && (
                                     <View style={styles.categoryActions}>
+                                        <TouchableOpacity
+                                            style={styles.actionButton}
+                                            onPress={() => handleMoveUp(index - defaultCategories.length)}
+                                            disabled={reordering || index <= defaultCategories.length}
+                                        >
+                                            <Ionicons
+                                                name="chevron-up"
+                                                size={22}
+                                                color={index <= defaultCategories.length ? theme.colors.inactive : theme.colors.text}
+                                            />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={styles.actionButton}
+                                            onPress={() => handleMoveDown(index - defaultCategories.length)}
+                                            disabled={reordering || index >= allCategories.length - 1}
+                                        >
+                                            <Ionicons
+                                                name="chevron-down"
+                                                size={22}
+                                                color={index >= allCategories.length - 1 ? theme.colors.inactive : theme.colors.text}
+                                            />
+                                        </TouchableOpacity>
                                         <TouchableOpacity
                                             style={styles.actionButton}
                                             onPress={() => openEditModal(category)}

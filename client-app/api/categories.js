@@ -24,3 +24,11 @@ export const updateCategory = async (token, id, { name }) => {
 export const deleteCategory = async (token, id) => {
     return apiFetch(token, `/categories/${id}`, { method: 'DELETE' });
 };
+
+export const reorderCategories = async (token, categoryIds) => {
+    const data = await apiFetch(token, '/categories/reorder', {
+        method: 'PUT',
+        body: { category_ids: categoryIds },
+    });
+    return data;
+};

@@ -17,7 +17,7 @@ router.get('/', authenticateToken, async (req, res) => {
         logger.error('カテゴリー取得エラー', { 
             error: error.message, 
             stack: error.stack,
-            userId: userId 
+            userId: req.user?.id 
         });
         res.status(500).json({ message: 'カテゴリーの取得に失敗しました。' });
     }
@@ -56,10 +56,33 @@ router.post('/', authenticateToken, async (req, res) => {
         logger.error('カテゴリー作成エラー', { 
             error: error.message, 
             stack: error.stack,
-            userId,
-            categoryName: name 
+            userId: req.user?.id,
+            categoryName: req.body?.name 
         });
         res.status(500).json({ message: 'カテゴリーの作成に失敗しました。' });
+    }
+});
+
+/**
+ * PUT /api/categories/reorder
+ * カテゴリーの並び順を更新（body: { category_ids: [id1, id2, ...] }）
+ */
+router.put('/reorder', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { category_ids: categoryIds } = req.body;
+        if (!Array.isArray(categoryIds) || categoryIds.length === 0) {
+            return res.status(400).json({ message: 'category_ids は配列で指定してください。' });
+        }
+        const success = await CategoryModel.reorder(userId, categoryIds);
+        if (!success) {
+            return res.status(400).json({ message: '並び替えに失敗しました。指定したカテゴリーのいずれかが存在しません。' });
+        }
+        const categories = await CategoryModel.findAllByUserId(userId);
+        res.status(200).json({ message: '並び順を更新しました。', categories });
+    } catch (error) {
+        logger.error('カテゴリー並び替えエラー', { error: error.message, stack: error.stack, userId: req.user?.id });
+        res.status(500).json({ message: '並び替えに失敗しました。' });
     }
 });
 
@@ -71,6 +94,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
         const categoryId = req.params.id;
+        if (categoryId === 'reorder') {
+            return res.status(404).json({ message: '並び替えは PUT /api/categories/reorder を使用してください。' });
+        }
         const { name } = req.body;
 
         // バリデーション
@@ -107,9 +133,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
         logger.error('カテゴリー更新エラー', { 
             error: error.message, 
             stack: error.stack,
-            categoryId,
-            userId,
-            categoryName: name 
+            categoryId: req.params?.id,
+            userId: req.user?.id,
+            categoryName: req.body?.name 
         });
         res.status(500).json({ message: 'カテゴリーの更新に失敗しました。' });
     }
@@ -146,8 +172,8 @@ router.delete('/:id', authenticateToken, async (req, res) => {
         logger.error('カテゴリー削除エラー', { 
             error: error.message, 
             stack: error.stack,
-            categoryId,
-            userId 
+            categoryId: req.params?.id,
+            userId: req.user?.id 
         });
         res.status(500).json({ message: 'カテゴリーの削除に失敗しました。' });
     }
