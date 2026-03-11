@@ -322,8 +322,9 @@ export default function RecordListScreen({ navigation }) {
                                     }, 300);
                                 }}
                                 onLongPress={() => {
-                                    // "All"カテゴリは編集できないので、長押しを無効化
-                                    if (!isAllCategory) {
+                                    if (isAllCategory) {
+                                        navigation.navigate('CategoryManagement');
+                                    } else {
                                         setEditingCategory(category);
                                         setCategoryName(category.name);
                                         setShowEditModal(true);
@@ -584,13 +585,6 @@ export default function RecordListScreen({ navigation }) {
             <View style={styles.mainContent}>
                 {/* カテゴリタブUI */}
                 {renderCategoryTabs()}
-
-                {/* プルダウン更新中のローディング表示 */}
-                {refreshing && (
-                    <View style={styles.refreshingIndicator}>
-                        <ActivityIndicator size="small" color={theme.colors.primary} />
-                    </View>
-                )}
 
                 {/* 横スワイプ可能なカテゴリビュー */}
                 <ScrollView
@@ -883,11 +877,6 @@ const styles = StyleSheet.create({
     mainContent: {
         flex: 1,
         position: 'relative',
-    },
-    refreshingIndicator: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 8,
     },
     categoryTabsContainer: {
         paddingVertical: 6,

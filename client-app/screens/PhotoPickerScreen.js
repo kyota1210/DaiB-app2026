@@ -40,7 +40,16 @@ export default function PhotoPickerScreen({ navigation, route }) {
         editRecord ? new Date(editRecord.date_logged) : new Date()
     );
     const [showDatePicker, setShowDatePicker] = useState(false);
-    const [selectedCategoryId, setSelectedCategoryId] = useState(editRecord?.category_id || null);
+    const [selectedCategoryIds, setSelectedCategoryIds] = useState(() => {
+        if (editRecord?.category_ids) {
+            // サーバーから返るカンマ区切り文字列 or 配列に対応
+            const raw = editRecord.category_ids;
+            if (Array.isArray(raw)) return raw.map(Number);
+            return String(raw).split(',').map(Number).filter(n => !isNaN(n) && n > 0);
+        }
+        if (editRecord?.category_id) return [editRecord.category_id];
+        return [];
+    });
     const [showInTimeline, setShowInTimeline] = useState(editRecord ? (editRecord.show_in_timeline !== 0) : true);
     const [loading, setLoading] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -146,11 +155,14 @@ export default function PhotoPickerScreen({ navigation, route }) {
 
         setLoading(true);
         try {
+            const y = dateLogged.getFullYear();
+            const m = String(dateLogged.getMonth() + 1).padStart(2, '0');
+            const d = String(dateLogged.getDate()).padStart(2, '0');
             const recordData = { 
                 title,
                 description, 
-                date_logged: dateLogged.toISOString().split('T')[0], 
-                category_id: selectedCategoryId,
+                date_logged: `${y}-${m}-${d}`, 
+                category_ids: selectedCategoryIds,
             };
             if (!isEditMode) {
                 recordData.show_in_timeline = showInTimeline;
@@ -378,37 +390,45 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                                 showsHorizontalScrollIndicator={false}
                                                 style={styles.categoryScrollView}
                                             >
-                                                {categories.filter(c => c.id !== 'all').map(category => (
-                                                    <TouchableOpacity
-                                                        key={category.id}
-                                                        style={[
-                                                            styles.categoryItem,
-                                                            { 
-                                                                backgroundColor: selectedCategoryId === category.id 
-                                                                    ? theme.colors.primary 
-                                                                    : theme.colors.secondaryBackground,
-                                                                borderColor: theme.colors.border
-                                                            }
-                                                        ]}
-                                                        onPress={() => setSelectedCategoryId(category.id)}
-                                                    >
-                                                        {category.icon_url && (
-                                                            <Image 
-                                                                source={{ uri: getImageUrl(category.icon_url) }} 
-                                                                style={styles.categoryIcon}
-                                                            />
-                                                        )}
-                                                        <Text style={[
-                                                            styles.categoryName, 
-                                                            { color: selectedCategoryId === category.id 
-                                                                ? '#fff' 
-                                                                : theme.colors.text 
-                                                            }
-                                                        ]}>
-                                                            {category.name}
-                                                        </Text>
-                                                    </TouchableOpacity>
-                                                ))}
+                                                {categories.filter(c => c.id !== 'all').map(category => {
+                                                    const isSelected = selectedCategoryIds.includes(category.id);
+                                                    return (
+                                                        <TouchableOpacity
+                                                            key={category.id}
+                                                            style={[
+                                                                styles.categoryItem,
+                                                                { 
+                                                                    backgroundColor: isSelected
+                                                                        ? theme.colors.primary 
+                                                                        : theme.colors.secondaryBackground,
+                                                                    borderColor: isSelected
+                                                                        ? theme.colors.primary
+                                                                        : theme.colors.border
+                                                                }
+                                                            ]}
+                                                            onPress={() => {
+                                                                setSelectedCategoryIds(prev =>
+                                                                    prev.includes(category.id)
+                                                                        ? prev.filter(id => id !== category.id)
+                                                                        : [...prev, category.id]
+                                                                );
+                                                            }}
+                                                        >
+                                                            {category.icon_url && (
+                                                                <Image 
+                                                                    source={{ uri: getImageUrl(category.icon_url) }} 
+                                                                    style={styles.categoryIcon}
+                                                                />
+                                                            )}
+                                                            <Text style={[
+                                                                styles.categoryName, 
+                                                                { color: isSelected ? '#fff' : theme.colors.text }
+                                                            ]}>
+                                                                {category.name}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    );
+                                                })}
                                             </RNScrollView>
                                         )}
                                     </View>

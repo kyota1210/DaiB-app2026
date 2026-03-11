@@ -91,11 +91,17 @@ const RecordItem = React.memo(function RecordItem({ item, theme, t }) {
 export default function RecordDetailScreen({ route, navigation }) {
     const { records: paramsRecords, initialIndex } = route.params;
     const { records: contextRecords } = useRecordsAndCategories();
-    // タイムラインから開いた場合（author_id あり）は params を優先。それ以外は編集反映のため Context を優先
+    // タイムラインから開いた場合（author_id あり）は params をそのまま使用
     const paramsHaveAuthorInfo = paramsRecords?.some?.((r) => r.author_id != null);
-    const records = (paramsHaveAuthorInfo && paramsRecords?.length > 0)
-        ? paramsRecords
-        : (contextRecords?.length > 0 ? contextRecords : paramsRecords) || [];
+    // 一覧の並び順（paramsRecords）を維持しつつ、Context の最新データで各レコードを更新
+    const records = useMemo(() => {
+        if (paramsHaveAuthorInfo && paramsRecords?.length > 0) return paramsRecords;
+        if (!paramsRecords?.length) return contextRecords || [];
+        return (paramsRecords || []).map((pr) => {
+            const updated = contextRecords?.find((cr) => cr.id === pr.id);
+            return updated ? { ...updated } : pr;
+        });
+    }, [paramsRecords, contextRecords, paramsHaveAuthorInfo]);
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
     const [showMenu, setShowMenu] = useState(false);
     const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });

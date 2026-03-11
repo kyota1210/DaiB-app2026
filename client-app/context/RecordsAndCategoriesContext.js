@@ -24,7 +24,12 @@ export function RecordsAndCategoriesProvider({ children }) {
         const cats = categories.length > 0 ? categories : [ALL_CATEGORY];
         const next = { all: records };
         cats.filter(cat => cat.id !== 'all').forEach(cat => {
-            next[cat.id] = records.filter(r => r.category_id === cat.id);
+            next[cat.id] = records.filter(r => {
+                if (Array.isArray(r.category_ids)) {
+                    return r.category_ids.includes(cat.id);
+                }
+                return r.category_id === cat.id;
+            });
         });
         return next;
     }, [records, categories]);
@@ -47,7 +52,14 @@ export function RecordsAndCategoriesProvider({ children }) {
         if (!hasRecordsCache.current) setLoadingRecords(true);
         try {
             const data = await fetchRecords(null);
-            setRecords(Array.isArray(data) ? data : []);
+            const normalized = (Array.isArray(data) ? data : []).map(r => ({
+                ...r,
+                // サーバーのGROUP_CONCATはカンマ区切り文字列で返るため配列に変換
+                category_ids: r.category_ids
+                    ? String(r.category_ids).split(',').map(Number).filter(n => !isNaN(n) && n > 0)
+                    : (r.category_id ? [r.category_id] : []),
+            }));
+            setRecords(normalized);
             hasRecordsCache.current = true;
         } catch (error) {
             console.error('記録取得エラー:', error);

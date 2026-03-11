@@ -13,9 +13,9 @@ export const useRecordsApi = () => {
         formData.append('date_logged', recordData.date_logged);
         formData.append('show_in_timeline', recordData.show_in_timeline !== false && recordData.show_in_timeline !== 0 ? '1' : '0');
 
-        // カテゴリーIDを追加
-        if (recordData.category_id) {
-            formData.append('category_id', recordData.category_id);
+        // カテゴリーIDを追加（複数対応）
+        if (recordData.category_ids && recordData.category_ids.length > 0) {
+            formData.append('category_ids', JSON.stringify(recordData.category_ids));
         }
 
         if (recordData.imageUri) {
@@ -73,8 +73,9 @@ export const useRecordsApi = () => {
             formData.append('show_in_timeline', recordData.show_in_timeline !== false && recordData.show_in_timeline !== 0 ? '1' : '0');
         }
 
-        if (recordData.category_id) {
-            formData.append('category_id', recordData.category_id);
+        // カテゴリーIDを追加（複数対応）
+        if (recordData.category_ids && recordData.category_ids.length > 0) {
+            formData.append('category_ids', JSON.stringify(recordData.category_ids));
         }
 
         if (recordData.imageUri && !recordData.imageUri.startsWith('http') && !recordData.imageUri.startsWith('uploads/')) {

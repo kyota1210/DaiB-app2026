@@ -46,7 +46,7 @@ router.post('/', (req, res, next) => {
         return res.status(400).json({ message: 'リクエストデータが読み取れませんでした。' });
     }
 
-    const { title, description, date_logged, category_id, show_in_timeline } = req.body;
+    const { title, description, date_logged, category_ids, show_in_timeline } = req.body;
     const user_id = req.user.id;
 
     // 要件: 日付のみ必須
@@ -61,6 +61,18 @@ router.post('/', (req, res, next) => {
     // スレッドに表示する: 未指定・'1'・true のとき 1、それ以外 0
     const showInTimeline = (show_in_timeline === undefined || show_in_timeline === '' || show_in_timeline === '1' || show_in_timeline === true) ? 1 : 0;
 
+    // カテゴリIDの配列をパース（JSON文字列または単一IDを受け付ける）
+    let parsedCategoryIds = [];
+    if (category_ids) {
+        try {
+            parsedCategoryIds = JSON.parse(category_ids);
+            if (!Array.isArray(parsedCategoryIds)) parsedCategoryIds = [parsedCategoryIds];
+        } catch {
+            parsedCategoryIds = [category_ids];
+        }
+        parsedCategoryIds = parsedCategoryIds.map(Number).filter(n => !isNaN(n) && n > 0);
+    }
+
     // 画像パスの生成（相対パス）
     let imageUrl = null;
     if (req.file) {
@@ -74,14 +86,14 @@ router.post('/', (req, res, next) => {
             description: recordDescription,
             dateLogged: date_logged,
             imageUrl,
-            categoryId: category_id || null,
+            categoryIds: parsedCategoryIds,
             showInTimeline
         });
 
         logger.info('記録作成成功', { 
             recordId, 
             userId: user_id,
-            categoryId: category_id || null 
+            categoryIds: parsedCategoryIds 
         });
         
         res.status(201).json({ 
@@ -169,10 +181,22 @@ router.put('/:id', (req, res, next) => {
     });
 }, async (req, res) => {
     const { id } = req.params;
-    const { title, description, category_id, date_logged, show_in_timeline } = req.body;
+    const { title, description, category_ids, date_logged, show_in_timeline } = req.body;
     const user_id = req.user.id;
 
     const showInTimeline = (show_in_timeline === undefined || show_in_timeline === '') ? undefined : ((show_in_timeline === '1' || show_in_timeline === true) ? 1 : 0);
+
+    // カテゴリIDの配列をパース
+    let parsedCategoryIds = [];
+    if (category_ids) {
+        try {
+            parsedCategoryIds = JSON.parse(category_ids);
+            if (!Array.isArray(parsedCategoryIds)) parsedCategoryIds = [parsedCategoryIds];
+        } catch {
+            parsedCategoryIds = [category_ids];
+        }
+        parsedCategoryIds = parsedCategoryIds.map(Number).filter(n => !isNaN(n) && n > 0);
+    }
 
     let imageUrl = null;
     if (req.file) {
@@ -183,7 +207,7 @@ router.put('/:id', (req, res, next) => {
         const success = await RecordModel.update(id, user_id, { 
             title, 
             description,
-            categoryId: category_id || null,
+            categoryIds: parsedCategoryIds,
             dateLogged: date_logged,
             imageUrl,
             showInTimeline
