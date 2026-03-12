@@ -110,6 +110,16 @@ export default function LoginScreen({ navigation }) {
                     </TouchableOpacity>
 
                     <TouchableOpacity
+                        style={styles.forgotPasswordLink}
+                        onPress={() => navigation.navigate('ForgotPassword')}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={[styles.forgotPasswordLinkText, { color: theme.colors.primary }]}>
+                            {tDevice('forgotPassword')}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
                         style={[styles.secondaryButton, { borderColor: theme.colors.primary }]}
                         onPress={() => navigation.navigate('Signup')}
                         activeOpacity={0.8}
@@ -170,6 +180,14 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: '600',
         color: '#ffffff',
+    },
+    forgotPasswordLink: {
+        marginTop: 12,
+        paddingVertical: 8,
+    },
+    forgotPasswordLinkText: {
+        fontSize: 15,
+        fontWeight: '500',
     },
     secondaryButton: {
         width: '100%',

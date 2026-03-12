@@ -138,6 +138,63 @@ class UserModel {
     }
 
     /**
+     * パスワードを更新（パスワードリセット用）
+     * @param {number} userId
+     * @param {string} passwordHash - bcrypt 済みハッシュ
+     */
+    static async updatePassword(userId, passwordHash) {
+        const sql = 'UPDATE users SET password_hash = ? WHERE id = ?';
+        const [result] = await db.query(sql, [passwordHash, userId]);
+        return result.affectedRows;
+    }
+
+    /**
+     * リセット用トークンのハッシュを計算（照合用）
+     * @param {string} plainToken
+     * @returns {string}
+     */
+    static hashResetToken(plainToken) {
+        return crypto.createHash('sha256').update(plainToken, 'utf8').digest('hex');
+    }
+
+    /**
+     * パスワードリセット用トークンを作成し、DB に保存する
+     * @param {number} userId
+     * @param {number} expiresInMinutes - 有効期限（分）
+     * @returns {{ token: string, expiresAt: Date }}
+     */
+    static async createPasswordResetToken(userId, expiresInMinutes = 60) {
+        const plainToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = this.hashResetToken(plainToken);
+        const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
+        const sql = 'INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)';
+        await db.query(sql, [userId, tokenHash, expiresAt]);
+        return { token: plainToken, expiresAt };
+    }
+
+    /**
+     * 有効なリセットトークンから user_id を取得
+     * @param {string} plainToken
+     * @returns {Promise<number|undefined>} userId または undefined
+     */
+    static async findValidResetToken(plainToken) {
+        const tokenHash = this.hashResetToken(plainToken);
+        const sql = 'SELECT user_id FROM password_reset_tokens WHERE token_hash = ? AND expires_at > NOW() LIMIT 1';
+        const [rows] = await db.query(sql, [tokenHash]);
+        return rows[0] ? rows[0].user_id : undefined;
+    }
+
+    /**
+     * リセットトークンを無効化（削除）
+     * @param {string} plainToken
+     */
+    static async invalidateResetToken(plainToken) {
+        const tokenHash = this.hashResetToken(plainToken);
+        const sql = 'DELETE FROM password_reset_tokens WHERE token_hash = ?';
+        await db.query(sql, [tokenHash]);
+    }
+
+    /**
      * 検索: 公開ユーザーは user_name 等で部分一致、非公開は search_key 完全一致時のみ
      * @param {string} query - 検索文字列
      * @param {number} viewerId - 検索実行者（自分は結果から除外）

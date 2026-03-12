@@ -9,8 +9,10 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { RecordsAndCategoriesProvider } from '../context/RecordsAndCategoriesContext';
 
-import LoginScreen from '../screens/LoginScreen'; 
+import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 import RecordListScreen from '../screens/RecordListScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ThreadScreen from '../screens/ThreadScreen';
@@ -132,6 +134,24 @@ const AuthStack = () => {
           headerTintColor: '#1c1c1e',
           headerBackVisible: false,
           headerLeft: () => null,
+        }}
+      />
+      <Stack.Screen
+        name="ForgotPassword"
+        component={ForgotPasswordScreen}
+        options={{
+          title: t('appName'),
+          headerStyle: { backgroundColor: '#E8E6E1' },
+          headerTintColor: '#1c1c1e',
+        }}
+      />
+      <Stack.Screen
+        name="ResetPassword"
+        component={ResetPasswordScreen}
+        options={{
+          title: t('appName'),
+          headerStyle: { backgroundColor: '#E8E6E1' },
+          headerTintColor: '#1c1c1e',
         }}
       />
     </Stack.Navigator>

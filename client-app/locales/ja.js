@@ -120,6 +120,22 @@ export default {
     signupFailed: '登録に失敗しました',
     signupLoginSuccess: '登録が完了しました',
     redirectToMain: 'ホーム画面に移動します',
+
+    // パスワード再発行
+    forgotPassword: 'パスワードを忘れた方はこちら',
+    forgotPasswordTitle: 'パスワードの再発行',
+    forgotPasswordDescription: '登録したメールアドレスを入力してください。再設定用のリンクをお送りします。',
+    sendResetLink: '送信する',
+    sendingResetLink: '送信中...',
+    resetPasswordTitle: '新しいパスワードを設定',
+    newPassword: '新しいパスワード',
+    newPasswordConfirm: '新しいパスワード（確認）',
+    setNewPassword: 'パスワードを変更する',
+    changingPassword: '変更中...',
+    passwordChanged: 'パスワードを変更しました。新しいパスワードでログインしてください。',
+    resetRequestSent: 'ご登録のメールアドレスにパスワード再設定のご案内を送信しました。',
+    resetTokenMissing: 'トークンがありません。パスワード再発行からやり直してください。',
+    passwordMismatch: '新しいパスワードと確認が一致しません。',
     
     // プロフィール編集
     userName: 'ユーザー名',

@@ -120,7 +120,23 @@ export default {
     signupFailed: 'Sign up failed',
     signupLoginSuccess: 'Registration complete',
     redirectToMain: 'Redirecting to home screen',
-    
+
+    // Forgot password
+    forgotPassword: 'Forgot password?',
+    forgotPasswordTitle: 'Reset Password',
+    forgotPasswordDescription: 'Enter the email address you used to register. We will send you a link to reset your password.',
+    sendResetLink: 'Send',
+    sendingResetLink: 'Sending...',
+    resetPasswordTitle: 'Set New Password',
+    newPassword: 'New password',
+    newPasswordConfirm: 'Confirm new password',
+    setNewPassword: 'Change password',
+    changingPassword: 'Changing...',
+    passwordChanged: 'Your password has been changed. Please log in with your new password.',
+    resetRequestSent: 'If that email is registered, we have sent password reset instructions.',
+    resetTokenMissing: 'Token is missing. Please start the password reset process again.',
+    passwordMismatch: 'New password and confirmation do not match.',
+
     // Profile edit
     userName: 'User Name',
     userNamePlaceholder: 'Enter user name',
