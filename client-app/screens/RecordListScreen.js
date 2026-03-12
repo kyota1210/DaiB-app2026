@@ -111,6 +111,8 @@ export default function RecordListScreen({ navigation }) {
     const { t } = useLanguage();
     const horizontalScrollViewRef = useRef(null);
     const categoryScrollViewRefs = useRef({});
+    const categoryTabsScrollRef = useRef(null);
+    const categoryTabLayoutsRef = useRef({});
 
     // カテゴリーを更新する関数
     const handleUpdateCategory = async () => {
@@ -280,15 +282,14 @@ export default function RecordListScreen({ navigation }) {
         }
     };
 
-    // カテゴリタブUIコンポーネント
+    // カテゴリタブUIコンポーネント（liquid glass風）
     const renderCategoryTabs = () => {
         if (categories.length === 0) return null;
 
         return (
-            <View style={[styles.categoryTabsContainer, { 
-                backgroundColor: theme.colors.background
-            }]}>
+            <View style={styles.categoryTabsContainer}>
                 <ScrollView 
+                    ref={categoryTabsScrollRef}
                     horizontal 
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.categoryTabsContent}
@@ -303,15 +304,15 @@ export default function RecordListScreen({ navigation }) {
                                 style={[
                                     styles.categoryTab,
                                     isAllCategory && styles.categoryTabIcon,
-                                    {
-                                        backgroundColor: theme.colors.secondaryBackground
-                                    },
                                     isSelected && styles.categoryTabSelected
                                 ]}
+                                onLayout={(e) => {
+                                    const { x, width } = e.nativeEvent.layout;
+                                    categoryTabLayoutsRef.current[index] = { x, width };
+                                }}
                                 onPress={() => {
                                     isScrollingRef.current = true;
                                     setSelectedCategory(category.id);
-                                    // 横スクロールビューを対応するページに移動
                                     if (horizontalScrollViewRef.current) {
                                         horizontalScrollViewRef.current.scrollTo({
                                             x: index * SCREEN_WIDTH,
@@ -331,28 +332,38 @@ export default function RecordListScreen({ navigation }) {
                                         setShowEditModal(true);
                                     }
                                 }}
-                                activeOpacity={0.7}
+                                activeOpacity={0.85}
                             >
-                                {isAllCategory ? (
-                                    <View style={styles.categoryTabContent}>
-                                        <Ionicons 
-                                            name="apps" 
-                                            size={20} 
-                                            color={theme.colors.text} 
-                                        />
-                                        {isSelected && <View style={styles.categoryTabUnderline} />}
+                                <View style={[
+                                    styles.categoryTabGlass,
+                                    isSelected && styles.categoryTabGlassSelected
+                                ]}>
+                                    <BlurView
+                                        intensity={60}
+                                        tint="light"
+                                        style={StyleSheet.absoluteFillObject}
+                                    />
+                                    <View style={styles.categoryTabGlassContent}>
+                                        {isAllCategory ? (
+                                            <View style={styles.categoryTabContent}>
+                                                <Ionicons 
+                                                    name="apps" 
+                                                    size={18} 
+                                                    color={theme.colors.text} 
+                                                />
+                                            </View>
+                                        ) : (
+                                            <View style={styles.categoryTabContent}>
+                                                <Text style={[
+                                                    styles.categoryTabText,
+                                                    { color: theme.colors.text }
+                                                ]}>
+                                                    {category.name}
+                                                </Text>
+                                            </View>
+                                        )}
                                     </View>
-                                ) : (
-                                    <View style={styles.categoryTabContent}>
-                                        <Text style={[
-                                            styles.categoryTabText,
-                                            { color: theme.colors.text }
-                                        ]}>
-                                            {category.name}
-                                        </Text>
-                                        {isSelected && <View style={styles.categoryTabUnderline} />}
-                                    </View>
-                                )}
+                                </View>
                             </TouchableOpacity>
                         );
                     })}
@@ -390,6 +401,20 @@ export default function RecordListScreen({ navigation }) {
                 });
             }
         }
+    }, [selectedCategory, categories.length]);
+
+    // 選択中のカテゴリタブが画面内に収まるようにタブバーをスクロール
+    React.useEffect(() => {
+        const scrollRef = categoryTabsScrollRef.current;
+        const layouts = categoryTabLayoutsRef.current;
+        if (!scrollRef || categories.length === 0) return;
+        const categoryIndex = categories.findIndex(cat => cat.id === selectedCategory);
+        if (categoryIndex < 0) return;
+        const layout = layouts[categoryIndex];
+        if (!layout) return;
+        const { x: tabX, width: tabWidth } = layout;
+        const scrollX = Math.max(0, tabX - SCREEN_WIDTH / 2 + tabWidth / 2);
+        scrollRef.scrollTo({ x: scrollX, animated: true });
     }, [selectedCategory, categories.length]);
 
     // プルダウンで一覧を更新
@@ -873,42 +898,46 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
     },
     categoryTabsContent: {
-        paddingHorizontal: 16,
+        paddingHorizontal: 14,
         alignItems: 'center',
         paddingVertical: 2,
     },
     categoryTab: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 16,
         marginRight: 6,
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: 36,
+        minHeight: 32,
     },
     categoryTabIcon: {
-        minWidth: 50,
-        paddingHorizontal: 12,
+        minWidth: 42,
     },
-    categoryTabSelected: {
-        // 選択時のスタイル（下線は別途追加）
+    categoryTabSelected: {},
+    categoryTabGlass: {
+        paddingHorizontal: 11,
+        paddingVertical: 6,
+        borderRadius: 16,
+        overflow: 'hidden',
+        minHeight: 32,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.45)',
+    },
+    categoryTabGlassSelected: {
+        borderWidth: 2.0,
+        borderColor: '#4E5F5C',
+    },
+    categoryTabGlassContent: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 11,
+        paddingVertical: 6,
     },
     categoryTabContent: {
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
     },
-    categoryTabUnderline: {
-        position: 'absolute',
-        bottom: -8,
-        left: 0,
-        right: 0,
-        height: 2,
-        backgroundColor: '#4E5F5C',
-        borderRadius: 1,
-    },
     categoryTabText: {
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: '600',
         letterSpacing: 0.3,
     },

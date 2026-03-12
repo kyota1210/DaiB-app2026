@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Text, View, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Text, View, ActivityIndicator, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -36,65 +36,46 @@ import ContactScreen from '../screens/ContactScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-const CustomTabBar = React.memo(({ state, descriptors, navigation }) => {
+const CustomTabBar = React.memo(({ state, navigation }) => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
+  const isOnHome = state.index === 0;
+  const targetRoute = isOnHome ? 'Thread' : 'Home';
+
+  const onPress = () => {
+    navigation.navigate(targetRoute);
+  };
+
+  const IconComponent = isOnHome ? Ionicons : MaterialIcons;
+  const iconName = isOnHome ? 'chatbubbles' : 'home';
+  const accessibilityLabel = isOnHome ? t('thread') : t('gallery');
 
   return (
-    <BlurView intensity={80} tint="light" style={styles.blurContainer}>
-      <View style={styles.tabBarContainer}>
-        {state.routes.map((route, index) => {
-          const { options } = descriptors[route.key];
-          const isFocused = state.index === index;
-          const color = isFocused ? theme.colors.text : theme.colors.inactive;
-
-          const onPress = () => {
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name);
-            }
-          };
-
-          const onLongPress = () => {
-            navigation.emit({ type: 'tabLongPress', target: route.key });
-          };
-
-          let iconName;
-          let IconComponent;
-          if (route.name === 'Home') {
-            IconComponent = MaterialIcons;
-            iconName = 'home';
-          } else if (route.name === 'Thread') {
-            IconComponent = Ionicons;
-            iconName = isFocused ? 'chatbubbles' : 'chatbubbles-outline';
-          }
-
-          return (
-            <TouchableOpacity
-              key={route.key}
-              accessibilityRole="button"
-              accessibilityState={isFocused ? { selected: true } : {}}
-              accessibilityLabel={options.tabBarAccessibilityLabel}
-              testID={options.tabBarTestID}
-              onPress={onPress}
-              onLongPress={onLongPress}
-              style={styles.tabBarButton}
-            >
-              {isFocused ? (
-                <BlurView intensity={20} tint="light" style={styles.iconGlassContainer}>
-                  {IconComponent && <IconComponent name={iconName} size={30} color={color} />}
-                </BlurView>
-              ) : (
-                IconComponent && <IconComponent name={iconName} size={30} color={color} />
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </BlurView>
+    <View style={styles.switchButtonWrapper} pointerEvents="box-none">
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        onPress={onPress}
+        onLongPress={onPress}
+        activeOpacity={0.85}
+        style={styles.switchButton}
+      >
+        <View style={styles.glassButtonInner}>
+          <BlurView
+            intensity={70}
+            tint="light"
+            style={StyleSheet.absoluteFillObject}
+          />
+          <View style={styles.glassButtonContent}>
+            <IconComponent
+              name={iconName}
+              size={32}
+              color="#4E5F5C"
+            />
+          </View>
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 });
 
@@ -217,43 +198,35 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
   },
-  blurContainer: {
+  switchButtonWrapper: {
     position: 'absolute',
-    bottom: 10,
-    alignSelf: 'center',
-    borderRadius: 20,
+    bottom: Platform.OS === 'ios' ? 34 : 24,
+    right: 20,
+    left: 0,
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+  },
+  switchButton: {
+    width: 64,
+    height: 64,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  glassButtonInner: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 10,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
-  tabBarContainer: {
-    flexDirection: 'row',
-    height: 64,
-    paddingTop: 14,
-    paddingBottom: 12,
-    paddingHorizontal: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 40,
-  },
-  tabBarButton: {
+  glassButtonContent: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iconGlassContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
   },
 });
 
