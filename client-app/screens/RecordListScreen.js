@@ -11,6 +11,9 @@ import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext'
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SERVER_URL } from '../config';
+import RecordCalendarSection from '../components/RecordCalendarSection';
+import RecordHeatmapSection from '../components/RecordHeatmapSection';
+import RecordLifeTimelineSection from '../components/RecordLifeTimelineSection';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IMAGE_PADDING = 1; // 画像間の余白
@@ -19,6 +22,26 @@ const COLUMN_WIDTH = (SCREEN_WIDTH - IMAGE_PADDING * 4) / 3; // 3列
 const TILE_PADDING = 16;
 const TILE_GAP = 8;
 const TILE_SIZE = (SCREEN_WIDTH - TILE_PADDING * 2 - TILE_GAP * (3 - 1)) / 3;
+
+const LIST_AREA_MODES = ['gallery', 'calendar', 'heatmap', 'lifeTimeline'];
+
+function advanceListAreaMode(prev) {
+    const i = LIST_AREA_MODES.indexOf(prev);
+    return LIST_AREA_MODES[(i + 1) % LIST_AREA_MODES.length];
+}
+
+function listAreaModeIcon(mode) {
+    switch (mode) {
+        case 'calendar':
+            return 'calendar';
+        case 'heatmap':
+            return 'flame';
+        case 'lifeTimeline':
+            return 'git-branch-outline';
+        default:
+            return 'calendar-outline';
+    }
+}
 
 // 日付を yyyy/mm/dd 形式にフォーマットする関数
 const formatDate = (dateString) => {
@@ -93,7 +116,7 @@ const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid
 export default function RecordListScreen({ navigation }) {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', 'booklist', 'tile'
-    const [sortOrder, setSortOrder] = useState('date_logged'); // 'date_logged' | 'created_at'
+    const [listAreaMode, setListAreaMode] = useState('gallery'); // gallery | calendar | heatmap | lifeTimeline
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
     const [categoryName, setCategoryName] = useState('');
@@ -108,7 +131,7 @@ export default function RecordListScreen({ navigation }) {
     const { categories, recordsByCategory, records, loadCategories, loadRecords, loadingCategories, loadingRecords } = useRecordsAndCategories();
     const { userInfo, userToken } = useContext(AuthContext);
     const { theme } = useTheme();
-    const { t } = useLanguage();
+    const { t, activeLanguage } = useLanguage();
     const horizontalScrollViewRef = useRef(null);
     const categoryScrollViewRefs = useRef({});
     const categoryTabsScrollRef = useRef(null);
@@ -441,23 +464,20 @@ export default function RecordListScreen({ navigation }) {
         }, [loadCategories, loadRecords])
     );
 
-    // フォーカス時にデフォルト表示形式・並び順を反映（表示設定で変更した場合など）
+    // フォーカス時にデフォルト表示形式を反映（表示設定で変更した場合など）
     useFocusEffect(
         useCallback(() => {
             const defaultMode = userInfo?.default_view_mode || 'grid';
             setViewMode(defaultMode);
-            const defaultSort = userInfo?.default_sort_order || 'date_logged';
-            setSortOrder(defaultSort);
-        }, [userInfo?.default_view_mode, userInfo?.default_sort_order])
+        }, [userInfo?.default_view_mode])
     );
 
-    // 並び順でソート（新しい順）
-    const sortRecords = useCallback((records, order) => {
-        if (!records || records.length === 0) return records;
-        const key = order === 'created_at' ? 'created_at' : 'date_logged';
+    // 投稿日（date_logged）の新しい順で固定ソート
+    const sortByDateLoggedDesc = useCallback((records) => {
+        if (!records || records.length === 0) return records || [];
         return [...records].sort((a, b) => {
-            const ta = a[key] ? new Date(a[key]).getTime() : 0;
-            const tb = b[key] ? new Date(b[key]).getTime() : 0;
+            const ta = a.date_logged ? new Date(a.date_logged).getTime() : 0;
+            const tb = b.date_logged ? new Date(b.date_logged).getTime() : 0;
             return tb - ta;
         });
     }, []);
@@ -494,13 +514,18 @@ export default function RecordListScreen({ navigation }) {
                 <View style={styles.iconButtons}>
                     <TouchableOpacity
                         style={styles.viewModeButton}
-                        onPress={() => setSortOrder((prev) => (prev === 'date_logged' ? 'created_at' : 'date_logged'))}
+                        onPress={() => setListAreaMode((prev) => advanceListAreaMode(prev))}
                     >
-                        <Ionicons name="swap-vertical-outline" size={24} color={theme.colors.icon} />
+                        <Ionicons
+                            name={listAreaModeIcon(listAreaMode)}
+                            size={24}
+                            color={listAreaMode !== 'gallery' ? theme.colors.primary : theme.colors.icon}
+                        />
                     </TouchableOpacity>
                     <TouchableOpacity 
                         style={styles.viewModeButton}
                         onPress={() => {
+                            setListAreaMode('gallery');
                             // 表示形式を切り替え: grid -> list -> booklist -> tile -> grid
                             if (viewMode === 'grid') {
                                 setViewMode('list');
@@ -624,6 +649,7 @@ export default function RecordListScreen({ navigation }) {
                 >
                     {categories.map((category) => {
                         const categoryRecords = recordsByCategory[category.id] || [];
+                        const sortedCategoryRecords = sortByDateLoggedDesc(categoryRecords);
                         return (
                             <ScrollView
                                 key={category.id}
@@ -632,6 +658,7 @@ export default function RecordListScreen({ navigation }) {
                                         categoryScrollViewRefs.current[category.id] = ref;
                                     }
                                 }}
+                                nestedScrollEnabled
                                 onScroll={() => {}}
                                 scrollEventThrottle={16}
                                 contentContainerStyle={styles.scrollContent}
@@ -646,7 +673,33 @@ export default function RecordListScreen({ navigation }) {
                                 }
                             >
                                 <View style={styles.gridContainer}>
-                                    {renderRecords(sortRecords(categoryRecords, sortOrder))}
+                                    {listAreaMode === 'calendar' ? (
+                                        <RecordCalendarSection
+                                            records={sortedCategoryRecords}
+                                            theme={theme}
+                                            navigation={navigation}
+                                            language={activeLanguage}
+                                            t={t}
+                                        />
+                                    ) : listAreaMode === 'heatmap' ? (
+                                        <RecordHeatmapSection
+                                            records={sortedCategoryRecords}
+                                            theme={theme}
+                                            navigation={navigation}
+                                            language={activeLanguage}
+                                            t={t}
+                                        />
+                                    ) : listAreaMode === 'lifeTimeline' ? (
+                                        <RecordLifeTimelineSection
+                                            records={sortedCategoryRecords}
+                                            theme={theme}
+                                            navigation={navigation}
+                                            language={activeLanguage}
+                                            t={t}
+                                        />
+                                    ) : (
+                                        renderRecords(sortedCategoryRecords)
+                                    )}
                                 </View>
                             </ScrollView>
                         );

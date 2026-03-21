@@ -46,7 +46,6 @@ export const getOtherUserProfile = async (token, userId) => {
 export const updateDisplaySettings = async (token, settings) => {
     const body = {};
     if (settings.default_view_mode !== undefined) body.default_view_mode = settings.default_view_mode;
-    if (settings.default_sort_order !== undefined) body.default_sort_order = settings.default_sort_order;
 
     return apiFetch(token, '/users/me/settings', {
         method: 'PUT',
