@@ -371,13 +371,6 @@ const ThreadScreen = ({ navigation }) => {
                 </SafeAreaView>
             </Modal>
 
-            {/* プルダウン更新中のローディング表示（投稿一覧画面と同じ） */}
-            {refreshing && (
-                <View style={styles.refreshingIndicator}>
-                    <ActivityIndicator size="small" color={theme.colors.primary} />
-                </View>
-            )}
-
             {loading ? (
                 <View style={styles.centered}>
                     <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -425,11 +418,6 @@ const styles = StyleSheet.create({
     headerSpacer: { flex: 1 },
     searchButton: { padding: 8 },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    refreshingIndicator: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 8,
-    },
     listContent: { padding: 12, paddingBottom: 80 },
     emptyContainer: { flex: 1, justifyContent: 'center', paddingBottom: 80 },
     emptyState: { alignItems: 'center', paddingVertical: 48 },
