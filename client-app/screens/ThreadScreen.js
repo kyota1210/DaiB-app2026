@@ -50,15 +50,30 @@ const ThreadScreen = ({ navigation }) => {
     const loadData = useCallback(async () => {
         if (!userToken) return;
         try {
+            const clientTz =
+                (typeof Intl !== 'undefined' && Intl.DateTimeFormat().resolvedOptions().timeZone) || 'Asia/Tokyo';
             const [meRes, timelineRes] = await Promise.all([
                 getUserProfile(userToken),
-                getTimeline(userToken),
+                getTimeline(userToken, clientTz),
             ]);
             setCounts({
                 following_count: meRes.user?.following_count ?? 0,
                 follower_count: meRes.user?.follower_count ?? 0,
             });
-            setRecords(timelineRes.records ?? []);
+            const base = timelineRes.records ?? [];
+            const mem = timelineRes.memoryResurface;
+            if (mem?.record) {
+                setRecords([
+                    {
+                        ...mem.record,
+                        memory_kind: mem.kind,
+                        memory_years_ago: mem.yearsAgo,
+                    },
+                    ...base,
+                ]);
+            } else {
+                setRecords(base);
+            }
         } catch (err) {
             console.error('ThreadScreen load error', err);
         } finally {
@@ -169,29 +184,59 @@ const ThreadScreen = ({ navigation }) => {
             }
         };
 
+        const isMemoryResurface = !!item.is_memory_resurface;
+        const memoryLabelText =
+            isMemoryResurface &&
+            (item.memory_kind === 'anniversary' && item.memory_years_ago != null
+                ? t('memoryResurfaceYearsAgoToday').replace('{{years}}', String(item.memory_years_ago))
+                : t('memoryResurfaceSerendipity'));
+
         return (
             <TouchableOpacity
                 style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
                 onPress={() => openRecordDetail(index)}
                 activeOpacity={0.9}
             >
-                <TouchableOpacity
-                    style={styles.cardHeader}
-                    onPress={openUserProfile}
-                    activeOpacity={0.8}
-                    disabled={item.author_id == null}
-                >
-                    {authorAvatarUrl ? (
-                        <Image source={{ uri: authorAvatarUrl }} style={styles.avatar} />
-                    ) : (
-                        <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.border }]}>
-                            <Ionicons name="person" size={20} color={theme.colors.inactive} />
-                        </View>
-                    )}
-                    <Text style={[styles.authorName, { color: theme.colors.text }]} numberOfLines={1}>
-                        {item.author_name || ''}
-                    </Text>
-                </TouchableOpacity>
+                {isMemoryResurface && memoryLabelText ? (
+                    <View style={[styles.memoryLabelRow, { backgroundColor: theme.colors.secondaryBackground }]}>
+                        <Ionicons name="time-outline" size={14} color={theme.colors.primary} style={styles.memoryLabelIcon} />
+                        <Text style={[styles.memoryLabelText, { color: theme.colors.primary }]} numberOfLines={1}>
+                            {memoryLabelText}
+                        </Text>
+                    </View>
+                ) : null}
+                {isMemoryResurface ? (
+                    <View style={styles.cardHeader}>
+                        {authorAvatarUrl ? (
+                            <Image source={{ uri: authorAvatarUrl }} style={styles.avatar} />
+                        ) : (
+                            <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.border }]}>
+                                <Ionicons name="person" size={20} color={theme.colors.inactive} />
+                            </View>
+                        )}
+                        <Text style={[styles.authorName, { color: theme.colors.text }]} numberOfLines={1}>
+                            {item.author_name || ''}
+                        </Text>
+                    </View>
+                ) : (
+                    <TouchableOpacity
+                        style={styles.cardHeader}
+                        onPress={openUserProfile}
+                        activeOpacity={0.8}
+                        disabled={item.author_id == null}
+                    >
+                        {authorAvatarUrl ? (
+                            <Image source={{ uri: authorAvatarUrl }} style={styles.avatar} />
+                        ) : (
+                            <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.border }]}>
+                                <Ionicons name="person" size={20} color={theme.colors.inactive} />
+                            </View>
+                        )}
+                        <Text style={[styles.authorName, { color: theme.colors.text }]} numberOfLines={1}>
+                            {item.author_name || ''}
+                        </Text>
+                    </TouchableOpacity>
+                )}
                 {imageUrl ? (
                     <Image source={{ uri: imageUrl }} style={styles.recordImage} resizeMode="cover" />
                 ) : (
@@ -378,7 +423,7 @@ const ThreadScreen = ({ navigation }) => {
             ) : (
                 <FlatList
                     data={records}
-                    keyExtractor={(item) => String(item.id)}
+                    keyExtractor={(item) => (item.is_memory_resurface ? `mem-${item.id}` : String(item.id))}
                     renderItem={renderItem}
                     contentContainerStyle={records.length === 0 ? styles.emptyContainer : styles.listContent}
                     ListEmptyComponent={
@@ -428,6 +473,16 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         overflow: 'hidden',
     },
+    memoryLabelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 6,
+        paddingHorizontal: 10,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: 'rgba(128,128,128,0.25)',
+    },
+    memoryLabelIcon: { marginRight: 6 },
+    memoryLabelText: { fontSize: 12, fontWeight: '700', flex: 1 },
     cardHeader: { flexDirection: 'row', alignItems: 'center', padding: 10 },
     avatar: { width: 32, height: 32, borderRadius: 16 },
     avatarPlaceholder: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },

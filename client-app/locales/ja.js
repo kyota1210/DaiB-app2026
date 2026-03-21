@@ -26,6 +26,8 @@ export default {
     unfollowConfirmMessageWithName: '{{name}}のフォローを解除しますか？',
     thisUser: 'このユーザー',
     noTimeline: 'フォローしているユーザーの投稿がここに表示されます',
+    memoryResurfaceYearsAgoToday: '{{years}}年前の今日',
+    memoryResurfaceSerendipity: '過去の思い出',
     followingList: 'フォロー中',
     followersList: 'フォロワー',
     noUsers: 'なし',

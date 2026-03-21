@@ -26,6 +26,8 @@ export default {
     unfollowConfirmMessageWithName: 'Unfollow {{name}}?',
     thisUser: 'this user',
     noTimeline: 'Posts from people you follow will appear here',
+    memoryResurfaceYearsAgoToday: '{{years}} years ago today',
+    memoryResurfaceSerendipity: 'A memory from the past',
     followingList: 'Following',
     followersList: 'Followers',
     noUsers: 'No users',

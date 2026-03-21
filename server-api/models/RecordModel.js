@@ -153,6 +153,71 @@ class RecordModel {
         const [rows] = await db.query(sql, authorIds);
         return rows;
     }
+
+    /**
+     * 再浮上（周年）: date_logged の暦日が一致する最初の1件
+     * @param {object|null} [conn] pool またはトランザクション接続（省略時はプール）
+     */
+    static async findFirstResurfaceRecordIdByLoggedDate(userId, loggedDate, conn = null) {
+        const executor = conn || db;
+        const sql = `
+            SELECT r.id
+            FROM records r
+            WHERE r.user_id = ?
+              AND r.invalidation_flag = 0
+              AND r.show_in_timeline = 1
+              AND DATE(r.date_logged) = ?
+            ORDER BY r.id ASC
+            LIMIT 1
+        `;
+        const [rows] = await executor.query(sql, [userId, loggedDate]);
+        return rows[0]?.id ?? null;
+    }
+
+    /**
+     * 再浮上（セレンディピティ）: 候補からランダム1件
+     */
+    static async findRandomResurfaceRecordId(userId, conn = null) {
+        const executor = conn || db;
+        const sql = `
+            SELECT r.id
+            FROM records r
+            WHERE r.user_id = ?
+              AND r.invalidation_flag = 0
+              AND r.show_in_timeline = 1
+            ORDER BY RAND()
+            LIMIT 1
+        `;
+        const [rows] = await executor.query(sql, [userId]);
+        return rows[0]?.id ?? null;
+    }
+
+    /**
+     * タイムラインカード用の1行（所有者本人の記録）
+     */
+    static async findTimelineRowByRecordIdForUser(recordId, userId, conn = null) {
+        const executor = conn || db;
+        const sql = `
+            SELECT r.id, r.title, r.description, r.created_at, r.date_logged, r.image_url, r.category_id, r.user_id AS author_id,
+                   u.user_name AS author_name,
+                   ua.image_url AS author_avatar_url,
+                   GROUP_CONCAT(rc.category_id ORDER BY rc.category_id SEPARATOR ',') AS category_ids,
+                   GROUP_CONCAT(c.name ORDER BY rc.category_id SEPARATOR ',') AS category_names
+            FROM records r
+            JOIN users u ON u.id = r.user_id
+            LEFT JOIN user_avatars ua ON ua.user_id = u.id
+            LEFT JOIN record_categories rc ON rc.record_id = r.id
+            LEFT JOIN categories c ON c.id = rc.category_id
+            WHERE r.id = ?
+              AND r.user_id = ?
+              AND r.invalidation_flag = 0
+              AND r.show_in_timeline = 1
+            GROUP BY r.id, r.title, r.description, r.created_at, r.date_logged, r.image_url, r.category_id, r.user_id,
+                     u.user_name, ua.image_url
+        `;
+        const [rows] = await executor.query(sql, [recordId, userId]);
+        return rows[0] ?? null;
+    }
 }
 
 module.exports = RecordModel;
