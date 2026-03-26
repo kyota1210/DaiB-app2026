@@ -104,14 +104,13 @@ function heatmapGreenForLevel(level) {
     );
 }
 
-/** その週列に月の1日が含まれる場合、月の短縮名（ロケール対応） */
-function monthLabelForWeekColumn(columnCells, language) {
-    const locale = language === 'en' ? 'en-US' : 'ja-JP';
+/** その週列に月の1日が含まれる場合、月の短縮名（英語固定: Jan, Feb, ...） */
+function monthLabelForWeekColumn(columnCells) {
     for (const cell of columnCells) {
         if (!cell.inYear) continue;
         const d = new Date(`${cell.dateString}T12:00:00`);
         if (d.getDate() === 1) {
-            return d.toLocaleDateString(locale, { month: 'short' });
+            return d.toLocaleDateString('en-US', { month: 'short' });
         }
     }
     return '';
@@ -163,15 +162,6 @@ export default function RecordHeatmapSection({ records, theme, navigation, langu
     }, []);
 
     const renderDayGrid = () => {
-        if (!selectedDate) {
-            return (
-                <View style={styles.hintWrap}>
-                    <Text style={[styles.hintText, { color: theme.colors.secondaryText }]}>
-                        {t('heatmapTapDayHint')}
-                    </Text>
-                </View>
-            );
-        }
         if (dayRecords.length === 0) {
             return (
                 <View style={styles.hintWrap}>
@@ -233,9 +223,7 @@ export default function RecordHeatmapSection({ records, theme, navigation, langu
                 >
                     <Ionicons name="chevron-back" size={22} color={theme.colors.icon} />
                 </TouchableOpacity>
-                <Text style={[styles.yearText, { color: theme.colors.text }]}>
-                    {t('heatmapForYear').replace('{{year}}', String(year))}
-                </Text>
+                <Text style={[styles.yearText, { color: theme.colors.text }]}>{String(year)}</Text>
                 <TouchableOpacity
                     onPress={() => setYear((y) => y + 1)}
                     style={styles.yearArrow}
@@ -254,7 +242,7 @@ export default function RecordHeatmapSection({ records, theme, navigation, langu
                 <View>
                     <View style={styles.monthRow}>
                         {weekColumns.map((col, wi) => {
-                            const label = monthLabelForWeekColumn(col, language);
+                            const label = monthLabelForWeekColumn(col);
                             return (
                                 <View
                                     key={`m-${wi}`}
@@ -333,9 +321,6 @@ export default function RecordHeatmapSection({ records, theme, navigation, langu
             </View>
 
             <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-            <Text style={[styles.sectionLabel, { color: theme.colors.secondaryText }]}>
-                {t('calendarDayPosts')}
-            </Text>
             {renderDayGrid()}
         </View>
     );

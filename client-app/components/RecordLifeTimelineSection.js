@@ -4,28 +4,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { getImageUrl } from '../utils/imageHelper';
 import { recordDateKey } from '../utils/recordDateKey';
 
-const THUMB = 56;
-const THUMB_GAP = 8;
-const MONTH_LABEL_W = 44;
-/** タブ選択・ヒートマップ最大色と揃えたアクセント（primary の青は使わない） */
-const CHRONOMAP_AXIS_COLOR = '#4E5F5C';
-const MONTH_INDENT_FROM_YEAR = 18;
-const YEAR_TITLE_PADDING_LEFT = 14;
+const THUMB = 72;
+const THUMB_GAP = 10;
 
-function formatYearLabel(year, language) {
-    return language === 'en' ? String(year) : `${year}年`;
+function formatYearLabel(year) {
+    return String(year);
 }
 
-function formatMonthLabel(month, language) {
-    if (language === 'en') {
-        const d = new Date(2000, month - 1, 1);
-        return d.toLocaleDateString('en-US', { month: 'short' });
-    }
-    return `${month}月`;
+function formatMonthLabel(month) {
+    const d = new Date(2000, month - 1, 1);
+    return d.toLocaleDateString('en-US', { month: 'short' });
 }
 
-function formatDayLabel(day, language) {
-    return language === 'en' ? String(day) : `${day}日`;
+function formatDayLabel(day) {
+    return String(day);
 }
 
 /**
@@ -112,8 +104,6 @@ export default function RecordLifeTimelineSection({ records, theme, navigation, 
         );
     }
 
-    const axisColor = CHRONOMAP_AXIS_COLOR;
-
     const renderThumb = (item) => {
         const imageUrl = getImageUrl(item.image_url);
         const initialIndex = indexById.get(item.id) ?? 0;
@@ -143,7 +133,7 @@ export default function RecordLifeTimelineSection({ records, theme, navigation, 
                             { backgroundColor: theme.colors.secondaryBackground },
                         ]}
                     >
-                        <Ionicons name="image" size={24} color={theme.colors.inactive} />
+                        <Ionicons name="image" size={28} color={theme.colors.inactive} />
                     </View>
                 )}
             </TouchableOpacity>
@@ -152,47 +142,44 @@ export default function RecordLifeTimelineSection({ records, theme, navigation, 
 
     return (
         <View style={styles.wrap}>
-            {tree.map((yearBlock) => (
-                <View key={yearBlock.year} style={styles.yearSection}>
+            {tree.map((yearBlock, yi) => (
+                <View
+                    key={yearBlock.year}
+                    style={[styles.yearSection, yi > 0 && styles.yearSectionGap]}
+                >
                     <Text style={[styles.yearTitle, { color: theme.colors.text }]}>
-                        {formatYearLabel(yearBlock.year, language)}
+                        {formatYearLabel(yearBlock.year)}
                     </Text>
                     <View style={styles.monthsUnderYear}>
-                    {yearBlock.months.map((monthBlock) => (
-                        <View key={`${yearBlock.year}-${monthBlock.month}`} style={styles.monthRow}>
-                            <View style={[styles.monthLabelCol, { width: MONTH_LABEL_W }]}>
-                                <Text style={[styles.monthLabel, { color: theme.colors.text }]}>
-                                    {formatMonthLabel(monthBlock.month, language)}
-                                </Text>
-                            </View>
-                            <View style={styles.monthConnectorWrap}>
-                                <View style={[styles.monthHConnector, { backgroundColor: axisColor }]} />
-                            </View>
+                        {yearBlock.months.map((monthBlock) => (
                             <View
-                                style={[
-                                    styles.monthContent,
-                                    {
-                                        borderLeftColor: axisColor,
-                                    },
-                                ]}
+                                key={`${yearBlock.year}-${monthBlock.month}`}
+                                style={styles.monthSection}
                             >
-                                {monthBlock.days.map((dayBlock) => (
-                                    <View key={`${yearBlock.year}-${monthBlock.month}-${dayBlock.day}`} style={styles.dayBlock}>
-                                        <View style={styles.dayLabelCol}>
-                                            <Text
-                                                style={[styles.dayLabel, { color: theme.colors.secondaryText }]}
-                                            >
-                                                {formatDayLabel(dayBlock.day, language)}
-                                            </Text>
+                                <Text style={[styles.monthLabel, { color: theme.colors.text }]}>
+                                    {formatMonthLabel(monthBlock.month)}
+                                </Text>
+                                <View style={styles.daysUnderMonth}>
+                                    {monthBlock.days.map((dayBlock) => (
+                                        <View
+                                            key={`${yearBlock.year}-${monthBlock.month}-${dayBlock.day}`}
+                                            style={styles.dayBlock}
+                                        >
+                                            <View style={styles.dayLabelCol}>
+                                                <Text
+                                                    style={[styles.dayLabel, { color: theme.colors.secondaryText }]}
+                                                >
+                                                    {formatDayLabel(dayBlock.day)}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.thumbRow}>
+                                                {dayBlock.records.map((rec) => renderThumb(rec))}
+                                            </View>
                                         </View>
-                                        <View style={styles.thumbRow}>
-                                            {dayBlock.records.map((rec) => renderThumb(rec))}
-                                        </View>
-                                    </View>
-                                ))}
+                                    ))}
+                                </View>
                             </View>
-                        </View>
-                    ))}
+                        ))}
                     </View>
                 </View>
             ))}
@@ -201,70 +188,48 @@ export default function RecordLifeTimelineSection({ records, theme, navigation, 
 }
 
 const styles = StyleSheet.create({
-    wrap: { width: '100%', paddingBottom: 20 },
+    wrap: { width: '100%', paddingBottom: 24 },
     yearSection: {
-        marginBottom: 20,
+        marginBottom: 8,
     },
-    monthsUnderYear: {
-        marginLeft: MONTH_INDENT_FROM_YEAR,
+    yearSectionGap: {
+        marginTop: 32,
     },
     yearTitle: {
-        fontSize: 22,
-        fontWeight: '800',
-        marginBottom: 14,
-        paddingLeft: YEAR_TITLE_PADDING_LEFT,
+        fontSize: 28,
+        fontWeight: '300',
+        marginBottom: 16,
+        paddingLeft: 16,
         paddingRight: 4,
     },
-    monthRow: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        marginBottom: 16,
+    monthsUnderYear: {
+        paddingLeft: 28,
     },
-    monthLabelCol: {
-        paddingTop: 2,
-        paddingRight: 6,
-        justifyContent: 'flex-start',
+    monthSection: {
+        marginBottom: 18,
     },
     monthLabel: {
-        fontSize: 17,
-        fontWeight: '700',
-        textAlign: 'right',
+        fontSize: 15,
+        fontWeight: '600',
+        marginBottom: 10,
     },
-    monthConnectorWrap: {
-        width: 14,
-        alignSelf: 'flex-start',
-        paddingTop: 2,
-        height: 24,
-        justifyContent: 'center',
-    },
-    monthHConnector: {
-        height: 2,
-        width: 14,
-        borderRadius: 1,
-    },
-    monthContent: {
-        flex: 1,
-        borderLeftWidth: 2,
-        paddingLeft: 12,
-        paddingVertical: 4,
-        paddingRight: 8,
-        borderRadius: 0,
-        minWidth: 0,
+    daysUnderMonth: {
+        paddingLeft: 8,
     },
     dayBlock: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        marginBottom: 14,
+        marginBottom: 16,
     },
     dayLabelCol: {
-        width: 45,
-        paddingRight: 10,
-        paddingTop: 4,
+        width: 30,
+        paddingRight: 6,
+        paddingTop: 6,
         justifyContent: 'flex-start',
     },
     dayLabel: {
-        fontSize: 14,
-        fontWeight: '600',
+        fontSize: 13,
+        fontWeight: '400',
         textAlign: 'right',
     },
     thumbRow: {
@@ -275,14 +240,11 @@ const styles = StyleSheet.create({
         gap: THUMB_GAP,
         minWidth: 0,
     },
-    thumbWrap: {
-        marginRight: 0,
-        marginBottom: 0,
-    },
+    thumbWrap: {},
     thumb: {
         width: THUMB,
         height: THUMB,
-        borderRadius: 8,
+        borderRadius: 12,
         overflow: 'hidden',
     },
     thumbPlaceholder: {
