@@ -129,6 +129,26 @@ async function run() {
             console.log('✅ follows テーブルを作成しました。');
         }
 
+        // 6. reactions
+        if (await tableExists('reactions')) {
+            console.log('reactions は既に存在します。スキップします。');
+        } else {
+            await db.query(`
+                CREATE TABLE reactions (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    record_id INT NOT NULL,
+                    user_id INT NOT NULL,
+                    emoji VARCHAR(10) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY unique_reaction (record_id, user_id),
+                    FOREIGN KEY (record_id) REFERENCES records(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    INDEX idx_record_id (record_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            `);
+            console.log('✅ reactions テーブルを作成しました。');
+        }
+
         console.log('\n全テーブルの作成が完了しました。');
     } catch (error) {
         console.error('❌ テーブル作成に失敗しました:', error);

@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, Modal, Dimensions, LayoutAnimation } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, Modal, Dimensions, Animated, Easing, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ResultModal from '../components/ResultModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRecordsApi } from '../api/records';
+import { addReaction, getReactionSummary } from '../api/reactions';
 import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -13,9 +14,51 @@ import { useFocusEffect } from '@react-navigation/native';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SCREEN_WIDTH = Dimensions.get('window').width;
+const REACTION_EMOJIS = ['❤️', '👍', '🌸', '🎉', '✨'];
 
-// 各レコードアイテムコンポーネント（オリジナル画像を余白なく表示）
-const RecordItem = React.memo(function RecordItem({ item, theme, t }) {
+const AnimatedReactionBar = React.memo(({ emojis, onSelect, isClosing, onCloseComplete }) => {
+    const anim = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+        Animated.timing(anim, {
+            toValue: 1,
+            duration: 260,
+            useNativeDriver: true,
+            easing: Easing.out(Easing.cubic),
+        }).start();
+    }, []);
+    useEffect(() => {
+        if (isClosing) {
+            Animated.timing(anim, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+                easing: Easing.in(Easing.cubic),
+            }).start(() => onCloseComplete?.());
+        }
+    }, [isClosing]);
+    return (
+        <Animated.View
+            style={[
+                styles.imageReactionBar,
+                {
+                    backgroundColor: 'rgba(255,255,255,0.22)',
+                    borderColor: 'rgba(255,255,255,0.45)',
+                    opacity: anim,
+                    transform: [{ translateX: anim.interpolate({ inputRange: [0, 1], outputRange: [80, 0] }) }],
+                },
+            ]}
+            pointerEvents={isClosing ? 'none' : 'auto'}
+        >
+            {emojis.map((emoji) => (
+                <TouchableOpacity key={emoji} style={styles.imageReactionOption} onPress={() => onSelect(emoji)}>
+                    <Text style={styles.reactionPopupEmoji}>{emoji}</Text>
+                </TouchableOpacity>
+            ))}
+        </Animated.View>
+    );
+});
+
+const RecordItem = React.memo(function RecordItem({ item, theme, t, showReactionControl, isReactionBarExpanded, onToggleReactionBar, onSelectReaction, burstEmoji, burstAnim, isReactionBarClosing, onReactionBarCloseComplete }) {
     const [originalAspect, setOriginalAspect] = useState(null);
     const imageUrl = getImageUrl(item.image_url);
     const date = useMemo(() => new Date(item.date_logged), [item.date_logged]);
@@ -53,12 +96,48 @@ const RecordItem = React.memo(function RecordItem({ item, theme, t }) {
             removeClippedSubviews={true}
         >
             {showImage ? (
-                <View style={[styles.imageContainer, { width: SCREEN_WIDTH, height: containerHeight }]}>
-                    <Image
-                        source={{ uri: imageUrl }}
-                        style={styles.image}
-                        resizeMode="contain"
-                    />
+                <View style={{ position: 'relative' }}>
+                    <TouchableOpacity
+                        activeOpacity={0.98}
+                    >
+                        <View style={[styles.imageContainer, { width: SCREEN_WIDTH, height: containerHeight }]}>
+                            <Image
+                                source={{ uri: imageUrl }}
+                                style={styles.image}
+                                resizeMode="contain"
+                            />
+                        </View>
+                    </TouchableOpacity>
+                    {showReactionControl ? (
+                        <TouchableOpacity
+                            style={[styles.imageReactionButton, { backgroundColor: theme.colors.card }]}
+                            onPress={onToggleReactionBar}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons name="happy-outline" size={16} color={theme.colors.text} />
+                        </TouchableOpacity>
+                    ) : null}
+                    {showReactionControl && isReactionBarExpanded ? (
+                        <AnimatedReactionBar
+                            emojis={REACTION_EMOJIS}
+                            onSelect={onSelectReaction}
+                            isClosing={isReactionBarClosing}
+                            onCloseComplete={onReactionBarCloseComplete}
+                        />
+                    ) : null}
+                    {burstEmoji ? (
+                        <Animated.View style={styles.burstOverlay} pointerEvents="none">
+                            <Animated.Text style={[
+                                styles.burstEmoji,
+                                {
+                                    opacity: burstAnim.interpolate({ inputRange: [0, 0.3, 1, 2], outputRange: [0, 1, 1, 0] }),
+                                    transform: [{ scale: burstAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [0.3, 1.5, 2.5] }) }],
+                                },
+                            ]}>
+                                {burstEmoji}
+                            </Animated.Text>
+                        </Animated.View>
+                    ) : null}
                 </View>
             ) : (
                 <View style={[styles.placeholderImageContainer, { backgroundColor: theme.colors.border }]}>
@@ -113,9 +192,22 @@ export default function RecordDetailScreen({ route, navigation }) {
     const menuButtonRef = useRef(null);
     const { deleteRecord } = useRecordsApi();
     const { loadRecords } = useRecordsAndCategories();
-    const { userInfo } = useContext(AuthContext);
+    const { userToken, userInfo } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
+
+    const [myReaction, setMyReaction] = useState(() => paramsRecords?.[initialIndex]?.my_reaction ?? null);
+    const [reactionSummary, setReactionSummary] = useState([]);
+    const [isReactionBarExpanded, setIsReactionBarExpanded] = useState(false);
+    const [isReactionBarClosing, setIsReactionBarClosing] = useState(false);
+    const [burstEmoji, setBurstEmoji] = useState(null);
+    const burstAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+            UIManager.setLayoutAnimationEnabledExperimental(true);
+        }
+    }, []);
 
     // 表示中のレコードIDを追跡し、Context 更新後も同じレコードを指すようにする
     const currentRecordIdRef = useRef(records[initialIndex]?.id);
@@ -126,6 +218,63 @@ export default function RecordDetailScreen({ route, navigation }) {
     const isOwnPost = !currentRecord?.author_id || currentRecord.author_id === userInfo?.id;
     // タイムラインから他人の投稿を開いた場合のみ true（ヘッダーに著者表示・横スワイプ無効）
     const isTimelineOtherUser = !!(paramsHaveAuthorInfo && currentRecord && !isOwnPost);
+
+    useEffect(() => {
+        if (isTimelineOtherUser && currentRecord) {
+            setMyReaction(currentRecord.my_reaction ?? null);
+        }
+    }, [currentRecord?.id]);
+
+    useEffect(() => {
+        if (!isOwnPost || !currentRecord?.id || !userToken) {
+            setReactionSummary([]);
+            return;
+        }
+        let cancelled = false;
+        getReactionSummary(userToken, currentRecord.id)
+            .then((res) => {
+                if (!cancelled) setReactionSummary(res.summary || []);
+            })
+            .catch(() => {
+                if (!cancelled) setReactionSummary([]);
+            });
+        return () => { cancelled = true; };
+    }, [currentRecord?.id, isOwnPost, userToken]);
+
+    const applyReaction = useCallback(async (emoji) => {
+        if (!userToken || !currentRecord) return;
+        const prev = myReaction;
+        setMyReaction(emoji);
+        setIsReactionBarExpanded(false);
+        setIsReactionBarClosing(false);
+        setBurstEmoji(emoji);
+        burstAnim.setValue(0);
+        Animated.sequence([
+            Animated.spring(burstAnim, { toValue: 1, useNativeDriver: true, speed: 18, bounciness: 10 }),
+            Animated.timing(burstAnim, { toValue: 2, duration: 350, useNativeDriver: true }),
+        ]).start(() => setBurstEmoji(null));
+        try {
+            await addReaction(userToken, currentRecord.id, emoji);
+        } catch (err) {
+            console.error('Reaction apply error', err);
+            setMyReaction(prev);
+        }
+    }, [userToken, currentRecord, myReaction, burstAnim]);
+
+    const toggleReactionBar = useCallback(() => {
+        if (!isTimelineOtherUser) return;
+        if (isReactionBarExpanded) {
+            setIsReactionBarClosing(true);
+        } else {
+            setIsReactionBarClosing(false);
+            setIsReactionBarExpanded(true);
+        }
+    }, [isTimelineOtherUser, isReactionBarExpanded]);
+
+    const handleReactionBarCloseComplete = useCallback(() => {
+        setIsReactionBarExpanded(false);
+        setIsReactionBarClosing(false);
+    }, []);
 
     useEffect(() => {
         const id = currentRecordIdRef.current;
@@ -220,6 +369,7 @@ export default function RecordDetailScreen({ route, navigation }) {
                         <Text style={[styles.headerAuthorName, { color: theme.colors.text }]} numberOfLines={1}>
                             {currentRecord.author_name || ''}
                         </Text>
+                        {myReaction ? <Text style={styles.reactionBadgeEmoji}>{myReaction}</Text> : null}
                     </TouchableOpacity>
                 ) : (
                     <View style={styles.headerSpacer} />
@@ -244,7 +394,19 @@ export default function RecordDetailScreen({ route, navigation }) {
             {/* コンテンツ: タイムライン他人投稿時は1件のみ表示（横スワイプ不可）、それ以外は横スワイプ可能 */}
             {isTimelineOtherUser && currentRecord ? (
                 <View style={styles.singleRecordWrapper}>
-                    <RecordItem item={currentRecord} theme={theme} t={t} />
+                    <RecordItem
+                        item={currentRecord}
+                        theme={theme}
+                        t={t}
+                        showReactionControl
+                        isReactionBarExpanded={isReactionBarExpanded}
+                        onToggleReactionBar={toggleReactionBar}
+                        onSelectReaction={applyReaction}
+                        burstEmoji={burstEmoji}
+                        burstAnim={burstAnim}
+                        isReactionBarClosing={isReactionBarClosing}
+                        onReactionBarCloseComplete={handleReactionBarCloseComplete}
+                    />
                 </View>
             ) : (
                 <ScrollView
@@ -264,6 +426,17 @@ export default function RecordDetailScreen({ route, navigation }) {
                         </View>
                     ))}
                 </ScrollView>
+            )}
+            {isOwnPost && reactionSummary.length > 0 && (
+                <View style={[styles.reactionBar, { borderTopColor: theme.colors.border, backgroundColor: theme.colors.background }]}>
+                    <Text style={[styles.reactionSummaryLabel, { color: theme.colors.secondaryText }]}>{t('reactions')}</Text>
+                    {reactionSummary.map((r) => (
+                        <View key={r.emoji} style={styles.reactionSummaryItem}>
+                            <Text style={styles.reactionSummaryEmoji}>{r.emoji}</Text>
+                            <Text style={[styles.reactionSummaryCount, { color: theme.colors.text }]}>{r.count}</Text>
+                        </View>
+                    ))}
+                </View>
             )}
 
             {/* メニューモーダル */}
@@ -409,6 +582,18 @@ const styles = StyleSheet.create({
         backgroundColor: '#000',
         overflow: 'hidden',
     },
+    imageReactionButton: {
+        position: 'absolute',
+        right: 8,
+        bottom: 8,
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: 'rgba(255,255,255,0.5)',
+    },
     image: { 
         width: '100%', 
         height: '100%', 
@@ -460,5 +645,65 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginLeft: 12,
         fontWeight: '500',
+    },
+    reactionBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderTopWidth: 1,
+        gap: 8,
+    },
+    imageReactionBar: {
+        position: 'absolute',
+        right: 42,
+        bottom: 8,
+        flexDirection: 'row',
+        gap: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        borderWidth: 1,
+        borderRadius: 18,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.18,
+        shadowRadius: 6,
+        elevation: 3,
+    },
+    imageReactionOption: { paddingHorizontal: 4, paddingVertical: 2 },
+    reactionPopupEmoji: {
+        fontSize: 24,
+    },
+    reactionBadgeEmoji: {
+        fontSize: 18,
+        marginLeft: 6,
+    },
+    burstOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    burstEmoji: {
+        fontSize: 64,
+    },
+    reactionSummaryLabel: {
+        fontSize: 12,
+        marginRight: 4,
+    },
+    reactionSummaryItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+    },
+    reactionSummaryEmoji: {
+        fontSize: 18,
+    },
+    reactionSummaryCount: {
+        fontSize: 14,
+        fontWeight: '600',
     },
 });

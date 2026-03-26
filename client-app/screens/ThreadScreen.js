@@ -10,6 +10,8 @@ import {
     RefreshControl,
     Modal,
     Dimensions,
+    Animated,
+    Easing,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -22,14 +24,59 @@ import { useLanguage } from '../context/LanguageContext';
 import { getUserProfile, searchUsers } from '../api/user';
 import { getTimeline } from '../api/threads';
 import { follow } from '../api/follows';
+import { addReaction } from '../api/reactions';
 import { getImageUrl } from '../utils/imageHelper';
+
+const REACTION_EMOJIS = ['❤️', '👍', '🌸', '🎉', '✨'];
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const QR_SIZE = Math.min(SCREEN_WIDTH - 80, 240);
 
+const AnimatedReactionBar = React.memo(({ emojis, onSelect, isClosing, onCloseComplete }) => {
+    const anim = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+        Animated.timing(anim, {
+            toValue: 1,
+            duration: 260,
+            useNativeDriver: true,
+            easing: Easing.out(Easing.cubic),
+        }).start();
+    }, []);
+    useEffect(() => {
+        if (isClosing) {
+            Animated.timing(anim, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+                easing: Easing.in(Easing.cubic),
+            }).start(() => onCloseComplete?.());
+        }
+    }, [isClosing]);
+    return (
+        <Animated.View
+            style={[
+                styles.imageReactionBar,
+                {
+                    backgroundColor: 'rgba(255,255,255,0.22)',
+                    borderColor: 'rgba(255,255,255,0.45)',
+                    opacity: anim,
+                    transform: [{ translateX: anim.interpolate({ inputRange: [0, 1], outputRange: [80, 0] }) }],
+                },
+            ]}
+            pointerEvents={isClosing ? 'none' : 'auto'}
+        >
+            {emojis.map((emoji) => (
+                <TouchableOpacity key={emoji} style={styles.imageReactionOption} onPress={() => onSelect(emoji)}>
+                    <Text style={styles.reactionPopupEmoji}>{emoji}</Text>
+                </TouchableOpacity>
+            ))}
+        </Animated.View>
+    );
+});
+
 const ThreadScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
-    const { userToken } = useContext(AuthContext);
+    const { userToken, userInfo } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
     const [permission, requestPermission] = useCameraPermissions();
@@ -44,6 +91,10 @@ const ThreadScreen = ({ navigation }) => {
     const [scannedUser, setScannedUser] = useState(null);
     const [scanBusy, setScanBusy] = useState(false);
     const [scanNoUserFound, setScanNoUserFound] = useState(false);
+    const [expandedReactionRecordId, setExpandedReactionRecordId] = useState(null);
+    const [closingReactionRecordId, setClosingReactionRecordId] = useState(null);
+    const [burstState, setBurstState] = useState(null);
+    const burstAnim = useRef(new Animated.Value(0)).current;
     /** 詳細/プロフィールから戻った次のフォーカスでは再取得しない（スクロール位置維持） */
     const skipRefetchOnNextFocusRef = useRef(false);
 
@@ -170,6 +221,46 @@ const ThreadScreen = ({ navigation }) => {
         });
     };
 
+    const applyReaction = useCallback(async (recordId, emoji) => {
+        if (!userToken) return;
+        const prevReaction = records.find((r) => r.id === recordId)?.my_reaction ?? null;
+        setRecords((prev) =>
+            prev.map((r) => (r.id === recordId ? { ...r, my_reaction: emoji } : r))
+        );
+        setExpandedReactionRecordId(null);
+        setClosingReactionRecordId(null);
+        setBurstState({ recordId, emoji });
+        burstAnim.setValue(0);
+        Animated.sequence([
+            Animated.spring(burstAnim, { toValue: 1, useNativeDriver: true, speed: 18, bounciness: 10 }),
+            Animated.timing(burstAnim, { toValue: 2, duration: 350, useNativeDriver: true }),
+        ]).start(() => setBurstState(null));
+        try {
+            await addReaction(userToken, recordId, emoji);
+        } catch (err) {
+            console.error('Reaction apply error', err);
+            setRecords((prev) =>
+                prev.map((r) => (r.id === recordId ? { ...r, my_reaction: prevReaction } : r))
+            );
+        }
+    }, [userToken, records, burstAnim]);
+
+    const handleReactionButtonPress = useCallback((item) => {
+        if (!item?.id) return;
+        if (item.author_id == null || item.author_id === userInfo?.id) return;
+        if (expandedReactionRecordId === item.id) {
+            setClosingReactionRecordId(item.id);
+        } else {
+            setClosingReactionRecordId(null);
+            setExpandedReactionRecordId(item.id);
+        }
+    }, [userInfo?.id, expandedReactionRecordId]);
+
+    const handleReactionBarCloseComplete = useCallback(() => {
+        setExpandedReactionRecordId(null);
+        setClosingReactionRecordId(null);
+    }, []);
+
     const renderItem = ({ item, index }) => {
         const imageUrl = getImageUrl(item.image_url);
         const authorAvatarUrl = getImageUrl(item.author_avatar_url);
@@ -217,6 +308,7 @@ const ThreadScreen = ({ navigation }) => {
                         <Text style={[styles.authorName, { color: theme.colors.text }]} numberOfLines={1}>
                             {item.author_name || ''}
                         </Text>
+                        {item.my_reaction ? <Text style={styles.reactionBadgeEmoji}>{item.my_reaction}</Text> : null}
                     </View>
                 ) : (
                     <TouchableOpacity
@@ -235,10 +327,35 @@ const ThreadScreen = ({ navigation }) => {
                         <Text style={[styles.authorName, { color: theme.colors.text }]} numberOfLines={1}>
                             {item.author_name || ''}
                         </Text>
+                        {item.my_reaction ? <Text style={styles.reactionBadgeEmoji}>{item.my_reaction}</Text> : null}
                     </TouchableOpacity>
                 )}
                 {imageUrl ? (
-                    <Image source={{ uri: imageUrl }} style={styles.recordImage} resizeMode="cover" />
+                    <View style={styles.imageArea}>
+                        <TouchableOpacity
+                            activeOpacity={0.95}
+                            onPress={() => openRecordDetail(index)}
+                        >
+                            <Image source={{ uri: imageUrl }} style={styles.recordImage} resizeMode="cover" />
+                        </TouchableOpacity>
+                        {item.author_id != null && item.author_id !== userInfo?.id ? (
+                            <TouchableOpacity
+                                style={[styles.imageReactionButton, { backgroundColor: theme.colors.card }]}
+                                onPress={() => handleReactionButtonPress(item)}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="happy-outline" size={16} color={theme.colors.text} />
+                            </TouchableOpacity>
+                        ) : null}
+                        {expandedReactionRecordId === item.id ? (
+                            <AnimatedReactionBar
+                                emojis={REACTION_EMOJIS}
+                                onSelect={(emoji) => applyReaction(item.id, emoji)}
+                                isClosing={closingReactionRecordId === item.id}
+                                onCloseComplete={handleReactionBarCloseComplete}
+                            />
+                        ) : null}
+                    </View>
                 ) : (
                     <View style={[styles.recordImagePlaceholder, { backgroundColor: theme.colors.secondaryBackground }]}>
                         <Ionicons name="image-outline" size={40} color={theme.colors.inactive} />
@@ -248,6 +365,19 @@ const ThreadScreen = ({ navigation }) => {
                     {dateStr ? <Text style={[styles.dateText, { color: theme.colors.secondaryText }]}>{dateStr}</Text> : null}
                     {item.title ? <Text style={[styles.titleText, { color: theme.colors.text }]} numberOfLines={2}>{item.title}</Text> : null}
                 </View>
+                {burstState?.recordId === item.id ? (
+                    <Animated.View style={styles.burstOverlay} pointerEvents="none">
+                        <Animated.Text style={[
+                            styles.burstEmoji,
+                            {
+                                opacity: burstAnim.interpolate({ inputRange: [0, 0.3, 1, 2], outputRange: [0, 1, 1, 0] }),
+                                transform: [{ scale: burstAnim.interpolate({ inputRange: [0, 1, 2], outputRange: [0.3, 1.5, 2.5] }) }],
+                            },
+                        ]}>
+                            {burstState.emoji}
+                        </Animated.Text>
+                    </Animated.View>
+                ) : null}
             </TouchableOpacity>
         );
     };
@@ -442,6 +572,7 @@ const ThreadScreen = ({ navigation }) => {
                     }
                 />
             )}
+
         </SafeAreaView>
     );
 };
@@ -492,6 +623,55 @@ const styles = StyleSheet.create({
     cardFooter: { padding: 10 },
     dateText: { fontSize: 12 },
     titleText: { fontSize: 14, marginTop: 4 },
+    imageArea: { position: 'relative' },
+    imageReactionButton: {
+        position: 'absolute',
+        right: 8,
+        bottom: 8,
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: 'rgba(255,255,255,0.5)',
+    },
+    imageReactionBar: {
+        position: 'absolute',
+        right: 42,
+        bottom: 8,
+        flexDirection: 'row',
+        gap: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        borderWidth: 1,
+        borderRadius: 18,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.18,
+        shadowRadius: 6,
+        elevation: 3,
+    },
+    imageReactionOption: { paddingHorizontal: 4, paddingVertical: 2 },
+    reactionPopupEmoji: {
+        fontSize: 24,
+    },
+    reactionBadgeEmoji: {
+        fontSize: 18,
+        marginLeft: 6,
+    },
+    burstOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    burstEmoji: {
+        fontSize: 64,
+    },
     qrModalSafeArea: { flex: 1 },
     qrModalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
     qrModalCloseFixed: { position: 'absolute', zIndex: 10, padding: 12, minWidth: 48, minHeight: 48, justifyContent: 'center', alignItems: 'center' },

@@ -7,6 +7,7 @@ const userRoutes = require('./userRoutes');
 const categoryRoutes = require('./categoryRoutes');
 const followsRoutes = require('./followsRoutes');
 const threadsRoutes = require('./threadsRoutes');
+const reactionsRoutes = require('./reactionsRoutes');
 const requestLogger = require('./middleware/requestLogger');
 const errorHandler = require('./middleware/errorHandler');
 const logger = require('./utils/logger').createLogger('server');
@@ -59,6 +60,9 @@ app.use('/api/follows', followsRoutes);
 
 // スレッド・タイムラインフート (認証が必要)
 app.use('/api/threads', threadsRoutes);
+
+// リアクションルート (認証が必要)
+app.use('/api/reactions', reactionsRoutes);
 
 // エラーハンドラーミドルウェアを最後に追加（すべてのルートの後）
 app.use(errorHandler);

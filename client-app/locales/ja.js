@@ -263,6 +263,10 @@ export default {
     upgradedToPremium: 'プレミアムプランにアップグレードしました',
     planCanceled: 'プレミアムプランを解約しました',
     
+    // リアクション
+    reactions: 'リアクション',
+    noReactions: 'まだリアクションはありません',
+
     // その他
     loading: '読み込み中...',
     checkingAuth: '認証状態を確認中...',

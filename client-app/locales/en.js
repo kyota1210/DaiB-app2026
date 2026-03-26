@@ -266,6 +266,10 @@ export default {
     upgradedToPremium: 'Upgraded to Premium Plan',
     planCanceled: 'Premium Plan has been canceled',
     
+    // Reactions
+    reactions: 'Reactions',
+    noReactions: 'No reactions yet',
+
     // Other
     loading: 'Loading...',
     checkingAuth: 'Checking authentication...',
