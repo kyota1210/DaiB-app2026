@@ -59,7 +59,7 @@ export default {
     viewModeBooklist: 'ブックリスト',
     viewModeTile: 'タイル',
     selectDefaultViewMode: '一覧画面のデフォルトの表示形式を選択',
-    calendarTapDayHint: '日付をタップすると、その日の投稿を表示します。',
+    calendarTapDayHint: '写真のある日をタップすると、その日の投稿を開きます。上下にスクロールして月を切り替えられます。',
     calendarNoPostsThisDay: 'この日の投稿はありません。',
     calendarDayPosts: 'この日の投稿',
     heatmapForYear: '{{year}}年',

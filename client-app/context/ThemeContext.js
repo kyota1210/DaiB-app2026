@@ -8,7 +8,8 @@ const colors = {
     text: '#1c1c1e',
     secondaryText: '#6b6b6e',
     border: '#b8b6b1',
-    primary: '#0a84ff',
+    /** アクセント（ボタン・カレンダーの今日枠・バッジなど）。ベージュ系UIと揃えた暖色 */
+    primary: '#5a5248',
     card: '#F5F3EE',
     icon: '#1c1c1e',
     inactive: '#8e8e93',

@@ -15,7 +15,7 @@ import RecordCalendarSection from '../components/RecordCalendarSection';
 import RecordHeatmapSection from '../components/RecordHeatmapSection';
 import RecordLifeTimelineSection from '../components/RecordLifeTimelineSection';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const IMAGE_PADDING = 1; // 画像間の余白
 const COLUMN_WIDTH = (SCREEN_WIDTH - IMAGE_PADDING * 4) / 3; // 3列
 // タイル表示（他ユーザープロフィール同様: 隙間あり・正方形・3列）
@@ -126,6 +126,8 @@ export default function RecordListScreen({ navigation }) {
     const [categoryErrorMessage, setCategoryErrorMessage] = useState('');
     const [updatingCategory, setUpdatingCategory] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    /** 横カテゴリ ScrollView の縦幅（カレンダーは子で flex が効かないため明示高さに使う） */
+    const [horizontalPagerHeight, setHorizontalPagerHeight] = useState(0);
 
     const insets = useSafeAreaInsets();
     const { categories, recordsByCategory, records, loadCategories, loadRecords, loadingCategories, loadingRecords } = useRecordsAndCategories();
@@ -482,6 +484,11 @@ export default function RecordListScreen({ navigation }) {
         });
     }, []);
 
+    const calendarPagerViewportHeight =
+        horizontalPagerHeight > 0
+            ? horizontalPagerHeight
+            : Math.round(SCREEN_HEIGHT * 0.5);
+
     // 初期表示時に選択されたカテゴリのページにスクロール
     React.useEffect(() => {
         if (categories.length > 0 && horizontalScrollViewRef.current) {
@@ -646,10 +653,79 @@ export default function RecordListScreen({ navigation }) {
                     onMomentumScrollEnd={handleHorizontalScroll}
                     scrollEventThrottle={16}
                     style={styles.horizontalScrollView}
+                    onLayout={(e) => {
+                        const h = e.nativeEvent.layout.height;
+                        if (h > 0) {
+                            setHorizontalPagerHeight((prev) =>
+                                Math.abs(prev - h) < 1 ? prev : h
+                            );
+                        }
+                    }}
+                    contentContainerStyle={
+                        listAreaMode === 'calendar'
+                            ? styles.horizontalPagerContentCalendar
+                            : undefined
+                    }
                 >
                     {categories.map((category) => {
                         const categoryRecords = recordsByCategory[category.id] || [];
                         const sortedCategoryRecords = sortByDateLoggedDesc(categoryRecords);
+                        const calendarMode = listAreaMode === 'calendar';
+
+                        const gridBody = (
+                            <View
+                                style={[
+                                    styles.gridContainer,
+                                    calendarMode && styles.gridContainerCalendar,
+                                ]}
+                            >
+                                {listAreaMode === 'calendar' ? (
+                                    <RecordCalendarSection
+                                        records={sortedCategoryRecords}
+                                        theme={theme}
+                                        navigation={navigation}
+                                        language={activeLanguage}
+                                        containerHeight={calendarPagerViewportHeight}
+                                    />
+                                ) : listAreaMode === 'heatmap' ? (
+                                    <RecordHeatmapSection
+                                        records={sortedCategoryRecords}
+                                        theme={theme}
+                                        navigation={navigation}
+                                        language={activeLanguage}
+                                        t={t}
+                                    />
+                                ) : listAreaMode === 'lifeTimeline' ? (
+                                    <RecordLifeTimelineSection
+                                        records={sortedCategoryRecords}
+                                        theme={theme}
+                                        navigation={navigation}
+                                        language={activeLanguage}
+                                        t={t}
+                                    />
+                                ) : (
+                                    renderRecords(sortedCategoryRecords)
+                                )}
+                            </View>
+                        );
+
+                        if (calendarMode) {
+                            return (
+                                <View
+                                    key={category.id}
+                                    style={[
+                                        styles.categoryPage,
+                                        {
+                                            width: SCREEN_WIDTH,
+                                            height: calendarPagerViewportHeight,
+                                        },
+                                    ]}
+                                >
+                                    {gridBody}
+                                </View>
+                            );
+                        }
+
                         return (
                             <ScrollView
                                 key={category.id}
@@ -672,35 +748,7 @@ export default function RecordListScreen({ navigation }) {
                                     />
                                 }
                             >
-                                <View style={styles.gridContainer}>
-                                    {listAreaMode === 'calendar' ? (
-                                        <RecordCalendarSection
-                                            records={sortedCategoryRecords}
-                                            theme={theme}
-                                            navigation={navigation}
-                                            language={activeLanguage}
-                                            t={t}
-                                        />
-                                    ) : listAreaMode === 'heatmap' ? (
-                                        <RecordHeatmapSection
-                                            records={sortedCategoryRecords}
-                                            theme={theme}
-                                            navigation={navigation}
-                                            language={activeLanguage}
-                                            t={t}
-                                        />
-                                    ) : listAreaMode === 'lifeTimeline' ? (
-                                        <RecordLifeTimelineSection
-                                            records={sortedCategoryRecords}
-                                            theme={theme}
-                                            navigation={navigation}
-                                            language={activeLanguage}
-                                            t={t}
-                                        />
-                                    ) : (
-                                        renderRecords(sortedCategoryRecords)
-                                    )}
-                                </View>
+                                {gridBody}
                             </ScrollView>
                         );
                     })}
@@ -997,6 +1045,11 @@ const styles = StyleSheet.create({
     horizontalScrollView: {
         flex: 1,
     },
+    /** カレンダーモード: 縦方向に子ページが親と同じ高さになるよう伸ばす（CalendarList と親 ScrollView のネストを避ける） */
+    horizontalPagerContentCalendar: {
+        flexGrow: 1,
+        alignItems: 'stretch',
+    },
     categoryPage: {
         width: SCREEN_WIDTH,
     },
@@ -1005,6 +1058,10 @@ const styles = StyleSheet.create({
     },
     gridContainer: {
         width: '100%',
+    },
+    gridContainerCalendar: {
+        flex: 1,
+        height: '100%',
     },
     rowContainer: {
         flexDirection: 'row',

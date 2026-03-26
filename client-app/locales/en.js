@@ -59,7 +59,7 @@ export default {
     viewModeBooklist: 'Book list',
     viewModeTile: 'Tile',
     selectDefaultViewMode: 'Select the layout shown when opening the list',
-    calendarTapDayHint: 'Tap a date to see posts from that day.',
+    calendarTapDayHint: 'Tap a day with a photo to open posts from that day. Scroll up or down to change months.',
     calendarNoPostsThisDay: 'No posts on this day.',
     calendarDayPosts: 'Posts on this day',
     heatmapForYear: '{{year}}',
