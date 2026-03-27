@@ -38,7 +38,7 @@ const ProfileEditScreen = ({ navigation }) => {
 
         // 画像を選択
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ImagePicker.MediaType.IMAGE,
             allowsEditing: true,
             aspect: [1, 1],
             quality: 0.8,

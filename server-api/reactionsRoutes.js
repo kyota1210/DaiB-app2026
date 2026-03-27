@@ -35,6 +35,25 @@ router.delete('/', async (req, res) => {
     return res.status(405).json({ message: 'リアクションの削除はできません。' });
 });
 
+// GET /api/reactions/:recordId/details - 誰がどのリアクションをくれたかの詳細（投稿者本人のみ）
+router.get('/:recordId/details', async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const recordId = req.params.recordId;
+
+        const record = await RecordModel.findById(recordId, userId);
+        if (!record) {
+            return res.status(403).json({ message: 'この投稿のリアクションを閲覧する権限がありません。' });
+        }
+
+        const details = await ReactionModel.getReactionDetails(recordId);
+        res.status(200).json({ details });
+    } catch (err) {
+        logger.error('リアクション詳細取得エラー', { error: err.message, stack: err.stack });
+        res.status(500).json({ message: 'リアクション詳細の取得に失敗しました。' });
+    }
+});
+
 // GET /api/reactions/:recordId - 自分の投稿へのリアクション集計（投稿者本人のみ）
 router.get('/:recordId', async (req, res) => {
     try {

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import ResultModal from '../components/ResultModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRecordsApi } from '../api/records';
-import { addReaction, getReactionSummary } from '../api/reactions';
+import { addReaction, getReactionDetails } from '../api/reactions';
 import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -58,7 +58,7 @@ const AnimatedReactionBar = React.memo(({ emojis, onSelect, isClosing, onCloseCo
     );
 });
 
-const RecordItem = React.memo(function RecordItem({ item, theme, t, showReactionControl, isReactionBarExpanded, onToggleReactionBar, onSelectReaction, burstEmoji, burstAnim, isReactionBarClosing, onReactionBarCloseComplete }) {
+const RecordItem = React.memo(function RecordItem({ item, theme, t, showReactionControl, isReactionBarExpanded, onToggleReactionBar, onSelectReaction, burstEmoji, burstAnim, isReactionBarClosing, onReactionBarCloseComplete, reactionUsers, onPressReactionUser }) {
     const [originalAspect, setOriginalAspect] = useState(null);
     const imageUrl = getImageUrl(item.image_url);
     const date = useMemo(() => new Date(item.date_logged), [item.date_logged]);
@@ -163,6 +163,39 @@ const RecordItem = React.memo(function RecordItem({ item, theme, t, showReaction
                     </Text>
                 )}
             </View>
+
+            {reactionUsers?.length > 0 ? (
+                <View style={styles.reactionUsersSection}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.reactionUsersRow}>
+                        {reactionUsers.map((r, i) => (
+                            <TouchableOpacity
+                                key={`${r.user_id}-${i}`}
+                                style={styles.reactionUserItem}
+                                activeOpacity={0.75}
+                                onPress={() => onPressReactionUser?.(r)}
+                            >
+                                {r.avatar_url ? (
+                                    <Image source={{ uri: getImageUrl(r.avatar_url) }} style={[styles.reactionUserAvatar, { borderColor: theme.colors.border }]} />
+                                ) : (
+                                    <View style={[styles.reactionUserAvatar, styles.reactionUserAvatarPlaceholder, { borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}>
+                                        <Ionicons name="person" size={27} color={theme.colors.inactive} />
+                                    </View>
+                                )}
+                                <View style={styles.reactionUserBadge}>
+                                    <Text
+                                        style={[
+                                            styles.reactionUserBadgeEmoji,
+                                            Platform.OS === 'android' && { includeFontPadding: false },
+                                        ]}
+                                    >
+                                        {r.emoji}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+            ) : null}
         </ScrollView>
     );
 });
@@ -197,7 +230,8 @@ export default function RecordDetailScreen({ route, navigation }) {
     const { t } = useLanguage();
 
     const [myReaction, setMyReaction] = useState(() => paramsRecords?.[initialIndex]?.my_reaction ?? null);
-    const [reactionSummary, setReactionSummary] = useState([]);
+    const [reactionData, setReactionData] = useState({ recordId: null, users: [] });
+    const [selectedReactionUser, setSelectedReactionUser] = useState(null);
     const [isReactionBarExpanded, setIsReactionBarExpanded] = useState(false);
     const [isReactionBarClosing, setIsReactionBarClosing] = useState(false);
     const [burstEmoji, setBurstEmoji] = useState(null);
@@ -226,20 +260,25 @@ export default function RecordDetailScreen({ route, navigation }) {
     }, [currentRecord?.id]);
 
     useEffect(() => {
-        if (!isOwnPost || !currentRecord?.id || !userToken) {
-            setReactionSummary([]);
-            return;
-        }
+        if (!isOwnPost || !currentRecord?.id || !userToken) return;
+        const fetchingId = currentRecord.id;
         let cancelled = false;
-        getReactionSummary(userToken, currentRecord.id)
+        getReactionDetails(userToken, fetchingId)
             .then((res) => {
-                if (!cancelled) setReactionSummary(res.summary || []);
+                if (!cancelled) setReactionData({ recordId: fetchingId, users: res.details || [] });
             })
             .catch(() => {
-                if (!cancelled) setReactionSummary([]);
+                if (!cancelled) setReactionData({ recordId: fetchingId, users: [] });
             });
         return () => { cancelled = true; };
     }, [currentRecord?.id, isOwnPost, userToken]);
+
+    // レンダー時点で現在のレコードに対応するデータのみ使う（IDが一致しなければ空）
+    const reactionUsers = reactionData.recordId === currentRecord?.id ? reactionData.users : [];
+
+    const handlePressReactionUser = useCallback((user) => {
+        setSelectedReactionUser(user);
+    }, []);
 
     const applyReaction = useCallback(async (emoji) => {
         if (!userToken || !currentRecord) return;
@@ -422,22 +461,58 @@ export default function RecordDetailScreen({ route, navigation }) {
                 >
                     {records.map((record) => (
                         <View key={record.id.toString()} style={[styles.recordWrapper, { height: scrollAreaHeight }]}>
-                            <RecordItem item={record} theme={theme} t={t} />
+                            <RecordItem
+                                item={record}
+                                theme={theme}
+                                t={t}
+                                reactionUsers={record.id === currentRecord?.id ? reactionUsers : undefined}
+                                onPressReactionUser={handlePressReactionUser}
+                            />
                         </View>
                     ))}
                 </ScrollView>
             )}
-            {isOwnPost && reactionSummary.length > 0 && (
-                <View style={[styles.reactionBar, { borderTopColor: theme.colors.border, backgroundColor: theme.colors.background }]}>
-                    <Text style={[styles.reactionSummaryLabel, { color: theme.colors.secondaryText }]}>{t('reactions')}</Text>
-                    {reactionSummary.map((r) => (
-                        <View key={r.emoji} style={styles.reactionSummaryItem}>
-                            <Text style={styles.reactionSummaryEmoji}>{r.emoji}</Text>
-                            <Text style={[styles.reactionSummaryCount, { color: theme.colors.text }]}>{r.count}</Text>
-                        </View>
-                    ))}
-                </View>
-            )}
+            {/* リアクションユーザーポップアップ */}
+            <Modal
+                visible={!!selectedReactionUser}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setSelectedReactionUser(null)}
+            >
+                <TouchableOpacity
+                    style={styles.reactionUserPopupOverlay}
+                    activeOpacity={1}
+                    onPress={() => setSelectedReactionUser(null)}
+                >
+                    <View
+                        style={[styles.reactionUserPopup, { backgroundColor: theme.colors.card }]}
+                        onStartShouldSetResponder={() => true}
+                    >
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={() => {
+                                setSelectedReactionUser(null);
+                                navigation.navigate('UserProfile', { userId: selectedReactionUser.user_id });
+                            }}
+                        >
+                            {selectedReactionUser?.avatar_url ? (
+                                <Image
+                                    source={{ uri: getImageUrl(selectedReactionUser.avatar_url) }}
+                                    style={[styles.reactionUserPopupAvatar, { borderColor: theme.colors.border }]}
+                                />
+                            ) : (
+                                <View style={[styles.reactionUserPopupAvatar, styles.reactionUserPopupAvatarPlaceholder, { borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}>
+                                    <Ionicons name="person" size={36} color={theme.colors.inactive} />
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                        <Text style={styles.reactionUserPopupEmoji}>{selectedReactionUser?.emoji}</Text>
+                        <Text style={[styles.reactionUserPopupName, { color: theme.colors.text }]} numberOfLines={1}>
+                            {selectedReactionUser?.user_name}
+                        </Text>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
 
             {/* メニューモーダル */}
             <Modal
@@ -646,14 +721,6 @@ const styles = StyleSheet.create({
         marginLeft: 12,
         fontWeight: '500',
     },
-    reactionBar: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderTopWidth: 1,
-        gap: 8,
-    },
     imageReactionBar: {
         position: 'absolute',
         right: 42,
@@ -690,20 +757,81 @@ const styles = StyleSheet.create({
     burstEmoji: {
         fontSize: 64,
     },
-    reactionSummaryLabel: {
-        fontSize: 12,
-        marginRight: 4,
+    reactionUsersSection: {
+        paddingHorizontal: 16,
+        paddingTop: 4,
+        paddingBottom: 12,
     },
-    reactionSummaryItem: {
+    reactionUsersRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 2,
+        gap: 12,
+        paddingVertical: 4,
     },
-    reactionSummaryEmoji: {
-        fontSize: 18,
+    reactionUserItem: {
+        position: 'relative',
+        width: 66,
+        height: 66,
+        overflow: 'visible',
     },
-    reactionSummaryCount: {
-        fontSize: 14,
+    reactionUserAvatar: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        borderWidth: 1.5,
+    },
+    reactionUserAvatarPlaceholder: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    reactionUserBadge: {
+        position: 'absolute',
+        bottom: 6,
+        right: 2,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    reactionUserBadgeEmoji: {
+        fontSize: 15,
+        lineHeight: 20,
+        textAlign: 'center',
+    },
+    reactionUserPopupOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.35)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    reactionUserPopup: {
+        alignItems: 'center',
+        paddingHorizontal: 32,
+        paddingVertical: 28,
+        borderRadius: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+        elevation: 8,
+        minWidth: 180,
+    },
+    reactionUserPopupAvatar: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        borderWidth: 2,
+        marginBottom: 4,
+    },
+    reactionUserPopupAvatarPlaceholder: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    reactionUserPopupEmoji: {
+        fontSize: 28,
+        marginVertical: 8,
+    },
+    reactionUserPopupName: {
+        fontSize: 16,
         fontWeight: '600',
+        maxWidth: 200,
     },
 });

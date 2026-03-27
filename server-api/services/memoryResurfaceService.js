@@ -62,7 +62,7 @@ async function resolveMemoryResurface(userId, clientTimezoneHeader) {
         await conn.beginTransaction();
 
         const [existingRows] = await conn.query(
-            'SELECT * FROM user_memory_resurface WHERE user_id = ? AND year_month = ? FOR UPDATE',
+            'SELECT * FROM user_memory_resurface WHERE user_id = ? AND `year_month` = ? FOR UPDATE',
             [userId, yearMonth]
         );
 
@@ -85,7 +85,7 @@ async function resolveMemoryResurface(userId, clientTimezoneHeader) {
         try {
             await conn.query(
                 `INSERT INTO user_memory_resurface
-                (user_id, year_month, record_id, kind, years_ago, client_timezone, display_local_date, window_end_utc)
+                (user_id, \`year_month\`, record_id, kind, years_ago, client_timezone, display_local_date, window_end_utc)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     userId,
@@ -105,7 +105,7 @@ async function resolveMemoryResurface(userId, clientTimezoneHeader) {
             }
             await conn.rollback();
             const [again] = await db.query(
-                'SELECT * FROM user_memory_resurface WHERE user_id = ? AND year_month = ?',
+                'SELECT * FROM user_memory_resurface WHERE user_id = ? AND `year_month` = ?',
                 [userId, yearMonth]
             );
             if (!again.length) {

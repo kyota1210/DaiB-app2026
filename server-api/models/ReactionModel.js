@@ -46,6 +46,25 @@ class ReactionModel {
         const [rows] = await db.query(sql, [recordId]);
         return rows;
     }
+
+    /**
+     * 投稿者向け: 誰がどの絵文字でリアクションしたかの詳細一覧
+     * @returns {Array<{emoji: string, user_id: number, user_name: string, avatar_url: string|null, created_at: string}>}
+     */
+    static async getReactionDetails(recordId) {
+        const sql = `
+            SELECT r.emoji, r.created_at,
+                   u.id AS user_id, u.user_name,
+                   ua.image_url AS avatar_url
+            FROM reactions r
+            JOIN users u ON u.id = r.user_id
+            LEFT JOIN user_avatars ua ON ua.user_id = u.id
+            WHERE r.record_id = ?
+            ORDER BY r.emoji, r.created_at DESC
+        `;
+        const [rows] = await db.query(sql, [recordId]);
+        return rows;
+    }
 }
 
 module.exports = ReactionModel;
