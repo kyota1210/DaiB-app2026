@@ -17,9 +17,39 @@ class UserModel {
      * @param {string} email 
      */
     static async findByEmail(email) {
-        const sql = 'SELECT id, password_hash, user_name, email FROM users WHERE email = ?';
+        const sql = 'SELECT id, password_hash, user_name, email, supabase_user_id FROM users WHERE email = ?';
         const [rows] = await db.query(sql, [email]);
         return rows[0]; // ユーザーが見つかればオブジェクト、なければundefinedを返す
+    }
+
+    /**
+     * Supabase Auth の user id (sub) で検索
+     * @param {string} supabaseUserId - UUID
+     */
+    static async findBySupabaseUserId(supabaseUserId) {
+        if (!supabaseUserId) return undefined;
+        const sql =
+            'SELECT id, user_name, email, password_hash, supabase_user_id, bio, default_view_mode, default_sort_order FROM users WHERE supabase_user_id = ?';
+        const [rows] = await db.query(sql, [supabaseUserId]);
+        return rows[0];
+    }
+
+    /**
+     * 既存ユーザーに Supabase の user id を紐付け
+     */
+    static async linkSupabaseUserId(userId, supabaseUserId) {
+        const sql = 'UPDATE users SET supabase_user_id = ? WHERE id = ?';
+        const [result] = await db.query(sql, [supabaseUserId, userId]);
+        return result.affectedRows;
+    }
+
+    /**
+     * Supabase 登録ユーザー新規作成（自前パスワードなし）
+     */
+    static async createSupabaseLinked({ email, userName, supabaseUserId }) {
+        const sql = 'INSERT INTO users (email, user_name, password_hash, supabase_user_id) VALUES (?, ?, NULL, ?)';
+        const [result] = await db.query(sql, [email, userName, supabaseUserId]);
+        return result.insertId;
     }
 
     /**

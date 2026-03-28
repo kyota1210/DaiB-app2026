@@ -104,8 +104,9 @@ export default {
     creating: 'Creating...',
     required: '*',
     showInTimeline: 'Show in thread',
-    showInTimelineYes: 'Yes',
-    showInTimelineNo: 'No',
+    threadDisplaySetting: 'Thread display',
+    showInTimelineYes: 'Show',
+    showInTimelineNo: "Don't show",
     
     // Login/Signup
     login: 'Login',
@@ -131,6 +132,7 @@ export default {
     signUp: 'Sign Up',
     signupFailed: 'Sign up failed',
     signupLoginSuccess: 'Registration complete',
+    signupConfirmEmail: 'Open the link in your registration email to verify your account, then sign in.',
     redirectToMain: 'Redirecting to home screen',
 
     // Forgot password

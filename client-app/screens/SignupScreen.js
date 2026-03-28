@@ -61,8 +61,11 @@ export default function SignupScreen({ navigation }) {
         const result = await authContext.signUp(email, displayName, password);
 
         if (result.success) {
-            Alert.alert(tDevice('signupLoginSuccess'), tDevice('redirectToMain'));
-            // 成功した場合、AppNavigatorが自動で画面を切り替えます
+            if (result.needsEmailConfirmation) {
+                Alert.alert(tDevice('signupLoginSuccess'), tDevice('signupConfirmEmail'));
+            } else {
+                Alert.alert(tDevice('signupLoginSuccess'), tDevice('redirectToMain'));
+            }
         } else {
              Alert.alert(tDevice('signupFailed'), result.error);
         }

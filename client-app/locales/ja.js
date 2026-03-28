@@ -104,6 +104,7 @@ export default {
     creating: '作成中...',
     required: '*',
     showInTimeline: 'スレッドに表示する',
+    threadDisplaySetting: 'スレッド表示設定',
     showInTimelineYes: '表示する',
     showInTimelineNo: '表示しない',
     
@@ -131,6 +132,7 @@ export default {
     signUp: '新規登録',
     signupFailed: '登録に失敗しました',
     signupLoginSuccess: '登録が完了しました',
+    signupConfirmEmail: '登録メールに届いたリンクを開いて認証を完了してください。完了後にログインできます。',
     redirectToMain: 'ホーム画面に移動します',
 
     // パスワード再発行

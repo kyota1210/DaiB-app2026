@@ -6,6 +6,7 @@
 node_modules
 npm-debug.log
 .env
+.env.example
 .DS_Store
 
 # client-app のビルド結果

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions, ScrollView as RNScrollView, TextInput, Platform, Modal, KeyboardAvoidingView, ActivityIndicator, Keyboard, TouchableWithoutFeedback, Switch } from 'react-native';
+import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions, ScrollView as RNScrollView, TextInput, Platform, Modal, KeyboardAvoidingView, ActivityIndicator, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -51,6 +51,9 @@ export default function PhotoPickerScreen({ navigation, route }) {
         return [];
     });
     const [showInTimeline, setShowInTimeline] = useState(editRecord ? (editRecord.show_in_timeline !== 0) : true);
+    const [timelineDropdownOpen, setTimelineDropdownOpen] = useState(false);
+    const [timelineDropdownAnchor, setTimelineDropdownAnchor] = useState(null);
+    const timelineSelectWrapRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showErrorModal, setShowErrorModal] = useState(false);
@@ -63,6 +66,22 @@ export default function PhotoPickerScreen({ navigation, route }) {
     // 各入力フィールドのref
     const titleInputRef = useRef(null);
     const captionInputRef = useRef(null);
+
+    const closeTimelineDropdown = useCallback(() => {
+        setTimelineDropdownOpen(false);
+        setTimelineDropdownAnchor(null);
+    }, []);
+
+    const toggleTimelineDropdown = useCallback(() => {
+        if (timelineDropdownOpen) {
+            closeTimelineDropdown();
+            return;
+        }
+        timelineSelectWrapRef.current?.measureInWindow((x, y, width, height) => {
+            setTimelineDropdownAnchor({ x, y, width, height });
+            setTimelineDropdownOpen(true);
+        });
+    }, [timelineDropdownOpen, closeTimelineDropdown]);
     
     const { createRecord, updateRecord } = useRecordsApi();
     const { categories, loadCategories, loadingCategories, loadRecords } = useRecordsAndCategories();
@@ -280,6 +299,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
                         keyboardShouldPersistTaps="handled"
                         showsVerticalScrollIndicator={false}
                         scrollEnabled={true}
+                        onScrollBeginDrag={closeTimelineDropdown}
                     >
                         {selectedImage ? (
                             <>
@@ -436,17 +456,103 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                     {/* スレッドに表示する（新規作成時のみ） */}
                                     {!isEditMode && (
                                         <View style={styles.inputGroup}>
-                                            <View style={styles.showInTimelineRow}>
-                                                <Text style={[styles.label, { color: theme.colors.secondaryText, marginBottom: 0 }]}>
-                                                    {t('showInTimeline')}
-                                                </Text>
-                                                <Switch
-                                                    value={showInTimeline}
-                                                    onValueChange={setShowInTimeline}
-                                                    trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-                                                    thumbColor="#fff"
-                                                />
+                                            <Text style={[styles.label, { color: theme.colors.secondaryText }]}>
+                                                {t('threadDisplaySetting')}
+                                            </Text>
+                                            <View ref={timelineSelectWrapRef} collapsable={false}>
+                                                <TouchableOpacity
+                                                    style={[
+                                                        styles.timelineSelectRow,
+                                                        {
+                                                            backgroundColor: theme.colors.secondaryBackground,
+                                                            borderColor: theme.colors.border,
+                                                        },
+                                                    ]}
+                                                    onPress={toggleTimelineDropdown}
+                                                    activeOpacity={0.7}
+                                                >
+                                                    <Text
+                                                        style={[styles.timelineSelectValue, { color: theme.colors.text }]}
+                                                        numberOfLines={1}
+                                                    >
+                                                        {showInTimeline ? t('showInTimelineYes') : t('showInTimelineNo')}
+                                                    </Text>
+                                                    <Ionicons
+                                                        name={timelineDropdownOpen ? 'chevron-up' : 'chevron-down'}
+                                                        size={20}
+                                                        color={theme.colors.secondaryText}
+                                                    />
+                                                </TouchableOpacity>
                                             </View>
+                                            <Modal
+                                                visible={timelineDropdownOpen && !!timelineDropdownAnchor}
+                                                transparent
+                                                animationType="fade"
+                                                onRequestClose={closeTimelineDropdown}
+                                                statusBarTranslucent
+                                            >
+                                                <View style={styles.timelineDropdownModalRoot} pointerEvents="box-none">
+                                                    <TouchableOpacity
+                                                        style={StyleSheet.absoluteFill}
+                                                        activeOpacity={1}
+                                                        onPress={closeTimelineDropdown}
+                                                    />
+                                                    {timelineDropdownAnchor ? (
+                                                        <View
+                                                            style={[
+                                                                styles.timelineDropdownPanel,
+                                                                {
+                                                                    top: timelineDropdownAnchor.y + timelineDropdownAnchor.height + 2,
+                                                                    left: timelineDropdownAnchor.x,
+                                                                    width: timelineDropdownAnchor.width,
+                                                                    backgroundColor: theme.colors.card,
+                                                                    borderColor: theme.colors.border,
+                                                                },
+                                                            ]}
+                                                            onStartShouldSetResponder={() => true}
+                                                        >
+                                                            <TouchableOpacity
+                                                                style={[
+                                                                    styles.timelineDropdownOption,
+                                                                    styles.timelineDropdownOptionDivider,
+                                                                    { borderBottomColor: theme.colors.border },
+                                                                ]}
+                                                                onPress={() => {
+                                                                    setShowInTimeline(true);
+                                                                    closeTimelineDropdown();
+                                                                }}
+                                                                activeOpacity={0.7}
+                                                            >
+                                                                <Text style={[styles.timelineDropdownOptionLabel, { color: theme.colors.text }]}>
+                                                                    {t('showInTimelineYes')}
+                                                                </Text>
+                                                                {showInTimeline ? (
+                                                                    <Ionicons name="checkmark" size={22} color={theme.colors.primary} />
+                                                                ) : (
+                                                                    <View style={styles.timelineDropdownCheckPlaceholder} />
+                                                                )}
+                                                            </TouchableOpacity>
+                                                            <TouchableOpacity
+                                                                style={styles.timelineDropdownOption}
+                                                                onPress={() => {
+                                                                    setShowInTimeline(false);
+                                                                    closeTimelineDropdown();
+                                                                }}
+                                                                activeOpacity={0.7}
+                                                            >
+                                                                <Text style={[styles.timelineDropdownOptionLabel, { color: theme.colors.text }]}>
+                                                                    {t('showInTimelineNo')}
+                                                                </Text>
+                                                                {!showInTimeline ? (
+                                                                    <Ionicons name="checkmark" size={22} color={theme.colors.primary} />
+                                                                ) : (
+                                                                    <View style={styles.timelineDropdownCheckPlaceholder} />
+                                                                )}
+                                                            </TouchableOpacity>
+                                                        </View>
+                                                    ) : null}
+                                                </View>
+                                            </Modal>
                                         </View>
                                     )}
 
@@ -665,10 +771,52 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '500',
     },
-    showInTimelineRow: {
+    timelineSelectRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        height: 44,
+        paddingHorizontal: 16,
+        borderWidth: 1,
+        borderRadius: 12,
+    },
+    timelineSelectValue: {
+        flex: 1,
+        fontSize: 16,
+        marginRight: 8,
+    },
+    timelineDropdownModalRoot: {
+        flex: 1,
+    },
+    timelineDropdownPanel: {
+        position: 'absolute',
+        borderWidth: 1,
+        borderRadius: 12,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+        elevation: 12,
+    },
+    timelineDropdownOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+    },
+    timelineDropdownOptionDivider: {
+        borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+    timelineDropdownOptionLabel: {
+        flex: 1,
+        fontSize: 16,
+        marginRight: 12,
+    },
+    timelineDropdownCheckPlaceholder: {
+        width: 22,
+        height: 22,
     },
     captionInput: {
         fontSize: 16,
