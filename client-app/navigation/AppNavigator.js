@@ -47,7 +47,7 @@ const CustomTabBar = React.memo(({ state, navigation }) => {
   };
 
   const IconComponent = isOnHome ? Ionicons : MaterialIcons;
-  const iconName = isOnHome ? 'chatbubbles' : 'home';
+  const iconName = isOnHome ? 'newspaper-outline' : 'home';
   const accessibilityLabel = isOnHome ? t('thread') : t('gallery');
 
   return (
