@@ -41,6 +41,30 @@ router.post('/', async (req, res) => {
     }
 });
 
+// DELETE /api/follows/incoming/:follower_id - 相手からのフォロー（フレンド申請）を拒否＝そのフォロー関係を削除
+// 申請者側の「申請中」一覧からも当該エントリが消える（同じ follows 行を論理削除するため）
+router.delete('/incoming/:follower_id', async (req, res) => {
+    try {
+        const followeeId = req.user.id;
+        const followerId = parseInt(req.params.follower_id, 10);
+        if (!Number.isInteger(followerId)) {
+            return res.status(400).json({ message: 'follower_id が不正です。' });
+        }
+        if (followerId === followeeId) {
+            return res.status(400).json({ message: '不正なリクエストです。' });
+        }
+        const deleted = await FollowModel.delete(followerId, followeeId);
+        if (deleted) logger.info('申請拒否（フォロー削除）', { followerId, followeeId });
+        res.status(200).json({
+            message: deleted ? '申請を却下しました。' : '該当する申請はありません。',
+            rejected: !!deleted,
+        });
+    } catch (err) {
+        logger.error('申請拒否エラー', { error: err.message, stack: err.stack });
+        res.status(500).json({ message: '申請の却下に失敗しました。', error: err.message });
+    }
+});
+
 // DELETE /api/follows/:following_id - フォロー解除（論理削除）
 router.delete('/:following_id', async (req, res) => {
     try {

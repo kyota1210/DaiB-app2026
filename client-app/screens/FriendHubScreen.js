@@ -20,7 +20,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getFriends, getFollowing, getFollowers } from '../api/user';
-import { follow } from '../api/follows';
+import { follow, rejectIncomingFollow } from '../api/follows';
 import { getImageUrl } from '../utils/imageHelper';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -36,7 +36,8 @@ const FriendHubScreen = ({ navigation }) => {
     const [data, setData] = useState({ friends: [], following: [], followers: [] });
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [busyId, setBusyId] = useState(null);
+    /** { userId, action: 'approve' | 'reject' } | null */
+    const [busy, setBusy] = useState(null);
 
     const fetchAll = useCallback(async () => {
         if (!userToken) return;
@@ -82,8 +83,8 @@ const FriendHubScreen = ({ navigation }) => {
     };
 
     const handleApprove = async (userId, userName) => {
-        if (busyId !== null) return;
-        setBusyId(userId);
+        if (busy !== null) return;
+        setBusy({ userId, action: 'approve' });
         try {
             await follow(userToken, userId);
             setData((prev) => ({
@@ -96,7 +97,25 @@ const FriendHubScreen = ({ navigation }) => {
         } catch (err) {
             console.error('approve error', err);
         } finally {
-            setBusyId(null);
+            setBusy(null);
+        }
+    };
+
+    /** 申請拒否：相手→自分のフォローを削除（申請者の「申請中」からも消える） */
+    const handleRejectIncoming = async (userId) => {
+        if (busy !== null) return;
+        setBusy({ userId, action: 'reject' });
+        try {
+            await rejectIncomingFollow(userToken, userId);
+            setData((prev) => ({
+                ...prev,
+                followers: prev.followers.filter((u) => u.id !== userId),
+            }));
+            fetchAll();
+        } catch (err) {
+            console.error('reject incoming follow error', err);
+        } finally {
+            setBusy(null);
         }
     };
 
@@ -138,7 +157,9 @@ const FriendHubScreen = ({ navigation }) => {
 
     const renderUserRow = (item, tabKey) => {
         const avatarUrl = getImageUrl(item.avatar_url);
-        const isBusy = busyId === item.id;
+        const rowBusy = busy?.userId === item.id;
+        const approveLoading = rowBusy && busy.action === 'approve';
+        const rejectLoading = rowBusy && busy.action === 'reject';
         const showApproveButton = tabKey === 'followers';
 
         return (
@@ -161,15 +182,26 @@ const FriendHubScreen = ({ navigation }) => {
                     </View>
                 </TouchableOpacity>
                 {showApproveButton && (
-                    <TouchableOpacity
-                        style={[styles.approveButton, { backgroundColor: theme.colors.primary }]}
-                        onPress={() => handleApprove(item.id, item.user_name)}
-                        disabled={isBusy}
-                    >
-                        {isBusy
-                            ? <ActivityIndicator size="small" color="#fff" />
-                            : <Text style={styles.approveButtonText}>{t('approveFriendRequest')}</Text>}
-                    </TouchableOpacity>
+                    <View style={styles.actionButtons}>
+                        <TouchableOpacity
+                            style={[styles.approveButton, { backgroundColor: theme.colors.primary }]}
+                            onPress={() => handleApprove(item.id, item.user_name)}
+                            disabled={rowBusy}
+                        >
+                            {approveLoading
+                                ? <ActivityIndicator size="small" color="#fff" />
+                                : <Text style={styles.approveButtonText}>{t('approveFriendRequest')}</Text>}
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.rejectButton, { borderColor: theme.colors.border, backgroundColor: theme.colors.secondaryBackground }]}
+                            onPress={() => handleRejectIncoming(item.id)}
+                            disabled={rowBusy}
+                        >
+                            {rejectLoading
+                                ? <ActivityIndicator size="small" color={theme.colors.primary} />
+                                : <Text style={[styles.rejectButtonText, { color: theme.colors.text }]}>{t('delete')}</Text>}
+                        </TouchableOpacity>
+                    </View>
                 )}
             </View>
         );
@@ -271,12 +303,28 @@ const styles = StyleSheet.create({
     userInfo: { flex: 1, marginLeft: 12 },
     userName: { fontSize: 16, fontWeight: '600' },
     bio: { fontSize: 12, marginTop: 2 },
+    actionButtons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
     approveButton: {
-        paddingHorizontal: 16,
+        paddingHorizontal: 14,
         paddingVertical: 8,
         borderRadius: 8,
+        minWidth: 72,
+        alignItems: 'center',
     },
     approveButtonText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+    rejectButton: {
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 8,
+        borderWidth: StyleSheet.hairlineWidth,
+        minWidth: 56,
+        alignItems: 'center',
+    },
+    rejectButtonText: { fontSize: 14, fontWeight: '600' },
 });
 
 export default FriendHubScreen;

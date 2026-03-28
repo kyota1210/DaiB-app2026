@@ -406,7 +406,14 @@ const ThreadScreen = ({ navigation }) => {
                         >
                             <Ionicons name="close" size={28} color="#fff" />
                         </TouchableOpacity>
-                        <View style={[styles.qrModalContent, { backgroundColor: theme.colors.background }, qrMode === 'display' && styles.qrModalContentFlex]}>
+                        <View
+                            style={[
+                                styles.qrModalContent,
+                                { backgroundColor: theme.colors.background },
+                                qrMode === 'display' && styles.qrModalContentFlex,
+                                qrMode === 'scan' && (scannedUser || scanNoUserFound) && styles.qrModalContentNarrow,
+                            ]}
+                        >
                             {qrMode === 'display' ? (
                                 <>
                                     <View style={styles.qrModalCenter}>
@@ -665,6 +672,8 @@ const styles = StyleSheet.create({
     qrModalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
     qrModalCloseFixed: { position: 'absolute', zIndex: 10, padding: 12, minWidth: 48, minHeight: 48, justifyContent: 'center', alignItems: 'center' },
     qrModalContent: { borderRadius: 16, paddingHorizontal: 12, paddingVertical: 16, width: '100%', maxWidth: 400 },
+    /** QR 読み取り直後のユーザー表示／未検出時はパネルを画面幅いっぱいにしない */
+    qrModalContentNarrow: { width: '86%', maxWidth: 340, alignSelf: 'center' },
     qrModalContentFlex: { flex: 1 },
     qrModalCenter: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     qrModalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' },
