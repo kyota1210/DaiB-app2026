@@ -9,12 +9,12 @@ const logger = require('./utils/logger').createLogger('threadsRoutes');
 
 router.use(authenticateToken);
 
-// GET /api/threads/timeline - フォロー中ユーザーの直近7日間の記録
+// GET /api/threads/timeline - 友だち（相互フォロー）の直近7日間の記録
 router.get('/timeline', async (req, res) => {
     try {
         const userId = req.user.id;
-        const following = await FollowModel.getFollowingList(userId);
-        const authorIds = following.map((u) => u.id);
+        const friends = await FollowModel.getFriendsList(userId);
+        const authorIds = friends.map((u) => u.id);
         const records = await RecordModel.findTimelineByAuthorIds(authorIds);
         const clientTz = req.get('x-client-timezone') || req.get('X-Client-Timezone');
         let memoryResurface = null;

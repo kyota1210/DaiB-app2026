@@ -12,6 +12,7 @@ import {
     Dimensions,
     Animated,
     Easing,
+    Share,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -21,11 +22,12 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { getUserProfile, searchUsers } from '../api/user';
+import { getUserProfile, getOtherUserProfile } from '../api/user';
 import { getTimeline } from '../api/threads';
 import { follow } from '../api/follows';
 import { addReaction } from '../api/reactions';
 import { getImageUrl } from '../utils/imageHelper';
+import { SERVER_URL } from '../config';
 
 const REACTION_EMOJIS = ['❤️', '👍', '🌸', '🎉', '✨'];
 
@@ -80,14 +82,12 @@ const ThreadScreen = ({ navigation }) => {
     const { theme } = useTheme();
     const { t } = useLanguage();
     const [permission, requestPermission] = useCameraPermissions();
-    const [counts, setCounts] = useState({ following_count: 0, follower_count: 0 });
+    const [counts, setCounts] = useState({ friend_count: 0 });
     const [records, setRecords] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [showQrModal, setShowQrModal] = useState(false);
     const [qrMode, setQrMode] = useState('display');
-    const [searchKeyForQr, setSearchKeyForQr] = useState(null);
-    const [qrKeyLoading, setQrKeyLoading] = useState(false);
     const [scannedUser, setScannedUser] = useState(null);
     const [scanBusy, setScanBusy] = useState(false);
     const [scanNoUserFound, setScanNoUserFound] = useState(false);
@@ -108,8 +108,7 @@ const ThreadScreen = ({ navigation }) => {
                 getTimeline(userToken, clientTz),
             ]);
             setCounts({
-                following_count: meRes.user?.following_count ?? 0,
-                follower_count: meRes.user?.follower_count ?? 0,
+                friend_count: meRes.user?.friend_count ?? 0,
             });
             const base = timelineRes.records ?? [];
             const mem = timelineRes.memoryResurface;
@@ -162,31 +161,19 @@ const ThreadScreen = ({ navigation }) => {
         }
     }, [loadData]);
 
-    useEffect(() => {
-        if (!showQrModal || qrMode !== 'display' || !userToken) return;
-        setQrKeyLoading(true);
-        setSearchKeyForQr(null);
-        getUserProfile(userToken)
-            .then((res) => {
-                const key = res.user?.search_key;
-                if (key) setSearchKeyForQr(key);
-            })
-            .catch(() => {})
-            .finally(() => setQrKeyLoading(false));
-    }, [showQrModal, qrMode, userToken]);
-
     const handleQrScan = useCallback(
         async (data) => {
             if (scanBusy || !userToken) return;
-            const query = (typeof data === 'string' ? data : String(data || '')).trim();
-            if (!query) return;
+            const raw = (typeof data === 'string' ? data : String(data || '')).trim();
+            if (!raw) return;
+            const userId = parseInt(raw, 10);
+            if (Number.isNaN(userId) || userId <= 0) return;
             setScanBusy(true);
             setScannedUser(null);
             setScanNoUserFound(false);
             try {
-                const res = await searchUsers(userToken, query);
-                const users = res.users || [];
-                const user = users[0] || null;
+                const res = await getOtherUserProfile(userToken, userId);
+                const user = res.user || null;
                 setScannedUser(user);
                 setScanNoUserFound(!user);
             } catch {
@@ -203,8 +190,9 @@ const ThreadScreen = ({ navigation }) => {
         if (!scannedUser || !userToken || scanBusy) return;
         setScanBusy(true);
         try {
-            await follow(userToken, scannedUser.id);
-            setScannedUser((prev) => (prev ? { ...prev, is_following: true } : null));
+            const res = await follow(userToken, scannedUser.id);
+            const nowFriend = !!res?.is_friend;
+            setScannedUser((prev) => (prev ? { ...prev, is_following: true, is_friend: nowFriend } : null));
         } catch (e) {
             console.error(e);
         } finally {
@@ -388,26 +376,13 @@ const ThreadScreen = ({ navigation }) => {
                 <View style={styles.countsRow}>
                     <TouchableOpacity
                         style={styles.countChip}
-                        onPress={() => navigation.navigate('FollowingList')}
+                        onPress={() => navigation.navigate('FriendHub')}
                     >
-                        <Text style={[styles.countNumber, { color: theme.colors.text }]}>{counts.following_count}</Text>
-                        <Text style={[styles.countLabel, { color: theme.colors.secondaryText }]}>{t('following')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.countChip}
-                        onPress={() => navigation.navigate('FollowersList')}
-                    >
-                        <Text style={[styles.countNumber, { color: theme.colors.text }]}>{counts.follower_count}</Text>
-                        <Text style={[styles.countLabel, { color: theme.colors.secondaryText }]}>{t('followers')}</Text>
+                        <Text style={[styles.countNumber, { color: theme.colors.text }]}>{counts.friend_count}</Text>
+                        <Text style={[styles.countLabel, { color: theme.colors.secondaryText }]}>{t('friends')}</Text>
                     </TouchableOpacity>
                 </View>
                 <View style={styles.headerSpacer} />
-                <TouchableOpacity
-                    style={styles.searchButton}
-                    onPress={() => navigation.navigate('UserSearch')}
-                >
-                    <Ionicons name="search" size={24} color={theme.colors.icon} />
-                </TouchableOpacity>
                 <TouchableOpacity style={styles.searchButton} onPress={() => setShowQrModal(true)}>
                     <Ionicons name="qr-code-outline" size={24} color={theme.colors.icon} />
                 </TouchableOpacity>
@@ -438,12 +413,10 @@ const ThreadScreen = ({ navigation }) => {
                                         <Text style={[styles.qrModalTitle, { color: theme.colors.text }]}>
                                             {t('showMyQr')}
                                         </Text>
-                                        {qrKeyLoading ? (
-                                            <ActivityIndicator size="large" color={theme.colors.primary} style={styles.qrLoader} />
-                                        ) : (searchKeyForQr && String(searchKeyForQr).trim()) ? (
+                                        {userInfo?.id ? (
                                             <View style={[styles.qrCodeWrap, { backgroundColor: '#fff', padding: 16, borderRadius: 12, width: QR_SIZE + 32, height: QR_SIZE + 32, justifyContent: 'center' }]}>
                                                 <QRCode
-                                                    value={String(searchKeyForQr)}
+                                                    value={String(userInfo.id)}
                                                     size={QR_SIZE}
                                                     color="#000"
                                                     backgroundColor="#fff"
@@ -455,7 +428,7 @@ const ThreadScreen = ({ navigation }) => {
                                                 />
                                             </View>
                                         ) : (
-                                            <Text style={[styles.qrHint, { color: theme.colors.secondaryText }]}>{t('userNotFoundByQr')}</Text>
+                                            <ActivityIndicator size="large" color={theme.colors.primary} style={styles.qrLoader} />
                                         )}
                                         <TouchableOpacity
                                             style={[styles.qrActionButton, styles.qrActionButtonCompact, { backgroundColor: theme.colors.primary }]}
@@ -463,6 +436,20 @@ const ThreadScreen = ({ navigation }) => {
                                         >
                                             <Text style={styles.qrActionButtonText}>{t('scanQr')}</Text>
                                         </TouchableOpacity>
+                                        {userInfo?.id ? (
+                                            <TouchableOpacity
+                                                style={[styles.qrShareButton, { borderColor: theme.colors.border }]}
+                                                onPress={async () => {
+                                                    try {
+                                                        const url = `${SERVER_URL}/invite/${userInfo.id}`;
+                                                        await Share.share({ message: `${t('inviteLinkMessage')}\n${url}` });
+                                                    } catch {}
+                                                }}
+                                            >
+                                                <Ionicons name="share-outline" size={18} color={theme.colors.text} style={{ marginRight: 6 }} />
+                                                <Text style={[styles.qrShareButtonText, { color: theme.colors.text }]}>{t('shareInviteLink')}</Text>
+                                            </TouchableOpacity>
+                                        ) : null}
                                     </View>
                                 </>
                             ) : (
@@ -492,7 +479,9 @@ const ThreadScreen = ({ navigation }) => {
                                             )}
                                             <Text style={[styles.scannedUserName, { color: theme.colors.text }]}>{scannedUser.user_name || ''}</Text>
                                             {scannedUser.is_following ? (
-                                                <Text style={[styles.qrFollowedMessage, { color: theme.colors.secondaryText }]}>{t('followedMessage')}</Text>
+                                                <Text style={[styles.qrFollowedMessage, { color: theme.colors.secondaryText }]}>
+                                                    {scannedUser.is_friend ? t('friendRequestApproved') : t('friendRequestSent')}
+                                                </Text>
                                             ) : (
                                                 <TouchableOpacity
                                                     style={[styles.qrFollowButton, { backgroundColor: theme.colors.primary, borderColor: theme.colors.border }]}
@@ -503,7 +492,7 @@ const ThreadScreen = ({ navigation }) => {
                                                     {scanBusy ? (
                                                         <ActivityIndicator size="small" color="#fff" />
                                                     ) : (
-                                                        <Text style={[styles.qrFollowButtonText, { color: '#fff' }]}>{t('follow')}</Text>
+                                                        <Text style={[styles.qrFollowButtonText, { color: '#fff' }]}>{t('sendFriendRequest')}</Text>
                                                     )}
                                                 </TouchableOpacity>
                                             )}
@@ -685,6 +674,8 @@ const styles = StyleSheet.create({
     qrActionButton: { marginTop: 16, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
     qrActionButtonCompact: { width: '80%', maxWidth: 280, alignSelf: 'center' },
     qrActionButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    qrShareButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 12, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8, borderWidth: 1 },
+    qrShareButtonText: { fontSize: 14, fontWeight: '500' },
     qrBackButton: { borderWidth: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
     qrBackButtonText: { fontSize: 15 },
     qrCameraPlaceholder: {

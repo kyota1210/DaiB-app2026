@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS user_memory_resurface (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id INT NOT NULL,
-    year_month CHAR(7) NOT NULL COMMENT 'YYYY-MM (クライアントTZ)',
+    `year_month` CHAR(7) NOT NULL COMMENT 'YYYY-MM (クライアントTZ)',
     record_id INT NOT NULL,
     kind ENUM('anniversary', 'serendipity') NOT NULL,
     years_ago INT NULL,
@@ -11,6 +11,6 @@ CREATE TABLE IF NOT EXISTS user_memory_resurface (
     window_end_utc DATETIME NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    UNIQUE KEY ux_user_year_month (user_id, year_month),
-    KEY idx_user_window (user_id, year_month, window_end_utc)
+    UNIQUE KEY ux_user_year_month (user_id, `year_month`),
+    KEY idx_user_window (user_id, `year_month`, window_end_utc)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

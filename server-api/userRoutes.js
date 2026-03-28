@@ -40,9 +40,8 @@ router.put('/profile', authenticateToken, (req, res, next) => {
 }, async (req, res) => {
     try {
         const userId = req.user.id;
-        const { user_name, bio, visibility } = req.body;
+        const { user_name, bio } = req.body;
 
-        // ユーザー名を更新
         if (user_name !== undefined) {
             const trimmed = String(user_name).trim();
             if (trimmed.length > 25) {
@@ -51,20 +50,8 @@ router.put('/profile', authenticateToken, (req, res, next) => {
             await UserModel.updateUserName(userId, trimmed);
         }
 
-        // 自己紹介を更新
         if (bio !== undefined) {
             await UserModel.updateBio(userId, bio);
-        }
-
-        // 公開設定のみ更新（検索キーはクライアントから送らない・サーバー側で自動生成のみ）
-        if (visibility !== undefined) {
-            const v = visibility === 'private' ? 'private' : 'public';
-            const user = await UserModel.findById(userId);
-            let kw = null;
-            if (v === 'private') {
-                kw = (user && user.search_key) || UserModel.generateSearchKey(userId);
-            }
-            await UserModel.updateVisibility(userId, v, kw);
         }
 
         // アバター画像がアップロードされた場合
@@ -121,19 +108,14 @@ router.get('/me', authenticateToken, async (req, res) => {
         const userId = req.user.id;
         const user = await UserModel.findById(userId);
         const avatar = await UserAvatarModel.findByUserId(userId);
-        const [followingCount, followerCount] = await Promise.all([
+        const [followingCount, followerCount, friendCount] = await Promise.all([
             FollowModel.getFollowingCount(userId),
             FollowModel.getFollowerCount(userId),
+            FollowModel.getFriendsCount(userId),
         ]);
 
         if (!user) {
             return res.status(404).json({ message: 'ユーザーが見つかりません' });
-        }
-
-        if (user.visibility === 'private' && !user.search_key) {
-            const searchKey = UserModel.generateSearchKey(userId);
-            await UserModel.updateVisibility(userId, 'private', searchKey);
-            user.search_key = searchKey;
         }
 
         res.status(200).json({
@@ -142,6 +124,7 @@ router.get('/me', authenticateToken, async (req, res) => {
                 avatar_url: avatar ? avatar.image_url : null,
                 following_count: followingCount,
                 follower_count: followerCount,
+                friend_count: friendCount,
             }
         });
     } catch (error) {
@@ -170,9 +153,10 @@ router.put('/me/settings', authenticateToken, async (req, res) => {
         }
         const user = await UserModel.findById(userId);
         const avatar = await UserAvatarModel.findByUserId(userId);
-        const [followingCount, followerCount] = await Promise.all([
+        const [followingCount, followerCount, friendCount] = await Promise.all([
             FollowModel.getFollowingCount(userId),
             FollowModel.getFollowerCount(userId),
+            FollowModel.getFriendsCount(userId),
         ]);
         res.status(200).json({
             user: {
@@ -180,32 +164,12 @@ router.put('/me/settings', authenticateToken, async (req, res) => {
                 avatar_url: avatar ? avatar.image_url : null,
                 following_count: followingCount,
                 follower_count: followerCount,
+                friend_count: friendCount,
             },
         });
     } catch (error) {
         logger.error('表示設定更新エラー', { error: error.message, stack: error.stack });
         res.status(500).json({ message: '更新に失敗しました', error: error.message });
-    }
-});
-
-// ユーザー検索（公開は部分一致、非公開は検索キーワード完全一致時のみ）
-router.get('/search', authenticateToken, async (req, res) => {
-    try {
-        const q = (req.query.q || '').trim();
-        const viewerId = req.user.id;
-        const limit = Math.min(parseInt(req.query.limit, 10) || 50, 50);
-        const users = await UserModel.search(q, viewerId, limit);
-        const withAvatar = await Promise.all(users.map(async (u) => {
-            const avatar = await UserAvatarModel.findByUserId(u.id);
-            return { ...u, avatar_url: avatar ? avatar.image_url : null };
-        }));
-        const ids = withAvatar.map((u) => u.id);
-        const followingSet = await FollowModel.getFollowingStatusSet(viewerId, ids);
-        const withFollowing = withAvatar.map((u) => ({ ...u, is_following: followingSet.has(u.id) }));
-        res.status(200).json({ users: withFollowing });
-    } catch (error) {
-        logger.error('ユーザー検索エラー', { error: error.message, stack: error.stack });
-        res.status(500).json({ message: '検索に失敗しました', error: error.message });
     }
 });
 
@@ -236,19 +200,38 @@ router.get('/me/followers', authenticateToken, async (req, res) => {
     }
 });
 
-// 他ユーザーの投稿一覧取得（プロフィール画面用）
+// 友だち一覧（相互フォロー）
+router.get('/me/friends', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const list = await FollowModel.getFriendsList(userId);
+        res.status(200).json({ users: list });
+    } catch (error) {
+        logger.error('友だち一覧取得エラー', { error: error.message, stack: error.stack });
+        res.status(500).json({ message: '一覧の取得に失敗しました', error: error.message });
+    }
+});
+
+// 他ユーザーの投稿一覧取得（プロフィール画面用・友だちのみ閲覧可）
 router.get('/:id/records', authenticateToken, async (req, res) => {
     try {
         const targetId = parseInt(req.params.id, 10);
         if (Number.isNaN(targetId)) {
             return res.status(400).json({ message: '無効なユーザーIDです。' });
         }
+        const viewerId = req.user.id;
+        if (targetId !== viewerId) {
+            const isFriend = await FollowModel.isFriend(viewerId, targetId);
+            if (!isFriend) {
+                return res.status(200).json({ records: [], is_friend: false });
+            }
+        }
         const user = await UserModel.findById(targetId);
         if (!user) {
             return res.status(404).json({ message: 'ユーザーが見つかりません' });
         }
         const records = await RecordModel.findAllByUserId(targetId, null);
-        res.status(200).json({ records });
+        res.status(200).json({ records, is_friend: true });
     } catch (error) {
         logger.error('ユーザー投稿一覧取得エラー', { error: error.message, stack: error.stack });
         res.status(500).json({ message: '取得に失敗しました', error: error.message });
@@ -268,7 +251,11 @@ router.get('/:id', authenticateToken, async (req, res) => {
             return res.status(404).json({ message: 'ユーザーが見つかりません' });
         }
         const avatar = await UserAvatarModel.findByUserId(targetId);
-        const isFollowing = await FollowModel.isFollowing(viewerId, targetId);
+        const [isFollowing, isFollowedBy, isFriend] = await Promise.all([
+            FollowModel.isFollowing(viewerId, targetId),
+            FollowModel.isFollowing(targetId, viewerId),
+            FollowModel.isFriend(viewerId, targetId),
+        ]);
         res.status(200).json({
             user: {
                 id: user.id,
@@ -276,6 +263,8 @@ router.get('/:id', authenticateToken, async (req, res) => {
                 bio: user.bio || null,
                 avatar_url: avatar ? avatar.image_url : null,
                 is_following: isFollowing,
+                is_followed_by: isFollowedBy,
+                is_friend: isFriend,
             },
         });
     } catch (error) {

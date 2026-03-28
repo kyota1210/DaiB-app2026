@@ -17,12 +17,12 @@ import ScreenHeader from '../components/ScreenHeader';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { getFollowing, getFollowers } from '../api/user';
+import { getFollowing, getFollowers, getFriends } from '../api/user';
 import { follow } from '../api/follows';
 import { getImageUrl } from '../utils/imageHelper';
 
 const FollowListScreen = ({ navigation, route }) => {
-    const mode = route.params?.mode ?? 'following'; // 'following' | 'followers'
+    const mode = route.params?.mode ?? 'following'; // 'following' | 'followers' | 'friends'
     const { userToken } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
@@ -34,7 +34,14 @@ const FollowListScreen = ({ navigation, route }) => {
     const fetchList = useCallback(async () => {
         if (!userToken) return;
         try {
-            const res = mode === 'following' ? await getFollowing(userToken) : await getFollowers(userToken);
+            let res;
+            if (mode === 'friends') {
+                res = await getFriends(userToken);
+            } else if (mode === 'followers') {
+                res = await getFollowers(userToken);
+            } else {
+                res = await getFollowing(userToken);
+            }
             setUsers(res.users || []);
         } catch (err) {
             console.error('follow list error', err);
@@ -57,19 +64,19 @@ const FollowListScreen = ({ navigation, route }) => {
         fetchList();
     };
 
-    const handleFollow = async (userId, userName) => {
+    const handleApprove = async (userId, userName) => {
         if (busyId !== null) return;
         setBusyId(userId);
         try {
             await follow(userToken, userId);
             if (mode === 'followers') {
-                setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, is_following: true } : u)));
+                setUsers((prev) => prev.filter((u) => u.id !== userId));
                 const displayName = (userName || '').trim() || t('thisUser');
-                const message = t('followedMessageWithName').replace('{{name}}', displayName);
+                const message = t('friendRequestApprovedWithName').replace('{{name}}', displayName);
                 Alert.alert('', message);
             }
         } catch (err) {
-            console.error('follow error', err);
+            console.error('approve error', err);
         } finally {
             setBusyId(null);
         }
@@ -107,17 +114,17 @@ const FollowListScreen = ({ navigation, route }) => {
                 {showFollowButton && (
                     <TouchableOpacity
                         style={[styles.followButton, { backgroundColor: theme.colors.primary }]}
-                        onPress={() => handleFollow(item.id, item.user_name)}
+                        onPress={() => handleApprove(item.id, item.user_name)}
                         disabled={isBusy}
                     >
-                        {isBusy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={[styles.followButtonText, { color: '#fff' }]}>{t('follow')}</Text>}
+                        {isBusy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={[styles.followButtonText, { color: '#fff' }]}>{t('approveFriendRequest')}</Text>}
                     </TouchableOpacity>
                 )}
             </View>
         );
     };
 
-    const title = mode === 'following' ? t('followingList') : t('followersList');
+    const title = mode === 'friends' ? t('friendsList') : mode === 'following' ? t('followingList') : t('followersList');
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>

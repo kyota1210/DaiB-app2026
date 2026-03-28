@@ -53,10 +53,6 @@ router.post('/signup', async (req, res) => {
             passwordHash
         });
 
-        // デフォルト非公開＋検索キー（userId_ランダム）を設定
-        const searchKey = UserModel.generateSearchKey(userId);
-        await UserModel.updateVisibility(userId, 'private', searchKey);
-
         res.status(201).json({ 
             message: 'ユーザー登録が完了しました。',
             userId

@@ -77,26 +77,36 @@ const UserProfileScreen = ({ navigation, route }) => {
         }, [loadProfileAndRecords])
     );
 
-    const handleFollow = async () => {
+    const handleAction = async () => {
         if (followBusy || !user) return;
-        const isCurrentlyFollowing = !!user.is_following;
-        if (isCurrentlyFollowing) {
-            const name = (user.user_name || '').trim() || t('thisUser');
-            const message = t('unfollowConfirmMessageWithName').replace('{{name}}', name);
-            Alert.alert(
-                '',
-                message,
-                [
-                    { text: t('cancel'), style: 'cancel' },
-                    { text: t('unfollow'), style: 'destructive', onPress: () => doUnfollow() },
-                ]
-            );
+        const name = (user.user_name || '').trim() || t('thisUser');
+
+        if (user.is_friend) {
+            const message = t('removeFriendConfirmWithName').replace('{{name}}', name);
+            Alert.alert('', message, [
+                { text: t('cancel'), style: 'cancel' },
+                { text: t('removeFriend'), style: 'destructive', onPress: () => doUnfollow() },
+            ]);
             return;
         }
+
+        if (user.is_following) {
+            const message = t('cancelFriendRequestConfirmWithName').replace('{{name}}', name);
+            Alert.alert('', message, [
+                { text: t('cancel'), style: 'cancel' },
+                { text: t('cancelFriendRequest'), style: 'destructive', onPress: () => doUnfollow() },
+            ]);
+            return;
+        }
+
         setFollowBusy(true);
         try {
-            await follow(userToken, user.id);
-            setUser((prev) => (prev ? { ...prev, is_following: true } : null));
+            const res = await follow(userToken, user.id);
+            const nowFriend = !!res?.is_friend;
+            setUser((prev) => prev ? { ...prev, is_following: true, is_friend: nowFriend } : null);
+            if (nowFriend) {
+                Alert.alert('', t('friendRequestApprovedWithName').replace('{{name}}', name));
+            }
         } catch (err) {
             console.error('follow error', err);
         } finally {
@@ -109,7 +119,7 @@ const UserProfileScreen = ({ navigation, route }) => {
         setFollowBusy(true);
         try {
             await unfollow(userToken, user.id);
-            setUser((prev) => (prev ? { ...prev, is_following: false } : null));
+            setUser((prev) => prev ? { ...prev, is_following: false, is_friend: false } : null);
         } catch (err) {
             console.error('unfollow error', err);
         } finally {
@@ -230,16 +240,26 @@ const UserProfileScreen = ({ navigation, route }) => {
                 <TouchableOpacity
                     style={[
                         styles.followButton,
-                        user.is_following ? { backgroundColor: theme.colors.secondaryBackground } : { backgroundColor: theme.colors.primary },
+                        (user.is_friend || user.is_following)
+                            ? { backgroundColor: theme.colors.secondaryBackground }
+                            : { backgroundColor: theme.colors.primary },
                     ]}
-                    onPress={handleFollow}
+                    onPress={handleAction}
                     disabled={followBusy}
                 >
                     {followBusy ? (
                         <ActivityIndicator size="small" color={theme.colors.text} />
                     ) : (
-                        <Text style={[styles.followButtonText, { color: theme.colors.text }]}>
-                            {user.is_following ? t('unfollow') : t('follow')}
+                        <Text style={[styles.followButtonText, {
+                            color: (user.is_friend || user.is_following) ? theme.colors.text : '#fff',
+                        }]}>
+                            {user.is_friend
+                                ? t('removeFriend')
+                                : user.is_following
+                                    ? t('cancelFriendRequest')
+                                    : user.is_followed_by
+                                        ? t('approveFriendRequest')
+                                        : t('sendFriendRequest')}
                         </Text>
                     )}
                 </TouchableOpacity>

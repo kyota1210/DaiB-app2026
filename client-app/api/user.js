@@ -1,12 +1,11 @@
 import { apiFetch } from './client';
 import { API_BASE_URL } from '../config';
 
-export const updateProfile = async (token, userName, bio, avatarFile, visibility) => {
+export const updateProfile = async (token, userName, bio, avatarFile) => {
     const formData = new FormData();
 
     if (userName !== undefined) formData.append('user_name', userName);
     if (bio !== undefined) formData.append('bio', bio);
-    if (visibility !== undefined) formData.append('visibility', visibility);
 
     if (avatarFile) {
         formData.append('avatar', {
@@ -26,17 +25,16 @@ export const getUserProfile = async (token) => {
     return apiFetch(token, '/users/me', { method: 'GET' });
 };
 
-export const searchUsers = async (token, query) => {
-    const q = encodeURIComponent((query || '').trim());
-    return apiFetch(token, `/users/search?q=${q}`, { method: 'GET' });
-};
-
 export const getFollowing = async (token) => {
     return apiFetch(token, '/users/me/following', { method: 'GET' });
 };
 
 export const getFollowers = async (token) => {
     return apiFetch(token, '/users/me/followers', { method: 'GET' });
+};
+
+export const getFriends = async (token) => {
+    return apiFetch(token, '/users/me/friends', { method: 'GET' });
 };
 
 export const getOtherUserProfile = async (token, userId) => {

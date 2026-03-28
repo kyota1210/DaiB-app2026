@@ -25,11 +25,13 @@ router.post('/', async (req, res) => {
         }
         const existing = await FollowModel.isFollowing(followerId, followingId);
         if (existing) {
-            return res.status(200).json({ message: '既にフォローしています。', following: true });
+            const isFriend = await FollowModel.isFriend(followerId, followingId);
+            return res.status(200).json({ message: '既にフォローしています。', following: true, is_friend: isFriend });
         }
         await FollowModel.create(followerId, followingId);
-        logger.info('フォロー成功', { followerId, followingId });
-        res.status(201).json({ message: 'フォローしました。', following: true });
+        const isFriend = await FollowModel.isFriend(followerId, followingId);
+        logger.info('フォロー成功', { followerId, followingId, isFriend });
+        res.status(201).json({ message: 'フォローしました。', following: true, is_friend: isFriend });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
             return res.status(200).json({ message: '既にフォローしています。', following: true });
@@ -49,7 +51,7 @@ router.delete('/:following_id', async (req, res) => {
         }
         const deleted = await FollowModel.delete(followerId, followingId);
         if (deleted) logger.info('フォロー解除成功', { followerId, followingId });
-        res.status(200).json({ message: deleted ? 'フォローを解除しました。' : 'フォロー関係はありません。', following: false });
+        res.status(200).json({ message: deleted ? 'フォローを解除しました。' : 'フォロー関係はありません。', following: false, is_friend: false });
     } catch (err) {
         logger.error('フォロー解除エラー', { error: err.message, stack: err.stack });
         res.status(500).json({ message: 'フォロー解除に失敗しました。', error: err.message });

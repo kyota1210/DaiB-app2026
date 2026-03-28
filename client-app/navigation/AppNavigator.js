@@ -19,8 +19,7 @@ import ThreadScreen from '../screens/ThreadScreen';
 import RecordDetailScreen from '../screens/RecordDetailScreen';
 import ProfileEditScreen from '../screens/ProfileEditScreen';
 import LoginInfoScreen from '../screens/LoginInfoScreen';
-import UserSearchScreen from '../screens/UserSearchScreen';
-import FollowListScreen from '../screens/FollowListScreen';
+import FriendHubScreen from '../screens/FriendHubScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
 import PremiumPlanScreen from '../screens/PremiumPlanScreen';
 import CategoryManagementScreen from '../screens/CategoryManagementScreen';
@@ -32,6 +31,7 @@ import AboutScreen from '../screens/AboutScreen';
 import TermsScreen from '../screens/TermsScreen';
 import PrivacyScreen from '../screens/PrivacyScreen';
 import ContactScreen from '../screens/ContactScreen';
+import InviteHandlerScreen from '../screens/InviteHandlerScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -172,10 +172,9 @@ const AppNavigator = () => {
           <Stack.Screen name="Terms" component={TermsScreen} />
           <Stack.Screen name="Privacy" component={PrivacyScreen} />
           <Stack.Screen name="Contact" component={ContactScreen} />
-          <Stack.Screen name="UserSearch" component={UserSearchScreen} />
-          <Stack.Screen name="FollowingList" component={FollowListScreen} initialParams={{ mode: 'following' }} />
-          <Stack.Screen name="FollowersList" component={FollowListScreen} initialParams={{ mode: 'followers' }} />
+          <Stack.Screen name="FriendHub" component={FriendHubScreen} />
           <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+          <Stack.Screen name="InviteHandler" component={InviteHandlerScreen} />
         </Stack.Navigator>
       </RecordsAndCategoriesProvider>
     );
@@ -184,6 +183,7 @@ const AppNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Auth" component={AuthStack} />
+      <Stack.Screen name="InviteHandler" component={InviteHandlerScreen} />
     </Stack.Navigator>
   );
 };

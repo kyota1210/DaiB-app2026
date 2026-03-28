@@ -17,7 +17,6 @@ const ProfileEditScreen = ({ navigation }) => {
     const { t } = useLanguage();
     const [userName, setUserName] = useState(userInfo?.user_name || '');
     const [bio, setBio] = useState(userInfo?.bio || '');
-    const [visibility, setVisibility] = useState(userInfo?.visibility === 'public' ? 'public' : 'private');
     const [avatarUri, setAvatarUri] = useState(
         userInfo?.avatar_url ? `${SERVER_URL}/${userInfo.avatar_url}` : null
     );
@@ -72,7 +71,7 @@ const ProfileEditScreen = ({ navigation }) => {
         setIsLoading(true);
         try {
             // プロフィール更新APIを呼び出す
-            const data = await updateProfile(userToken, userName, bio, selectedFile, visibility);
+            const data = await updateProfile(userToken, userName, bio, selectedFile);
             
             // AuthContextのユーザー情報を更新
             authContext.updateUserInfo(data.user);
@@ -196,43 +195,6 @@ const ProfileEditScreen = ({ navigation }) => {
                             maxLength={100}
                         />
                     </View>
-                    <View style={styles.inputGroup}>
-                        <Text style={[styles.label, { color: theme.colors.text }]}>
-                            {t('profileVisibility')}
-                        </Text>
-                        <View style={styles.visibilityRow}>
-                            <TouchableOpacity
-                                style={[
-                                    styles.visibilityOption,
-                                    visibility === 'public' && { backgroundColor: theme.colors.primary + '30', borderColor: theme.colors.primary }
-                                ]}
-                                onPress={() => setVisibility('public')}
-                            >
-                                <Text style={[styles.visibilityOptionText, { color: theme.colors.text }]}>{t('visibilityPublic')}</Text>
-                                <Text style={[styles.visibilityHint, { color: theme.colors.secondaryText }]}>{t('visibilityPublicHint')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[
-                                    styles.visibilityOption,
-                                    visibility === 'private' && { backgroundColor: theme.colors.primary + '30', borderColor: theme.colors.primary }
-                                ]}
-                                onPress={() => setVisibility('private')}
-                            >
-                                <Text style={[styles.visibilityOptionText, { color: theme.colors.text }]}>{t('visibilityPrivate')}</Text>
-                                <Text style={[styles.visibilityHint, { color: theme.colors.secondaryText }]}>{t('visibilityPrivateHint')}</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                    {visibility === 'public' && (
-                        <View style={styles.inputGroup}>
-                            <Text style={[styles.hintText, { color: theme.colors.secondaryText }]}>{t('visibilityPublicSearchHint')}</Text>
-                        </View>
-                    )}
-                    {visibility === 'private' && (
-                        <View style={styles.inputGroup}>
-                            <Text style={[styles.hintText, { color: theme.colors.secondaryText }]}>{t('searchKeyQrHint')}</Text>
-                        </View>
-                    )}
                 </View>
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -346,29 +308,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         minHeight: 140,
         textAlignVertical: 'top',
-    },
-    visibilityRow: {
-        flexDirection: 'row',
-        gap: 12,
-    },
-    visibilityOption: {
-        flex: 1,
-        padding: 16,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)',
-    },
-    visibilityOptionText: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    visibilityHint: {
-        fontSize: 12,
-        marginTop: 4,
-    },
-    hintText: {
-        fontSize: 12,
-        marginTop: 6,
     },
 });
 

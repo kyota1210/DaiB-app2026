@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
@@ -10,6 +11,15 @@ import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+const linking = {
+  prefixes: [Linking.createURL('/'), 'daibapp://'],
+  config: {
+    screens: {
+      InviteHandler: 'invite/:userId',
+    },
+  },
+};
+
 // ステータスバーとナビゲーションをラップするコンポーネント
 const AppContent = () => {
   const { theme } = useTheme();
@@ -18,7 +28,7 @@ const AppContent = () => {
     <>
       {/* ステータスバーのスタイルをテーマに応じて変更 */}
       <StatusBar style={theme.isDark ? 'light' : 'dark'} />
-      <NavigationContainer>
+      <NavigationContainer linking={linking}>
         <AppNavigator /> 
       </NavigationContainer>
     </>
