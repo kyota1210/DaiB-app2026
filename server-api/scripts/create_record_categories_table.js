@@ -21,10 +21,15 @@ async function createRecordCategoriesTable() {
                     record_id INT NOT NULL,
                     category_id INT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    invalidation_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0:有効 1:無効(削除)',
+                    deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '論理削除日時',
                     UNIQUE KEY unique_record_category (record_id, category_id),
                     FOREIGN KEY (record_id) REFERENCES records(id) ON DELETE CASCADE,
-                    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
-                )
+                    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+                    INDEX idx_rc_record (record_id),
+                    INDEX idx_rc_active (record_id, invalidation_flag)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
             console.log('Successfully created record_categories table.');
         }

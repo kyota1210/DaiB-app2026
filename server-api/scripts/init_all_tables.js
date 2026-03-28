@@ -29,10 +29,8 @@ async function run() {
                     bio VARCHAR(100) NULL,
                     default_view_mode VARCHAR(20) NOT NULL DEFAULT 'grid',
                     default_sort_order VARCHAR(20) NOT NULL DEFAULT 'date_logged',
-                    visibility ENUM('public', 'private') NOT NULL DEFAULT 'private',
-                    search_key VARCHAR(80) NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE KEY unique_search_key (search_key)
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
             console.log('✅ users テーブルを作成しました。');
@@ -65,12 +63,14 @@ async function run() {
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     user_id INT NOT NULL,
                     name VARCHAR(50) NOT NULL,
-                    icon VARCHAR(50) NOT NULL DEFAULT '',
-                    color VARCHAR(20) NOT NULL DEFAULT '',
+                    sort_order INT NOT NULL DEFAULT 0,
+                    invalidation_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0:有効 1:無効(削除)',
+                    deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '論理削除日時',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                    INDEX idx_user_id (user_id)
+                    INDEX idx_user_id (user_id),
+                    INDEX idx_user_active (user_id, invalidation_flag)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
             console.log('✅ categories テーブルを作成しました。');
@@ -89,10 +89,6 @@ async function run() {
                     date_logged DATE NULL,
                     invalidation_flag TINYINT(1) NOT NULL DEFAULT 0,
                     image_url VARCHAR(255) NULL,
-                    aspect_ratio VARCHAR(10) DEFAULT '1:1',
-                    zoom_level DECIMAL(3, 2) DEFAULT 1.00,
-                    position_x INT DEFAULT 0,
-                    position_y INT DEFAULT 0,
                     category_id INT NULL,
                     show_in_timeline TINYINT(1) NOT NULL DEFAULT 1,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -108,6 +104,29 @@ async function run() {
             console.log('✅ records テーブルを作成しました。');
         }
 
+        // 4b. record_categories（records / categories の次）
+        if (await tableExists('record_categories')) {
+            console.log('record_categories は既に存在します。スキップします。');
+        } else {
+            await db.query(`
+                CREATE TABLE record_categories (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    record_id INT NOT NULL,
+                    category_id INT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    invalidation_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0:有効 1:無効(削除)',
+                    deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '論理削除日時',
+                    UNIQUE KEY unique_record_category (record_id, category_id),
+                    FOREIGN KEY (record_id) REFERENCES records(id) ON DELETE CASCADE,
+                    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+                    INDEX idx_rc_record (record_id),
+                    INDEX idx_rc_active (record_id, invalidation_flag)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            `);
+            console.log('✅ record_categories テーブルを作成しました。');
+        }
+
         // 5. follows
         if (await tableExists('follows')) {
             console.log('follows は既に存在します。スキップします。');
@@ -117,6 +136,8 @@ async function run() {
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     follower_id INT NOT NULL,
                     following_id INT NOT NULL,
+                    invalidation_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0:有効 1:無効(削除)',
+                    deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '論理削除日時',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE KEY unique_follow (follower_id, following_id),
                     CONSTRAINT chk_no_self_follow CHECK (follower_id != following_id),

@@ -2,31 +2,56 @@ const db = require('../db');
 
 class FollowModel {
     /**
-     * フォロー関係を作成
+     * フォロー関係を作成（同一ペアが論理削除済みなら復活）
      * @param {number} followerId - フォローする側（自分）
      * @param {number} followingId - フォローされる側（相手）
      */
     static async create(followerId, followingId) {
         if (followerId === followingId) return null;
-        const sql = 'INSERT INTO follows (follower_id, following_id) VALUES (?, ?)';
-        const [result] = await db.query(sql, [followerId, followingId]);
+
+        const [rows] = await db.query(
+            `SELECT id, invalidation_flag FROM follows WHERE follower_id = ? AND following_id = ?`,
+            [followerId, followingId]
+        );
+        if (rows.length > 0) {
+            const row = rows[0];
+            if (row.invalidation_flag === 1) {
+                await db.query(
+                    `UPDATE follows SET invalidation_flag = 0, deleted_at = NULL WHERE id = ?`,
+                    [row.id]
+                );
+                return row.id;
+            }
+            return row.id;
+        }
+
+        const [result] = await db.query(
+            'INSERT INTO follows (follower_id, following_id) VALUES (?, ?)',
+            [followerId, followingId]
+        );
         return result.insertId;
     }
 
     /**
-     * フォロー解除
+     * フォロー解除（論理削除）
      */
     static async delete(followerId, followingId) {
-        const sql = 'DELETE FROM follows WHERE follower_id = ? AND following_id = ?';
+        const sql = `
+            UPDATE follows
+            SET invalidation_flag = 1,
+                deleted_at = CURRENT_TIMESTAMP
+            WHERE follower_id = ? AND following_id = ? AND invalidation_flag = 0
+        `;
         const [result] = await db.query(sql, [followerId, followingId]);
         return result.affectedRows > 0;
     }
 
     /**
-     * フォロー中かどうか
+     * フォロー中かどうか（有効なレコードのみ）
      */
     static async isFollowing(followerId, followingId) {
-        const sql = 'SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?';
+        const sql =
+            'SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ? AND invalidation_flag = 0';
         const [rows] = await db.query(sql, [followerId, followingId]);
         return rows.length > 0;
     }
@@ -38,9 +63,11 @@ class FollowModel {
         const sql = `
             SELECT COUNT(*) AS cnt FROM follows f
             WHERE f.follower_id = ?
+            AND f.invalidation_flag = 0
             AND NOT EXISTS (
                 SELECT 1 FROM follows f2
                 WHERE f2.follower_id = f.following_id AND f2.following_id = f.follower_id
+                AND f2.invalidation_flag = 0
             )
         `;
         const [rows] = await db.query(sql, [userId]);
@@ -54,9 +81,11 @@ class FollowModel {
         const sql = `
             SELECT COUNT(*) AS cnt FROM follows f
             WHERE f.following_id = ?
+            AND f.invalidation_flag = 0
             AND NOT EXISTS (
                 SELECT 1 FROM follows f2
                 WHERE f2.follower_id = f.following_id AND f2.following_id = f.follower_id
+                AND f2.invalidation_flag = 0
             )
         `;
         const [rows] = await db.query(sql, [userId]);
@@ -74,9 +103,11 @@ class FollowModel {
             JOIN users u ON u.id = f.following_id
             LEFT JOIN user_avatars ua ON ua.user_id = u.id
             WHERE f.follower_id = ?
+            AND f.invalidation_flag = 0
             AND NOT EXISTS (
                 SELECT 1 FROM follows f2
                 WHERE f2.follower_id = f.following_id AND f2.following_id = f.follower_id
+                AND f2.invalidation_flag = 0
             )
             ORDER BY f.created_at DESC
         `;
@@ -95,9 +126,11 @@ class FollowModel {
             JOIN users u ON u.id = f.follower_id
             LEFT JOIN user_avatars ua ON ua.user_id = u.id
             WHERE f.following_id = ?
+            AND f.invalidation_flag = 0
             AND NOT EXISTS (
                 SELECT 1 FROM follows f2
                 WHERE f2.follower_id = f.following_id AND f2.following_id = f.follower_id
+                AND f2.invalidation_flag = 0
             )
             ORDER BY f.created_at DESC
         `;
@@ -112,7 +145,7 @@ class FollowModel {
     static async getFollowingStatusSet(viewerId, userIds) {
         if (!userIds || userIds.length === 0) return new Set();
         const placeholders = userIds.map(() => '?').join(',');
-        const sql = `SELECT following_id FROM follows WHERE follower_id = ? AND following_id IN (${placeholders})`;
+        const sql = `SELECT following_id FROM follows WHERE follower_id = ? AND following_id IN (${placeholders}) AND invalidation_flag = 0`;
         const [rows] = await db.query(sql, [viewerId, ...userIds]);
         return new Set(rows.map((r) => r.following_id));
     }
@@ -124,7 +157,7 @@ class FollowModel {
     static async getFollowedByStatusSet(viewerId, userIds) {
         if (!userIds || userIds.length === 0) return new Set();
         const placeholders = userIds.map(() => '?').join(',');
-        const sql = `SELECT follower_id FROM follows WHERE following_id = ? AND follower_id IN (${placeholders})`;
+        const sql = `SELECT follower_id FROM follows WHERE following_id = ? AND follower_id IN (${placeholders}) AND invalidation_flag = 0`;
         const [rows] = await db.query(sql, [viewerId, ...userIds]);
         return new Set(rows.map((r) => r.follower_id));
     }
@@ -141,6 +174,7 @@ class FollowModel {
             FROM follows f1
             JOIN follows f2 ON f1.follower_id = f2.following_id AND f1.following_id = f2.follower_id
             WHERE f1.follower_id = ? AND f1.following_id IN (${placeholders})
+            AND f1.invalidation_flag = 0 AND f2.invalidation_flag = 0
         `;
         const [rows] = await db.query(sql, [viewerId, ...userIds]);
         return new Set(rows.map((r) => r.following_id));
@@ -158,6 +192,7 @@ class FollowModel {
             JOIN users u ON u.id = f1.following_id
             LEFT JOIN user_avatars ua ON ua.user_id = u.id
             WHERE f1.follower_id = ?
+            AND f1.invalidation_flag = 0 AND f2.invalidation_flag = 0
             ORDER BY f1.created_at DESC
         `;
         const [rows] = await db.query(sql, [userId]);
@@ -173,6 +208,7 @@ class FollowModel {
             FROM follows f1
             JOIN follows f2 ON f1.follower_id = f2.following_id AND f1.following_id = f2.follower_id
             WHERE f1.follower_id = ?
+            AND f1.invalidation_flag = 0 AND f2.invalidation_flag = 0
         `;
         const [rows] = await db.query(sql, [userId]);
         return rows[0] ? Number(rows[0].cnt) : 0;
@@ -186,6 +222,7 @@ class FollowModel {
             SELECT 1 FROM follows f1
             JOIN follows f2 ON f1.follower_id = f2.following_id AND f1.following_id = f2.follower_id
             WHERE f1.follower_id = ? AND f1.following_id = ?
+            AND f1.invalidation_flag = 0 AND f2.invalidation_flag = 0
         `;
         const [rows] = await db.query(sql, [userId1, userId2]);
         return rows.length > 0;

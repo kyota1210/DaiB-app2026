@@ -465,7 +465,6 @@ Authorization: Bearer <JWT_TOKEN>
 - ボディ:
   - `user_name` (string, 任意): ユーザー名（25文字以内）
   - `bio` (string, 任意): 自己紹介
-  - `visibility` (string, 任意): 公開設定（`public` | `private`）
   - `avatar` (file, 任意): アバター画像
 
 **レスポンス（成功: 200）**:

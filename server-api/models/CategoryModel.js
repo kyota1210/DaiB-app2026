@@ -8,7 +8,7 @@ class CategoryModel {
         const sqlWithSort = `
             SELECT id, name, sort_order, created_at, updated_at
             FROM categories
-            WHERE user_id = ?
+            WHERE user_id = ? AND invalidation_flag = 0
             ORDER BY sort_order ASC, id ASC
         `;
         try {
@@ -35,7 +35,7 @@ class CategoryModel {
     static async findById(id, userId) {
         try {
             const [rows] = await db.query(
-                'SELECT id, name, sort_order, created_at, updated_at FROM categories WHERE id = ? AND user_id = ?',
+                'SELECT id, name, sort_order, created_at, updated_at FROM categories WHERE id = ? AND user_id = ? AND invalidation_flag = 0',
                 [id, userId]
             );
             return rows[0];
@@ -57,7 +57,7 @@ class CategoryModel {
     static async create({ userId, name }) {
         try {
             const [[{ maxOrder }]] = await db.query(
-                'SELECT COALESCE(MAX(sort_order), -1) + 1 AS maxOrder FROM categories WHERE user_id = ?',
+                'SELECT COALESCE(MAX(sort_order), -1) + 1 AS maxOrder FROM categories WHERE user_id = ? AND invalidation_flag = 0',
                 [userId]
             );
             const [result] = await db.query(
@@ -88,14 +88,14 @@ class CategoryModel {
             params.push(sortOrder);
         }
         params.push(id, userId);
-        const sql = `UPDATE categories SET ${updates.join(', ')} WHERE id = ? AND user_id = ?`;
+        const sql = `UPDATE categories SET ${updates.join(', ')} WHERE id = ? AND user_id = ? AND invalidation_flag = 0`;
         try {
             const [result] = await db.query(sql, params);
             return result.affectedRows > 0;
         } catch (err) {
             if (err.code === 'ER_BAD_FIELD_ERROR' && sortOrder !== undefined) {
                 const [result] = await db.query(
-                    'UPDATE categories SET name = ? WHERE id = ? AND user_id = ?',
+                    'UPDATE categories SET name = ? WHERE id = ? AND user_id = ? AND invalidation_flag = 0',
                     [name, id, userId]
                 );
                 return result.affectedRows > 0;
@@ -112,7 +112,7 @@ class CategoryModel {
         try {
             for (let i = 0; i < categoryIds.length; i++) {
                 const [result] = await db.query(
-                    'UPDATE categories SET sort_order = ? WHERE id = ? AND user_id = ?',
+                    'UPDATE categories SET sort_order = ? WHERE id = ? AND user_id = ? AND invalidation_flag = 0',
                     [i, categoryIds[i], userId]
                 );
                 if (result.affectedRows === 0) return false;
@@ -131,8 +131,11 @@ class CategoryModel {
      */
     static async delete(id, userId) {
         const sql = `
-            DELETE FROM categories 
-            WHERE id = ? AND user_id = ?
+            UPDATE categories
+            SET invalidation_flag = 1,
+                deleted_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND user_id = ? AND invalidation_flag = 0
         `;
         const [result] = await db.query(sql, [id, userId]);
         return result.affectedRows > 0;

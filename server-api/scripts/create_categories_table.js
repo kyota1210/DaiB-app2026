@@ -25,12 +25,14 @@ async function createCategoriesTable() {
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id INT NOT NULL,
                 name VARCHAR(50) NOT NULL,
-                icon VARCHAR(50) NOT NULL,
-                color VARCHAR(20) NOT NULL,
+                sort_order INT NOT NULL DEFAULT 0,
+                invalidation_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0:有効 1:無効(削除)',
+                deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '論理削除日時',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                INDEX idx_user_id (user_id)
+                INDEX idx_user_id (user_id),
+                INDEX idx_user_active (user_id, invalidation_flag)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         `;
         

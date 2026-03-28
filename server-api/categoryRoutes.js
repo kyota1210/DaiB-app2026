@@ -143,7 +143,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
 /**
  * DELETE /api/categories/:id
- * カテゴリーを削除
+ * カテゴリーを論理削除（invalidation_flag=1, deleted_at を設定）
  */
 router.delete('/:id', authenticateToken, async (req, res) => {
     try {

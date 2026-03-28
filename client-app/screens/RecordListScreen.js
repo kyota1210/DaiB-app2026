@@ -53,7 +53,7 @@ const formatDate = (dateString) => {
     return `${year}/${month}/${day}`;
 };
 
-// ギャラリーアイテム（一覧はセルに合わせた cover 表示、詳細画面で aspect/zoom/position を反映）
+// ギャラリーアイテム（一覧はセルに合わせた cover 表示）
 const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid', theme }) => {
     const imageUrl = getImageUrl(item.image_url);
 

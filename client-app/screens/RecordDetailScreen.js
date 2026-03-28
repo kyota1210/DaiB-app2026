@@ -16,6 +16,23 @@ const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const REACTION_EMOJIS = ['❤️', '👍', '🌸', '🎉', '✨'];
 
+/** 閲覧ユーザーがその投稿の著者か（ギャラリー等で author_id が無い場合は自分の投稿として扱う） */
+function viewerOwnsRecord(record, viewerUserId) {
+    if (!record) return false;
+    if (record.author_id == null) return true;
+    return viewerUserId != null && record.author_id === viewerUserId;
+}
+
+/** category_ids をカテゴリ名の配列に解決（順序維持、不明 ID は省略） */
+function resolveCategoryLabelNames(record, categories) {
+    const ids = Array.isArray(record?.category_ids) ? record.category_ids : [];
+    if (ids.length === 0 || !categories?.length) return [];
+    return ids
+        .map((id) => categories.find((c) => c.id !== 'all' && (c.id === id || String(c.id) === String(id))))
+        .filter(Boolean)
+        .map((c) => c.name);
+}
+
 const AnimatedReactionBar = React.memo(({ emojis, onSelect, isClosing, onCloseComplete }) => {
     const anim = useRef(new Animated.Value(0)).current;
     useEffect(() => {
@@ -58,7 +75,23 @@ const AnimatedReactionBar = React.memo(({ emojis, onSelect, isClosing, onCloseCo
     );
 });
 
-const RecordItem = React.memo(function RecordItem({ item, theme, t, showReactionControl, isReactionBarExpanded, onToggleReactionBar, onSelectReaction, burstEmoji, burstAnim, isReactionBarClosing, onReactionBarCloseComplete, reactionUsers, onPressReactionUser }) {
+const RecordItem = React.memo(function RecordItem({
+    item,
+    theme,
+    t,
+    showReactionControl,
+    isReactionBarExpanded,
+    onToggleReactionBar,
+    onSelectReaction,
+    burstEmoji,
+    burstAnim,
+    isReactionBarClosing,
+    onReactionBarCloseComplete,
+    reactionUsers,
+    onPressReactionUser,
+    showCategoryLabels,
+    categoryLabelNames,
+}) {
     const [originalAspect, setOriginalAspect] = useState(null);
     const imageUrl = getImageUrl(item.image_url);
     const date = useMemo(() => new Date(item.date_logged), [item.date_logged]);
@@ -164,6 +197,27 @@ const RecordItem = React.memo(function RecordItem({ item, theme, t, showReaction
                 )}
             </View>
 
+            {showCategoryLabels && categoryLabelNames?.length > 0 ? (
+                <View style={styles.categoryLabelsRow}>
+                    {categoryLabelNames.map((name, idx) => (
+                        <View
+                            key={`${name}-${idx}`}
+                            style={[
+                                styles.categoryLabelChip,
+                                {
+                                    backgroundColor: theme.colors.secondaryBackground,
+                                    borderColor: theme.colors.border,
+                                },
+                            ]}
+                        >
+                            <Text style={[styles.categoryLabelText, { color: theme.colors.text }]} numberOfLines={1}>
+                                {name}
+                            </Text>
+                        </View>
+                    ))}
+                </View>
+            ) : null}
+
             {reactionUsers?.length > 0 ? (
                 <View style={styles.reactionUsersSection}>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.reactionUsersRow}>
@@ -202,7 +256,7 @@ const RecordItem = React.memo(function RecordItem({ item, theme, t, showReaction
 
 export default function RecordDetailScreen({ route, navigation }) {
     const { records: paramsRecords, initialIndex } = route.params;
-    const { records: contextRecords } = useRecordsAndCategories();
+    const { records: contextRecords, categories } = useRecordsAndCategories();
     // タイムラインから開いた場合（author_id あり）は params をそのまま使用
     const paramsHaveAuthorInfo = paramsRecords?.some?.((r) => r.author_id != null);
     // 一覧の並び順（paramsRecords）を維持しつつ、Context の最新データで各レコードを更新
@@ -445,6 +499,8 @@ export default function RecordDetailScreen({ route, navigation }) {
                         burstAnim={burstAnim}
                         isReactionBarClosing={isReactionBarClosing}
                         onReactionBarCloseComplete={handleReactionBarCloseComplete}
+                        showCategoryLabels={false}
+                        categoryLabelNames={[]}
                     />
                 </View>
             ) : (
@@ -467,6 +523,8 @@ export default function RecordDetailScreen({ route, navigation }) {
                                 t={t}
                                 reactionUsers={record.id === currentRecord?.id ? reactionUsers : undefined}
                                 onPressReactionUser={handlePressReactionUser}
+                                showCategoryLabels={viewerOwnsRecord(record, userInfo?.id)}
+                                categoryLabelNames={resolveCategoryLabelNames(record, categories)}
                             />
                         </View>
                     ))}
@@ -686,6 +744,26 @@ const styles = StyleSheet.create({
     infoContainer: { 
         padding: 16,
         paddingTop: 16,
+    },
+    categoryLabelsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: 8,
+        paddingHorizontal: 16,
+        marginTop: 4,
+        marginBottom: 4,
+    },
+    categoryLabelChip: {
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 14,
+        borderWidth: StyleSheet.hairlineWidth,
+        maxWidth: '100%',
+    },
+    categoryLabelText: {
+        fontSize: 13,
+        fontWeight: '500',
     },
     date: { 
         fontSize: 14, 

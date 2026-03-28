@@ -7,7 +7,7 @@ class UserModel {
      * @param {number} id 
      */
     static async findById(id) {
-        const sql = 'SELECT id, user_name, email, bio, default_view_mode, default_sort_order FROM users WHERE id = ?';
+        const sql = 'SELECT id, user_name, email, bio, default_view_mode, default_sort_order, created_at, updated_at FROM users WHERE id = ?';
         const [rows] = await db.query(sql, [id]);
         return rows[0]; // ユーザーが見つかればオブジェクト、なければundefinedを返す
     }

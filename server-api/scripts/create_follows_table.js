@@ -16,6 +16,8 @@ async function createFollowsTable() {
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 follower_id INT NOT NULL,
                 following_id INT NOT NULL,
+                invalidation_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0:有効 1:無効(削除)',
+                deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '論理削除日時',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE KEY unique_follow (follower_id, following_id),
                 CONSTRAINT chk_no_self_follow CHECK (follower_id != following_id),

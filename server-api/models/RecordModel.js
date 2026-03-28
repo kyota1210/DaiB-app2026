@@ -1,6 +1,49 @@
 const db = require('../db');
 
+/** record_categories との JOIN で有効行のみ */
+const RC_ACTIVE = 'rc.record_id = r.id AND rc.invalidation_flag = 0';
+
 class RecordModel {
+    /**
+     * 記録に紐づくカテゴリを同期（物理 DELETE せず論理削除／復活／追加）
+     */
+    static async syncRecordCategories(recordId, categoryIds) {
+        const ids = Array.isArray(categoryIds) ? categoryIds : [];
+        const newSet = new Set(ids);
+
+        const [existing] = await db.query(
+            'SELECT id, category_id, invalidation_flag FROM record_categories WHERE record_id = ?',
+            [recordId]
+        );
+
+        const byCategoryId = new Map(existing.map((r) => [r.category_id, r]));
+
+        for (const row of existing) {
+            const want = newSet.has(row.category_id);
+            const inv = Number(row.invalidation_flag);
+            if (want && inv === 1) {
+                await db.query(
+                    `UPDATE record_categories SET invalidation_flag = 0, deleted_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                    [row.id]
+                );
+            } else if (!want && inv === 0) {
+                await db.query(
+                    `UPDATE record_categories SET invalidation_flag = 1, deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                    [row.id]
+                );
+            }
+        }
+
+        for (const cid of newSet) {
+            if (!byCategoryId.has(cid)) {
+                await db.query(
+                    'INSERT INTO record_categories (record_id, category_id) VALUES (?, ?)',
+                    [recordId, cid]
+                );
+            }
+        }
+    }
+
     /**
      * 特定ユーザーの全記録を取得
      * category_ids: カンマ区切り文字列（クライアント側で配列に変換）
@@ -11,14 +54,14 @@ class RecordModel {
                    GROUP_CONCAT(rc.category_id ORDER BY rc.category_id SEPARATOR ',') AS category_ids,
                    GROUP_CONCAT(c.name ORDER BY rc.category_id SEPARATOR ',') AS category_names
             FROM records r
-            LEFT JOIN record_categories rc ON rc.record_id = r.id
+            LEFT JOIN record_categories rc ON ${RC_ACTIVE}
             LEFT JOIN categories c ON c.id = rc.category_id
             WHERE r.user_id = ? AND r.invalidation_flag = 0
         `;
         const params = [userId];
 
         if (categoryId !== null) {
-            sql += ' AND r.id IN (SELECT record_id FROM record_categories WHERE category_id = ?)';
+            sql += ' AND r.id IN (SELECT record_id FROM record_categories WHERE category_id = ? AND invalidation_flag = 0)';
             params.push(categoryId);
         }
 
@@ -38,7 +81,7 @@ class RecordModel {
                    GROUP_CONCAT(rc.category_id ORDER BY rc.category_id SEPARATOR ',') AS category_ids,
                    GROUP_CONCAT(c.name ORDER BY rc.category_id SEPARATOR ',') AS category_names
             FROM records r
-            LEFT JOIN record_categories rc ON rc.record_id = r.id
+            LEFT JOIN record_categories rc ON ${RC_ACTIVE}
             LEFT JOIN categories c ON c.id = rc.category_id
             WHERE r.id = ? AND r.user_id = ? AND r.invalidation_flag = 0
             GROUP BY r.id, r.title, r.description, r.created_at, r.date_logged, r.image_url, r.category_id, r.show_in_timeline
@@ -102,12 +145,7 @@ class RecordModel {
         const [result] = await db.query(sql, params);
         if (result.affectedRows === 0) return false;
 
-        // 中間テーブルを洗い替え
-        await db.query('DELETE FROM record_categories WHERE record_id = ?', [id]);
-        if (categoryIds && categoryIds.length > 0) {
-            const values = categoryIds.map(cid => [id, cid]);
-            await db.query('INSERT IGNORE INTO record_categories (record_id, category_id) VALUES ?', [values]);
-        }
+        await RecordModel.syncRecordCategories(id, categoryIds);
 
         return true;
     }
@@ -140,7 +178,7 @@ class RecordModel {
             FROM records r
             JOIN users u ON u.id = r.user_id
             LEFT JOIN user_avatars ua ON ua.user_id = u.id
-            LEFT JOIN record_categories rc ON rc.record_id = r.id
+            LEFT JOIN record_categories rc ON ${RC_ACTIVE}
             LEFT JOIN categories c ON c.id = rc.category_id
             WHERE r.user_id IN (${placeholders})
               AND r.invalidation_flag = 0
@@ -206,7 +244,7 @@ class RecordModel {
             FROM records r
             JOIN users u ON u.id = r.user_id
             LEFT JOIN user_avatars ua ON ua.user_id = u.id
-            LEFT JOIN record_categories rc ON rc.record_id = r.id
+            LEFT JOIN record_categories rc ON ${RC_ACTIVE}
             LEFT JOIN categories c ON c.id = rc.category_id
             WHERE r.id = ?
               AND r.user_id = ?

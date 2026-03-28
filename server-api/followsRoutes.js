@@ -41,7 +41,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-// DELETE /api/follows/:following_id - フォロー解除
+// DELETE /api/follows/:following_id - フォロー解除（論理削除）
 router.delete('/:following_id', async (req, res) => {
     try {
         const followerId = req.user.id;
