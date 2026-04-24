@@ -2,13 +2,13 @@ const db = require('../db');
 
 async function addShowInTimelineColumn() {
     try {
-        console.log('Adding show_in_timeline column to records table...');
+        console.log('Adding show_in_timeline column to posts table...');
 
         const checkSql = `
             SELECT COLUMN_NAME
             FROM INFORMATION_SCHEMA.COLUMNS
             WHERE TABLE_SCHEMA = DATABASE()
-            AND TABLE_NAME = 'records'
+            AND TABLE_NAME = 'posts'
             AND COLUMN_NAME = 'show_in_timeline';
         `;
         const [rows] = await db.query(checkSql);
@@ -19,7 +19,7 @@ async function addShowInTimelineColumn() {
         }
 
         const alterSql = `
-            ALTER TABLE records
+            ALTER TABLE posts
             ADD COLUMN show_in_timeline TINYINT(1) NOT NULL DEFAULT 1;
         `;
         await db.query(alterSql);

@@ -24,7 +24,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getUserProfile, getOtherUserProfile } from '../api/user';
 import { getTimeline } from '../api/threads';
-import { follow } from '../api/follows';
+import { follow, approveFollow } from '../api/follows';
 import { addReaction } from '../api/reactions';
 import { getImageUrl } from '../utils/imageHelper';
 import { SERVER_URL } from '../config';
@@ -166,8 +166,7 @@ const ThreadScreen = ({ navigation }) => {
             if (scanBusy || !userToken) return;
             const raw = (typeof data === 'string' ? data : String(data || '')).trim();
             if (!raw) return;
-            const userId = parseInt(raw, 10);
-            if (Number.isNaN(userId) || userId <= 0) return;
+            const userId = raw;
             setScanBusy(true);
             setScannedUser(null);
             setScanNoUserFound(false);
@@ -190,7 +189,12 @@ const ThreadScreen = ({ navigation }) => {
         if (!scannedUser || !userToken || scanBusy) return;
         setScanBusy(true);
         try {
-            const res = await follow(userToken, scannedUser.id);
+            let res;
+            if (scannedUser.is_followed_by) {
+                res = await approveFollow(userToken, scannedUser.id);
+            } else {
+                res = await follow(userToken, scannedUser.id);
+            }
             const nowFriend = !!res?.is_friend;
             setScannedUser((prev) => (prev ? { ...prev, is_following: true, is_friend: nowFriend } : null));
         } catch (e) {
@@ -251,7 +255,7 @@ const ThreadScreen = ({ navigation }) => {
 
     const renderItem = ({ item, index }) => {
         const imageUrl = getImageUrl(item.image_url);
-        const authorAvatarUrl = getImageUrl(item.author_avatar_url);
+        const authorAvatarUrl = getImageUrl(item.author_avatar_url, item.author_profile_updated_at);
         const dateStr = item.date_logged
             ? new Date(item.date_logged).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })
             : '';
@@ -478,7 +482,7 @@ const ThreadScreen = ({ navigation }) => {
                                     ) : scannedUser ? (
                                         <View style={[styles.scannedUserCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
                                             {scannedUser.avatar_url ? (
-                                                <Image source={{ uri: getImageUrl(scannedUser.avatar_url) }} style={styles.scannedUserAvatar} />
+                                                <Image source={{ uri: getImageUrl(scannedUser.avatar_url, scannedUser.updated_at) }} style={styles.scannedUserAvatar} />
                                             ) : (
                                                 <View style={[styles.avatarPlaceholder, styles.scannedUserAvatar, { backgroundColor: theme.colors.border }]}>
                                                     <Ionicons name="person" size={32} color={theme.colors.inactive} />

@@ -1,17 +1,11 @@
-import { apiFetch } from './client';
+import {
+  follow as followDirect,
+  unfollow as unfollowDirect,
+  rejectIncomingFollow as rejectIncomingFollowDirect,
+  approveFollow as approveFollowDirect,
+} from './supabaseData';
 
-export const follow = async (token, followingId) => {
-    return apiFetch(token, '/follows', {
-        method: 'POST',
-        body: { following_id: followingId },
-    });
-};
-
-export const unfollow = async (token, followingId) => {
-    return apiFetch(token, `/follows/${followingId}`, { method: 'DELETE' });
-};
-
-/** 相手からのフォロー（フレンド申請待ち）を拒否＝申請者→自分 のフォロー行を削除 */
-export const rejectIncomingFollow = async (token, followerId) => {
-    return apiFetch(token, `/follows/incoming/${followerId}`, { method: 'DELETE' });
-};
+export const follow = async (_token, followingId) => followDirect(followingId);
+export const unfollow = async (_token, followingId) => unfollowDirect(followingId);
+export const rejectIncomingFollow = async (_token, followerId) => rejectIncomingFollowDirect(followerId);
+export const approveFollow = async (_token, followerId) => approveFollowDirect(followerId);

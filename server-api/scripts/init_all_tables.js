@@ -77,12 +77,12 @@ async function run() {
             console.log('✅ categories テーブルを作成しました。');
         }
 
-        // 4. records
-        if (await tableExists('records')) {
-            console.log('records は既に存在します。スキップします。');
+        // 4. posts（旧 records）
+        if (await tableExists('posts')) {
+            console.log('posts は既に存在します。スキップします。');
         } else {
             await db.query(`
-                CREATE TABLE records (
+                CREATE TABLE posts (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     user_id INT NOT NULL,
                     title VARCHAR(255) NOT NULL DEFAULT '',
@@ -102,30 +102,30 @@ async function run() {
                     INDEX idx_created_at (created_at)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
-            console.log('✅ records テーブルを作成しました。');
+            console.log('✅ posts テーブルを作成しました。');
         }
 
-        // 4b. record_categories（records / categories の次）
-        if (await tableExists('record_categories')) {
-            console.log('record_categories は既に存在します。スキップします。');
+        // 4b. post_categories（posts / categories の次）
+        if (await tableExists('post_categories')) {
+            console.log('post_categories は既に存在します。スキップします。');
         } else {
             await db.query(`
-                CREATE TABLE record_categories (
+                CREATE TABLE post_categories (
                     id INT AUTO_INCREMENT PRIMARY KEY,
-                    record_id INT NOT NULL,
+                    post_id INT NOT NULL,
                     category_id INT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     invalidation_flag TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0:有効 1:無効(削除)',
                     deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '論理削除日時',
-                    UNIQUE KEY unique_record_category (record_id, category_id),
-                    FOREIGN KEY (record_id) REFERENCES records(id) ON DELETE CASCADE,
+                    UNIQUE KEY unique_post_category (post_id, category_id),
+                    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
                     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
-                    INDEX idx_rc_record (record_id),
-                    INDEX idx_rc_active (record_id, invalidation_flag)
+                    INDEX idx_pc_post (post_id),
+                    INDEX idx_pc_active (post_id, invalidation_flag)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
-            console.log('✅ record_categories テーブルを作成しました。');
+            console.log('✅ post_categories テーブルを作成しました。');
         }
 
         // 5. follows
@@ -158,14 +158,14 @@ async function run() {
             await db.query(`
                 CREATE TABLE reactions (
                     id INT AUTO_INCREMENT PRIMARY KEY,
-                    record_id INT NOT NULL,
+                    post_id INT NOT NULL,
                     user_id INT NOT NULL,
                     emoji VARCHAR(10) NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE KEY unique_reaction (record_id, user_id),
-                    FOREIGN KEY (record_id) REFERENCES records(id) ON DELETE CASCADE,
+                    UNIQUE KEY unique_reaction (post_id, user_id),
+                    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                    INDEX idx_record_id (record_id)
+                    INDEX idx_post_id (post_id)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
             console.log('✅ reactions テーブルを作成しました。');

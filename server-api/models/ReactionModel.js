@@ -3,7 +3,7 @@ const db = require('../db');
 class ReactionModel {
     static async upsertReaction(recordId, userId, emoji) {
         const sql = `
-            INSERT INTO reactions (record_id, user_id, emoji)
+            INSERT INTO reactions (post_id, user_id, emoji)
             VALUES (?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 emoji = VALUES(emoji),
@@ -21,13 +21,13 @@ class ReactionModel {
         if (!recordIds || recordIds.length === 0) return {};
         const placeholders = recordIds.map(() => '?').join(',');
         const sql = `
-            SELECT record_id, emoji
+            SELECT post_id, emoji
             FROM reactions
-            WHERE user_id = ? AND record_id IN (${placeholders})
+            WHERE user_id = ? AND post_id IN (${placeholders})
         `;
         const [rows] = await db.query(sql, [userId, ...recordIds]);
         const map = {};
-        for (const row of rows) map[row.record_id] = row.emoji;
+        for (const row of rows) map[row.post_id] = row.emoji;
         return map;
     }
 
@@ -39,7 +39,7 @@ class ReactionModel {
         const sql = `
             SELECT emoji, COUNT(*) AS count
             FROM reactions
-            WHERE record_id = ?
+            WHERE post_id = ?
             GROUP BY emoji
             ORDER BY count DESC, emoji
         `;
@@ -59,7 +59,7 @@ class ReactionModel {
             FROM reactions r
             JOIN users u ON u.id = r.user_id
             LEFT JOIN user_avatars ua ON ua.user_id = u.id
-            WHERE r.record_id = ?
+            WHERE r.post_id = ?
             ORDER BY r.emoji, r.created_at DESC
         `;
         const [rows] = await db.query(sql, [recordId]);

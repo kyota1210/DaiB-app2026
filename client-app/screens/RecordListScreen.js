@@ -598,7 +598,11 @@ export default function RecordListScreen({ navigation }) {
                         }]}>
                             {userInfo?.avatar_url ? (
                                 <Image 
-                                    source={{ uri: `${SERVER_URL}/${userInfo.avatar_url}` }} 
+                                    key={`avatar-${userInfo.updated_at || ''}`}
+                                    source={{ 
+                                        uri: getImageUrl(userInfo.avatar_url, userInfo.updated_at),
+                                        cache: 'reload',
+                                    }} 
                                     style={styles.userAvatar}
                                 />
                             ) : (

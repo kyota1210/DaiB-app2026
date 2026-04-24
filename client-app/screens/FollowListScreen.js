@@ -18,7 +18,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getFollowing, getFollowers, getFriends } from '../api/user';
-import { follow } from '../api/follows';
+import { approveFollow } from '../api/follows';
 import { getImageUrl } from '../utils/imageHelper';
 
 const FollowListScreen = ({ navigation, route }) => {
@@ -68,12 +68,11 @@ const FollowListScreen = ({ navigation, route }) => {
         if (busyId !== null) return;
         setBusyId(userId);
         try {
-            await follow(userToken, userId);
+            const res = await approveFollow(userToken, userId);
             if (mode === 'followers') {
                 setUsers((prev) => prev.filter((u) => u.id !== userId));
                 const displayName = (userName || '').trim() || t('thisUser');
-                const message = t('friendRequestApprovedWithName').replace('{{name}}', displayName);
-                Alert.alert('', message);
+                Alert.alert('', t('requestApprovedWithName').replace('{{name}}', displayName));
             }
         } catch (err) {
             console.error('approve error', err);
@@ -87,7 +86,7 @@ const FollowListScreen = ({ navigation, route }) => {
     };
 
     const renderUser = ({ item }) => {
-        const avatarUrl = getImageUrl(item.avatar_url);
+        const avatarUrl = getImageUrl(item.avatar_url, item.updated_at);
         const isFollowing = !!item.is_following;
         const isBusy = busyId === item.id;
         const showFollowButton = mode === 'followers' && !isFollowing;

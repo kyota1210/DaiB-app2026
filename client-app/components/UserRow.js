@@ -15,7 +15,7 @@ const UserRow = ({
     unfollowLabel,
 }) => {
     const { theme } = useTheme();
-    const avatarUrl = getImageUrl(user.avatar_url);
+    const avatarUrl = getImageUrl(user.avatar_url, user.updated_at);
 
     const avatar = avatarUrl ? (
         <Image source={{ uri: avatarUrl }} style={styles.avatar} />
