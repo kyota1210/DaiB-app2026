@@ -2,7 +2,7 @@
   "expo": {
     "name": "daib-app",
     "slug": "daib-app",
-    "scheme": "daibapp",
+    "scheme": "daib",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,7 +14,8 @@
       "backgroundColor": "#E8E6E1"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kytm1210.daibapp2026"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +23,11 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.daibapp"
+      "package": "com.kytm1210.daibapp2026",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -1,4 +1,4 @@
-import React, { useContext, useState, useRef } from 'react';
+import React, { useContext, useState, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../components/ScreenHeader';
@@ -8,8 +8,9 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import { useFocusEffect } from '@react-navigation/native';
 import { updateProfile } from '../api/user';
-import { SERVER_URL } from '../config';
+import { getImageUrl } from '../utils/imageHelper';
 
 const ProfileEditScreen = ({ navigation }) => {
     const { userInfo, userToken, authContext } = useContext(AuthContext);
@@ -18,7 +19,7 @@ const ProfileEditScreen = ({ navigation }) => {
     const [userName, setUserName] = useState(userInfo?.user_name || '');
     const [bio, setBio] = useState(userInfo?.bio || '');
     const [avatarUri, setAvatarUri] = useState(
-        userInfo?.avatar_url ? `${SERVER_URL}/${userInfo.avatar_url}` : null
+        userInfo?.avatar_url ? getImageUrl(userInfo.avatar_url, userInfo.updated_at) : null
     );
     const [selectedFile, setSelectedFile] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -26,35 +27,45 @@ const ProfileEditScreen = ({ navigation }) => {
     const scrollViewRef = useRef(null);
     const bioInputRef = useRef(null);
 
+    useFocusEffect(
+        useCallback(() => {
+            if (!selectedFile) {
+                setAvatarUri(userInfo?.avatar_url ? getImageUrl(userInfo.avatar_url, userInfo.updated_at) : null);
+            }
+        }, [userInfo?.avatar_url, userInfo?.updated_at, selectedFile])
+    );
+
     const handlePickImage = async () => {
-        // パーミッションを要求
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        
-        if (status !== 'granted') {
-            Alert.alert(t('permissionRequired'), t('photoLibraryAccess'));
-            return;
-        }
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-        // 画像を選択
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaType.IMAGE,
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.8,
-        });
+            if (status !== 'granted') {
+                Alert.alert(t('permissionRequired'), t('photoLibraryAccess'));
+                return;
+            }
 
-        if (!result.canceled) {
-            const uri = result.assets[0].uri;
-            setAvatarUri(uri);
-            
-            // ファイル情報を保存（アップロード用）
-            const fileName = uri.split('/').pop();
-            const fileType = `image/${fileName.split('.').pop()}`;
-            setSelectedFile({
-                uri: uri,
-                name: fileName,
-                type: fileType,
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: 'images',
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
             });
+
+            const asset = !result.canceled && result.assets && result.assets[0];
+            if (asset && asset.uri) {
+                const uri = asset.uri;
+                setAvatarUri(uri);
+                const fileName = uri.split('/').pop() || 'avatar.jpg';
+                const ext = (fileName.split('.').pop() || 'jpg').toLowerCase();
+                setSelectedFile({
+                    uri,
+                    name: fileName,
+                    type: ext === 'png' ? 'image/png' : 'image/jpeg',
+                });
+            }
+        } catch (e) {
+            console.error('handlePickImage', e);
+            Alert.alert(t('error'), (e && e.message) || t('photoLibraryAccess'));
         }
     };
 
@@ -133,7 +144,7 @@ const ProfileEditScreen = ({ navigation }) => {
                         onPress={handlePickImage}
                     >
                         {avatarUri ? (
-                            <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+                            <Image key={avatarUri} source={{ uri: avatarUri }} style={styles.avatarImage} />
                         ) : (
                             <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.secondaryBackground, borderColor: theme.colors.border }]}>
                                 <Ionicons name="person" size={32} color={theme.colors.inactive} />

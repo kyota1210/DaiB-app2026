@@ -72,7 +72,7 @@ async function resolveMemoryResurface(userId, clientTimezoneHeader) {
             if (new Date() > new Date(row.window_end_utc)) {
                 return null;
             }
-            const timelineRecord = await RecordModel.findTimelineRowByRecordIdForUser(row.record_id, userId);
+            const timelineRecord = await RecordModel.findTimelineRowByRecordIdForUser(row.post_id, userId);
             return buildMemoryPayload(row, timelineRecord);
         }
 
@@ -85,7 +85,7 @@ async function resolveMemoryResurface(userId, clientTimezoneHeader) {
         try {
             await conn.query(
                 `INSERT INTO user_memory_resurface
-                (user_id, \`year_month\`, record_id, kind, years_ago, client_timezone, display_local_date, window_end_utc)
+                (user_id, \`year_month\`, post_id, kind, years_ago, client_timezone, display_local_date, window_end_utc)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     userId,
@@ -115,7 +115,7 @@ async function resolveMemoryResurface(userId, clientTimezoneHeader) {
             if (new Date() > new Date(row.window_end_utc)) {
                 return null;
             }
-            const timelineRecord = await RecordModel.findTimelineRowByRecordIdForUser(row.record_id, userId);
+            const timelineRecord = await RecordModel.findTimelineRowByRecordIdForUser(row.post_id, userId);
             return buildMemoryPayload(row, timelineRecord);
         }
 

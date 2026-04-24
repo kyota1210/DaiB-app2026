@@ -50,7 +50,15 @@ export default function PhotoPickerScreen({ navigation, route }) {
         if (editRecord?.category_id) return [editRecord.category_id];
         return [];
     });
-    const [showInTimeline, setShowInTimeline] = useState(editRecord ? (editRecord.show_in_timeline !== 0) : true);
+    const [showInTimeline, setShowInTimeline] = useState(
+        editRecord
+            ? !(
+                  editRecord.show_in_timeline === false ||
+                  editRecord.show_in_timeline === 0 ||
+                  editRecord.show_in_timeline === '0'
+              )
+            : true
+    );
     const [timelineDropdownOpen, setTimelineDropdownOpen] = useState(false);
     const [timelineDropdownAnchor, setTimelineDropdownAnchor] = useState(null);
     const timelineSelectWrapRef = useRef(null);
@@ -186,7 +194,10 @@ export default function PhotoPickerScreen({ navigation, route }) {
             if (!isEditMode) {
                 recordData.show_in_timeline = showInTimeline;
             }
-            if (isNewImageSelected) {
+            // New post: always send local image URI. Edit: only when user picked a new image.
+            if (!isEditMode) {
+                recordData.imageUri = selectedImage;
+            } else if (isNewImageSelected) {
                 recordData.imageUri = selectedImage;
             }
 

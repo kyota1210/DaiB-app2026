@@ -20,7 +20,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getFriends, getFollowing, getFollowers } from '../api/user';
-import { follow, rejectIncomingFollow } from '../api/follows';
+import { approveFollow, rejectIncomingFollow, follow } from '../api/follows';
 import { getImageUrl } from '../utils/imageHelper';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -60,9 +60,14 @@ const FriendHubScreen = ({ navigation }) => {
         }
     }, [userToken]);
 
+    const initialLoadDone = useRef(false);
+
     useFocusEffect(
         useCallback(() => {
-            setLoading(true);
+            if (!initialLoadDone.current) {
+                setLoading(true);
+                initialLoadDone.current = true;
+            }
             fetchAll();
         }, [fetchAll])
     );
@@ -86,16 +91,39 @@ const FriendHubScreen = ({ navigation }) => {
         if (busy !== null) return;
         setBusy({ userId, action: 'approve' });
         try {
-            await follow(userToken, userId);
+            await approveFollow(userToken, userId);
+            // 承認後、ユーザーに approved_by_me フラグを追加して「申請」ボタンを表示
             setData((prev) => ({
                 ...prev,
-                followers: prev.followers.filter((u) => u.id !== userId),
+                followers: prev.followers.map((u) =>
+                    u.id === userId ? { ...u, approved_by_me: true } : u
+                ),
             }));
             const displayName = (userName || '').trim() || t('thisUser');
-            Alert.alert('', t('friendRequestApprovedWithName').replace('{{name}}', displayName));
-            fetchAll();
+            Alert.alert('', t('requestApprovedWithName').replace('{{name}}', displayName));
         } catch (err) {
             console.error('approve error', err);
+        } finally {
+            setBusy(null);
+        }
+    };
+
+    const handleSendRequest = async (userId, userName) => {
+        if (busy !== null) return;
+        setBusy({ userId, action: 'send' });
+        try {
+            await follow(userToken, userId);
+            // 申請後、is_following を true に更新（ボタンが消える）
+            setData((prev) => ({
+                ...prev,
+                followers: prev.followers.map((u) =>
+                    u.id === userId ? { ...u, is_following: true } : u
+                ),
+            }));
+            const displayName = (userName || '').trim() || t('thisUser');
+            Alert.alert('', t('friendRequestSentWithName').replace('{{name}}', displayName));
+        } catch (err) {
+            console.error('send request error', err);
         } finally {
             setBusy(null);
         }
@@ -156,11 +184,16 @@ const FriendHubScreen = ({ navigation }) => {
     };
 
     const renderUserRow = (item, tabKey) => {
-        const avatarUrl = getImageUrl(item.avatar_url);
+        const avatarUrl = getImageUrl(item.avatar_url, item.updated_at);
         const rowBusy = busy?.userId === item.id;
         const approveLoading = rowBusy && busy.action === 'approve';
         const rejectLoading = rowBusy && busy.action === 'reject';
-        const showApproveButton = tabKey === 'followers';
+        const sendLoading = rowBusy && busy.action === 'send';
+        const isFollowersTab = tabKey === 'followers';
+        // 未承認の場合は「承認」「削除」ボタン
+        const showApproveButton = isFollowersTab && !item.approved && !item.approved_by_me;
+        // 承認済みかつ自分がフォローしていない場合は「フォローする」ボタン
+        const showSendRequestButton = isFollowersTab && (item.approved || item.approved_by_me) && !item.is_following;
 
         return (
             <View style={[styles.row, { borderBottomColor: theme.colors.border }]}>
@@ -200,6 +233,19 @@ const FriendHubScreen = ({ navigation }) => {
                             {rejectLoading
                                 ? <ActivityIndicator size="small" color={theme.colors.primary} />
                                 : <Text style={[styles.rejectButtonText, { color: theme.colors.text }]}>{t('delete')}</Text>}
+                        </TouchableOpacity>
+                    </View>
+                )}
+                {showSendRequestButton && (
+                    <View style={styles.actionButtons}>
+                        <TouchableOpacity
+                            style={[styles.approveButton, { backgroundColor: theme.colors.primary }]}
+                            onPress={() => handleSendRequest(item.id, item.user_name)}
+                            disabled={rowBusy}
+                        >
+                            {sendLoading
+                                ? <ActivityIndicator size="small" color="#fff" />
+                                : <Text style={styles.approveButtonText}>{t('follow')}</Text>}
                         </TouchableOpacity>
                     </View>
                 )}

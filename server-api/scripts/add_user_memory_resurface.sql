@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS user_memory_resurface (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id INT NOT NULL,
     `year_month` CHAR(7) NOT NULL COMMENT 'YYYY-MM (クライアントTZ)',
-    record_id INT NOT NULL,
+    post_id INT NOT NULL,
     kind ENUM('anniversary', 'serendipity') NOT NULL,
     years_ago INT NULL,
     client_timezone VARCHAR(64) NOT NULL,

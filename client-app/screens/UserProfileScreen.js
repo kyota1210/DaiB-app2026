@@ -17,7 +17,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getOtherUserProfile, getOtherUserRecords } from '../api/user';
-import { follow, unfollow } from '../api/follows';
+import { follow, unfollow, approveFollow } from '../api/follows';
 import { getImageUrl } from '../utils/imageHelper';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -40,7 +40,7 @@ const UserProfileScreen = ({ navigation, route }) => {
     /** 投稿詳細から戻った次のフォーカスでは再取得しない（スクロール位置維持） */
     const skipRefetchOnNextFocusRef = useRef(false);
 
-    const isMe = userInfo?.id != null && Number(userId) === Number(userInfo.id);
+    const isMe = userInfo?.id != null && String(userId) === String(userInfo.id);
 
     const loadProfileAndRecords = useCallback(async () => {
         if (userId == null) return;
@@ -48,13 +48,13 @@ const UserProfileScreen = ({ navigation, route }) => {
         setRecordsLoading(true);
         try {
             await Promise.all([
-                getOtherUserProfile(userToken, Number(userId)).then((res) => {
+                getOtherUserProfile(userToken, userId).then((res) => {
                     setUser(res.user || null);
                 }).catch((err) => {
                     console.error('UserProfile fetch error', err);
                     setUser(null);
                 }),
-                getOtherUserRecords(userToken, Number(userId)).then((res) => {
+                getOtherUserRecords(userToken, userId).then((res) => {
                     setRecords(res.records ?? []);
                 }).catch((err) => {
                     console.error('User records fetch error', err);
@@ -101,11 +101,17 @@ const UserProfileScreen = ({ navigation, route }) => {
 
         setFollowBusy(true);
         try {
-            const res = await follow(userToken, user.id);
-            const nowFriend = !!res?.is_friend;
-            setUser((prev) => prev ? { ...prev, is_following: true, is_friend: nowFriend } : null);
-            if (nowFriend) {
-                Alert.alert('', t('friendRequestApprovedWithName').replace('{{name}}', name));
+            if (user.is_followed_by && !user.is_followed_by_approved) {
+                // 相手からの未承認申請がある場合は承認
+                const res = await approveFollow(userToken, user.id);
+                const nowFriend = !!res?.is_friend;
+                setUser((prev) => prev ? { ...prev, is_followed_by_approved: true, is_friend: nowFriend } : null);
+                Alert.alert('', t('requestApprovedWithName').replace('{{name}}', name));
+            } else {
+                // 新規申請またはフォロー
+                await follow(userToken, user.id);
+                setUser((prev) => prev ? { ...prev, is_following: true } : null);
+                Alert.alert('', t('friendRequestSentWithName').replace('{{name}}', name));
             }
         } catch (err) {
             console.error('follow error', err);
@@ -178,7 +184,7 @@ const UserProfileScreen = ({ navigation, route }) => {
         );
     }
 
-    const avatarUrl = getImageUrl(user.avatar_url);
+    const avatarUrl = getImageUrl(user.avatar_url, user.updated_at);
 
     const openRecordDetail = (index) => {
         skipRefetchOnNextFocusRef.current = true;
@@ -187,6 +193,7 @@ const UserProfileScreen = ({ navigation, route }) => {
             author_id: user.id,
             author_name: user.user_name || '',
             author_avatar_url: user.avatar_url || null,
+            author_profile_updated_at: user.updated_at ?? null,
         }));
         navigation.navigate('RecordDetail', { records: withAuthor, initialIndex: index });
     };
@@ -257,9 +264,9 @@ const UserProfileScreen = ({ navigation, route }) => {
                                 ? t('removeFriend')
                                 : user.is_following
                                     ? t('cancelFriendRequest')
-                                    : user.is_followed_by
+                                    : user.is_followed_by && !user.is_followed_by_approved
                                         ? t('approveFriendRequest')
-                                        : t('sendFriendRequest')}
+                                        : t('follow')}
                         </Text>
                     )}
                 </TouchableOpacity>

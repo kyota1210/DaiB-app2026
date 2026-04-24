@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     StyleSheet,
     Text,
@@ -14,24 +14,14 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { resetPassword } from '../api/auth';
 
-export default function ResetPasswordScreen({ navigation, route }) {
-    const token = route?.params?.token || '';
+export default function ResetPasswordScreen({ navigation }) {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const { theme } = useTheme();
     const { tDevice } = useLanguage();
 
-    useEffect(() => {
-        if (!token) {
-            Alert.alert(tDevice('error'), tDevice('resetTokenMissing'), [
-                { text: tDevice('ok'), onPress: () => navigation.replace('Login') },
-            ]);
-        }
-    }, [token, navigation, tDevice]);
-
     const handleSubmit = async () => {
-        if (!token) return;
         if (!newPassword || !confirmPassword) {
             Alert.alert(tDevice('error'), tDevice('emailPasswordRequired'));
             return;
@@ -50,7 +40,7 @@ export default function ResetPasswordScreen({ navigation, route }) {
         }
         setLoading(true);
         try {
-            await resetPassword({ token, new_password: newPassword });
+            await resetPassword({ token: '', new_password: newPassword });
             Alert.alert(tDevice('completed'), tDevice('passwordChanged'), [
                 { text: tDevice('ok'), onPress: () => navigation.replace('Login') },
             ]);
@@ -60,10 +50,6 @@ export default function ResetPasswordScreen({ navigation, route }) {
             setLoading(false);
         }
     };
-
-    if (!token) {
-        return null;
-    }
 
     return (
         <KeyboardAvoidingView

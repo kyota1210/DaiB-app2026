@@ -1,7 +1,7 @@
 const db = require('../db');
 
-/** record_categories との JOIN で有効行のみ */
-const RC_ACTIVE = 'rc.record_id = r.id AND rc.invalidation_flag = 0';
+/** post_categories との JOIN で有効行のみ */
+const RC_ACTIVE = 'rc.post_id = r.id AND rc.invalidation_flag = 0';
 
 class RecordModel {
     /**
@@ -12,7 +12,7 @@ class RecordModel {
         const newSet = new Set(ids);
 
         const [existing] = await db.query(
-            'SELECT id, category_id, invalidation_flag FROM record_categories WHERE record_id = ?',
+            'SELECT id, category_id, invalidation_flag FROM post_categories WHERE post_id = ?',
             [recordId]
         );
 
@@ -23,12 +23,12 @@ class RecordModel {
             const inv = Number(row.invalidation_flag);
             if (want && inv === 1) {
                 await db.query(
-                    `UPDATE record_categories SET invalidation_flag = 0, deleted_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                    `UPDATE post_categories SET invalidation_flag = 0, deleted_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
                     [row.id]
                 );
             } else if (!want && inv === 0) {
                 await db.query(
-                    `UPDATE record_categories SET invalidation_flag = 1, deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                    `UPDATE post_categories SET invalidation_flag = 1, deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
                     [row.id]
                 );
             }
@@ -37,7 +37,7 @@ class RecordModel {
         for (const cid of newSet) {
             if (!byCategoryId.has(cid)) {
                 await db.query(
-                    'INSERT INTO record_categories (record_id, category_id) VALUES (?, ?)',
+                    'INSERT INTO post_categories (post_id, category_id) VALUES (?, ?)',
                     [recordId, cid]
                 );
             }
@@ -53,15 +53,15 @@ class RecordModel {
             SELECT r.id, r.title, r.description, r.created_at, r.date_logged, r.image_url, r.category_id, r.show_in_timeline,
                    GROUP_CONCAT(rc.category_id ORDER BY rc.category_id SEPARATOR ',') AS category_ids,
                    GROUP_CONCAT(c.name ORDER BY rc.category_id SEPARATOR ',') AS category_names
-            FROM records r
-            LEFT JOIN record_categories rc ON ${RC_ACTIVE}
+            FROM posts r
+            LEFT JOIN post_categories rc ON ${RC_ACTIVE}
             LEFT JOIN categories c ON c.id = rc.category_id
             WHERE r.user_id = ? AND r.invalidation_flag = 0
         `;
         const params = [userId];
 
         if (categoryId !== null) {
-            sql += ' AND r.id IN (SELECT record_id FROM record_categories WHERE category_id = ? AND invalidation_flag = 0)';
+            sql += ' AND r.id IN (SELECT post_id FROM post_categories WHERE category_id = ? AND invalidation_flag = 0)';
             params.push(categoryId);
         }
 
@@ -80,8 +80,8 @@ class RecordModel {
             SELECT r.id, r.title, r.description, r.created_at, r.date_logged, r.image_url, r.category_id, r.show_in_timeline,
                    GROUP_CONCAT(rc.category_id ORDER BY rc.category_id SEPARATOR ',') AS category_ids,
                    GROUP_CONCAT(c.name ORDER BY rc.category_id SEPARATOR ',') AS category_names
-            FROM records r
-            LEFT JOIN record_categories rc ON ${RC_ACTIVE}
+            FROM posts r
+            LEFT JOIN post_categories rc ON ${RC_ACTIVE}
             LEFT JOIN categories c ON c.id = rc.category_id
             WHERE r.id = ? AND r.user_id = ? AND r.invalidation_flag = 0
             GROUP BY r.id, r.title, r.description, r.created_at, r.date_logged, r.image_url, r.category_id, r.show_in_timeline
@@ -98,7 +98,7 @@ class RecordModel {
         const primaryCategoryId = categoryIds && categoryIds.length > 0 ? categoryIds[0] : null;
 
         const sql = `
-            INSERT INTO records (user_id, title, description, date_logged, invalidation_flag, image_url, category_id, show_in_timeline, created_at, updated_at)
+            INSERT INTO posts (user_id, title, description, date_logged, invalidation_flag, image_url, category_id, show_in_timeline, created_at, updated_at)
             VALUES (?, ?, ?, ?, 0, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         `;
         const [result] = await db.query(sql, [
@@ -114,7 +114,7 @@ class RecordModel {
 
         if (categoryIds && categoryIds.length > 0) {
             const values = categoryIds.map(cid => [recordId, cid]);
-            await db.query('INSERT IGNORE INTO record_categories (record_id, category_id) VALUES ?', [values]);
+            await db.query('INSERT IGNORE INTO post_categories (post_id, category_id) VALUES ?', [values]);
         }
 
         return recordId;
@@ -127,7 +127,7 @@ class RecordModel {
     static async update(id, userId, { title, description, categoryIds, dateLogged, imageUrl, showInTimeline }) {
         const primaryCategoryId = categoryIds && categoryIds.length > 0 ? categoryIds[0] : null;
 
-        let sql = 'UPDATE records SET title = ?, description = ?, category_id = ?, date_logged = ?, updated_at = CURRENT_TIMESTAMP';
+        let sql = 'UPDATE posts SET title = ?, description = ?, category_id = ?, date_logged = ?, updated_at = CURRENT_TIMESTAMP';
         const params = [title, description, primaryCategoryId, dateLogged];
 
         if (imageUrl) {
@@ -155,7 +155,7 @@ class RecordModel {
      */
     static async softDelete(id, userId) {
         const sql = `
-            UPDATE records
+            UPDATE posts
             SET invalidation_flag = 1, delete_at = NOW()
             WHERE id = ? AND user_id = ?
         `;
@@ -175,10 +175,10 @@ class RecordModel {
                    ua.image_url AS author_avatar_url,
                    GROUP_CONCAT(rc.category_id ORDER BY rc.category_id SEPARATOR ',') AS category_ids,
                    GROUP_CONCAT(c.name ORDER BY rc.category_id SEPARATOR ',') AS category_names
-            FROM records r
+            FROM posts r
             JOIN users u ON u.id = r.user_id
             LEFT JOIN user_avatars ua ON ua.user_id = u.id
-            LEFT JOIN record_categories rc ON ${RC_ACTIVE}
+            LEFT JOIN post_categories rc ON ${RC_ACTIVE}
             LEFT JOIN categories c ON c.id = rc.category_id
             WHERE r.user_id IN (${placeholders})
               AND r.invalidation_flag = 0
@@ -200,7 +200,7 @@ class RecordModel {
         const executor = conn || db;
         const sql = `
             SELECT r.id
-            FROM records r
+            FROM posts r
             WHERE r.user_id = ?
               AND r.invalidation_flag = 0
               AND r.show_in_timeline = 1
@@ -219,7 +219,7 @@ class RecordModel {
         const executor = conn || db;
         const sql = `
             SELECT r.id
-            FROM records r
+            FROM posts r
             WHERE r.user_id = ?
               AND r.invalidation_flag = 0
               AND r.show_in_timeline = 1
@@ -241,10 +241,10 @@ class RecordModel {
                    ua.image_url AS author_avatar_url,
                    GROUP_CONCAT(rc.category_id ORDER BY rc.category_id SEPARATOR ',') AS category_ids,
                    GROUP_CONCAT(c.name ORDER BY rc.category_id SEPARATOR ',') AS category_names
-            FROM records r
+            FROM posts r
             JOIN users u ON u.id = r.user_id
             LEFT JOIN user_avatars ua ON ua.user_id = u.id
-            LEFT JOIN record_categories rc ON ${RC_ACTIVE}
+            LEFT JOIN post_categories rc ON ${RC_ACTIVE}
             LEFT JOIN categories c ON c.id = rc.category_id
             WHERE r.id = ?
               AND r.user_id = ?

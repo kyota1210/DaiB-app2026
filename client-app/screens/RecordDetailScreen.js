@@ -229,7 +229,7 @@ const RecordItem = React.memo(function RecordItem({
                                 onPress={() => onPressReactionUser?.(r)}
                             >
                                 {r.avatar_url ? (
-                                    <Image source={{ uri: getImageUrl(r.avatar_url) }} style={[styles.reactionUserAvatar, { borderColor: theme.colors.border }]} />
+                                    <Image source={{ uri: getImageUrl(r.avatar_url, r.avatar_updated_at) }} style={[styles.reactionUserAvatar, { borderColor: theme.colors.border }]} />
                                 ) : (
                                     <View style={[styles.reactionUserAvatar, styles.reactionUserAvatarPlaceholder, { borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}>
                                         <Ionicons name="person" size={27} color={theme.colors.inactive} />
@@ -453,7 +453,7 @@ export default function RecordDetailScreen({ route, navigation }) {
                         disabled={currentRecord.author_id == null}
                     >
                         {currentRecord.author_avatar_url ? (
-                            <Image source={{ uri: getImageUrl(currentRecord.author_avatar_url) }} style={styles.headerAuthorAvatar} />
+                            <Image source={{ uri: getImageUrl(currentRecord.author_avatar_url, currentRecord.author_profile_updated_at) }} style={styles.headerAuthorAvatar} />
                         ) : (
                             <View style={[styles.headerAuthorAvatarPlaceholder, { backgroundColor: theme.colors.border }]}>
                                 <Ionicons name="person" size={18} color={theme.colors.inactive} />
@@ -555,7 +555,7 @@ export default function RecordDetailScreen({ route, navigation }) {
                         >
                             {selectedReactionUser?.avatar_url ? (
                                 <Image
-                                    source={{ uri: getImageUrl(selectedReactionUser.avatar_url) }}
+                                    source={{ uri: getImageUrl(selectedReactionUser.avatar_url, selectedReactionUser.avatar_updated_at) }}
                                     style={[styles.reactionUserPopupAvatar, { borderColor: theme.colors.border }]}
                                 />
                             ) : (

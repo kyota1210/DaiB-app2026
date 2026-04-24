@@ -49,6 +49,7 @@ export function RecordsAndCategoriesProvider({ children }) {
     }, [userToken]);
 
     const loadRecords = useCallback(async () => {
+        if (!userToken) return;
         if (!hasRecordsCache.current) setLoadingRecords(true);
         try {
             const data = await fetchRecords(null);
@@ -66,7 +67,7 @@ export function RecordsAndCategoriesProvider({ children }) {
         } finally {
             setLoadingRecords(false);
         }
-    }, [fetchRecords]);
+    }, [userToken, fetchRecords]);
 
     const value = useMemo(() => ({
         categories,

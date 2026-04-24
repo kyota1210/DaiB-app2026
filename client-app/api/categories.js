@@ -1,34 +1,13 @@
-import { apiFetch } from './client';
+import {
+  fetchCategories as fetchCategoriesDirect,
+  createCategory as createCategoryDirect,
+  updateCategory as updateCategoryDirect,
+  deleteCategory as deleteCategoryDirect,
+  reorderCategories as reorderCategoriesDirect,
+} from './supabaseData';
 
-export const fetchCategories = async (token) => {
-    const data = await apiFetch(token, '/categories', { method: 'GET' });
-    return data.categories;
-};
-
-export const createCategory = async (token, { name }) => {
-    const data = await apiFetch(token, '/categories', {
-        method: 'POST',
-        body: { name },
-    });
-    return data.category;
-};
-
-export const updateCategory = async (token, id, { name }) => {
-    const data = await apiFetch(token, `/categories/${id}`, {
-        method: 'PUT',
-        body: { name },
-    });
-    return data.category;
-};
-
-export const deleteCategory = async (token, id) => {
-    return apiFetch(token, `/categories/${id}`, { method: 'DELETE' });
-};
-
-export const reorderCategories = async (token, categoryIds) => {
-    const data = await apiFetch(token, '/categories/reorder', {
-        method: 'PUT',
-        body: { category_ids: categoryIds },
-    });
-    return data;
-};
+export const fetchCategories = async (_token) => fetchCategoriesDirect();
+export const createCategory = async (_token, payload) => createCategoryDirect(payload);
+export const updateCategory = async (_token, id, payload) => updateCategoryDirect(id, payload);
+export const deleteCategory = async (_token, id) => deleteCategoryDirect(id);
+export const reorderCategories = async (_token, categoryIds) => reorderCategoriesDirect(categoryIds);

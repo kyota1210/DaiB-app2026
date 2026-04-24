@@ -13,16 +13,17 @@ router.use(authenticateToken);
 router.post('/', async (req, res) => {
     try {
         const userId = req.user.id;
-        const { record_id, emoji } = req.body;
+        const postId = req.body.post_id ?? req.body.record_id;
+        const { emoji } = req.body;
 
-        if (!record_id || !emoji) {
-            return res.status(400).json({ message: 'record_id と emoji は必須です。' });
+        if (!postId || !emoji) {
+            return res.status(400).json({ message: 'post_id と emoji は必須です。' });
         }
         if (!ALLOWED_EMOJIS.includes(emoji)) {
             return res.status(400).json({ message: '許可されていない絵文字です。' });
         }
 
-        await ReactionModel.upsertReaction(record_id, userId, emoji);
+        await ReactionModel.upsertReaction(postId, userId, emoji);
         res.status(200).json({ success: true });
     } catch (err) {
         logger.error('リアクション追加エラー', { error: err.message, stack: err.stack });

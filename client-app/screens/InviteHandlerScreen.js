@@ -13,8 +13,8 @@ const InviteHandlerScreen = ({ navigation, route }) => {
     const [error, setError] = useState(false);
 
     useEffect(() => {
-        const id = parseInt(userId, 10);
-        if (!id || Number.isNaN(id) || !userToken) {
+        const id = String(userId || '').trim();
+        if (!id || !userToken) {
             setError(true);
             return;
         }
