@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "daib-app",
-    "slug": "daib-app",
+    "name": "DaiB",
+    "slug": "DaiB",
     "scheme": "daibapp",
     "version": "1.0.0",
     "orientation": "portrait",
