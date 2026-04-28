@@ -1,5 +1,10 @@
 # API仕様
 
+> **ステータス（2026-04 時点）**  
+> 本書は **旧 Express + MySQL バックエンド**向けの **REST（`/api/...`）** 仕様である。現行 `server-api` は `app.use('/api', ...)` で **HTTP 410** を返し、クライアントは **Supabase（Auth / PostgREST / RPC / Storage）** を使用する。  
+> **正本の仕様**は [アプリケーション仕様書](アプリケーション仕様書.md) および `client-app/api/supabaseData.js`、ならびに `supabase/migrations/`。  
+> 以降の記述は、移行前の設計参照・用語比較用に残す。
+
 ## ベースURL
 
 ```

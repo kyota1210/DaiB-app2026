@@ -19,7 +19,7 @@ const PrivacyScreen = ({ navigation }) => {
             >
                 <View style={[styles.content, { backgroundColor: theme.colors.background }]}>
                     <Text style={[styles.lastUpdated, { color: theme.colors.secondaryText }]}>
-                        最終更新日: 2026年3月11日
+                        最終更新日: 2026年4月26日
                     </Text>
 
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
@@ -33,113 +33,123 @@ const PrivacyScreen = ({ navigation }) => {
                         当アプリは、サービスの提供に必要な範囲で、以下の情報を収集・保存します。
                     </Text>
                     <Text style={[styles.listItem, { color: theme.colors.secondaryText }]}>
-                        • アカウント情報：メールアドレス、パスワード（ハッシュ化）、ユーザー名、自己紹介、プロフィール画像（アバター）{'\n'}
-                        • 記録情報：投稿した写真、タイトル、説明、日付、カテゴリー情報（1件の記録に複数カテゴリーを紐づけ可能）、「スレッドに表示する」の設定{'\n'}
-                        • フォロー関係：フォロー・フォロワー関係（誰をフォローしているか、誰にフォローされているか）{'\n'}
-                        • 認証情報：JWTトークン（端末の暗号化ストレージに保存）{'\n'}
-                        • 端末内の設定：表示言語の選択（端末内ストレージに保存）{'\n'}
-                        • サーバー側のログ：アクセス・エラー等の記録（運用・障害対応のため）
+                        ・アカウント情報：メールアドレス、ユーザー名、自己紹介、プロフィール画像（アバター）。パスワードは Supabase Auth により安全にハッシュ化され、当アプリ運営者は平文を取得しません。{'\n'}
+                        ・投稿情報：投稿した写真、タイトル、説明、日付、カテゴリー情報、「スレッドに表示する」設定{'\n'}
+                        ・フォロー関係：フォロー・フォロワー・フレンド関係（誰と相互承認しているか）{'\n'}
+                        ・リアクション：投稿に付与した絵文字{'\n'}
+                        ・通報・ブロック：ユーザーや投稿に対して行った通報・ブロック内容{'\n'}
+                        ・認証情報：Supabase Auth が発行するアクセストークン（端末の暗号化ストレージに保存）{'\n'}
+                        ・端末内の設定：表示言語、表示モード等（端末内ストレージに保存）{'\n'}
+                        ・サブスクリプション情報：プレミアムプランの加入状況、有効期限、ストア種別（Apple／Google）、original transaction ID（個別の決済情報・カード情報は当アプリでは取得しません）{'\n'}
+                        ・サーバー側のログ：アクセス・エラー等の記録（運用・障害対応のため）
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
                         また、以下の権限を利用します。いずれも該当機能利用時にのみ使用し、許可いただいた範囲を超えて取得することはありません。
                     </Text>
                     <Text style={[styles.listItem, { color: theme.colors.secondaryText }]}>
-                        • カメラ：QRコードスキャンによるフォロー機能で使用{'\n'}
-                        • フォトライブラリ：記録の写真投稿・プロフィール画像の設定で使用
+                        ・カメラ：QR コードスキャンによるフレンド申請機能で使用{'\n'}
+                        ・フォトライブラリ：投稿の写真・プロフィール画像の設定で使用{'\n'}
+                        ・トラッキング許可（iOS の App Tracking Transparency）：第三者広告ネットワークによる広告最適化のため、初回起動時に同意を求めます。許可しない場合でも当アプリの基本機能はご利用いただけます。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
                         2. 情報の利用目的
                     </Text>
-                    <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        当アプリは、収集した情報を以下の目的で利用します：
-                    </Text>
                     <Text style={[styles.listItem, { color: theme.colors.secondaryText }]}>
-                        • アプリサービスの提供・運営（記録の作成・編集・削除、カテゴリー管理、一覧表示）{'\n'}
-                        • タイムライン機能の提供（「スレッドに表示する」が有効な記録を、フォローしているユーザーに表示）{'\n'}
-                        • フォロー機能の提供（フォロー・フォロワー一覧、他ユーザーのプロフィール・アバター表示）{'\n'}
-                        • ユーザー認証・セキュリティの維持{'\n'}
-                        • ユーザーサポート・お問い合わせ対応{'\n'}
-                        • サービスの改善・障害対応{'\n'}
-                        • 不正利用の防止
+                        ・アプリサービスの提供・運営{'\n'}
+                        ・タイムライン・スレッド機能の提供（フレンドの直近 7 日分の投稿を表示）{'\n'}
+                        ・フォロー／フレンド機能の提供{'\n'}
+                        ・ユーザー認証・セキュリティの維持・不正利用の防止{'\n'}
+                        ・通報されたコンテンツの審査・モデレーション{'\n'}
+                        ・サブスクリプションプランの管理（特典の付与・解約反映等）{'\n'}
+                        ・広告配信・効果測定（無料プラン利用時）{'\n'}
+                        ・アプリのクラッシュ・エラー解析、品質改善{'\n'}
+                        ・ユーザーサポート・お問い合わせ対応
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
                         3. 情報の保存とセキュリティ
                     </Text>
+                    <Text style={[styles.listItem, { color: theme.colors.secondaryText }]}>
+                        ・アカウント・投稿等のデータは Supabase（PostgreSQL）に保存し、Row Level Security により本人以外からのアクセスを制限しています{'\n'}
+                        ・写真等のアセットは Supabase Storage に保存します{'\n'}
+                        ・パスワードは Supabase Auth により安全にハッシュ化されます。当アプリ運営者は平文パスワードにアクセスできません{'\n'}
+                        ・認証トークンは端末の SecureStore（暗号化ストレージ）に保存します{'\n'}
+                        ・通信は HTTPS で暗号化します{'\n'}
+                        ・サブスクリプション情報は Apple／Google から提供される情報を当アプリのサーバーで検証して保存します
+                    </Text>
+
+                    <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                        4. 第三者サービス
+                    </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        当アプリは、ユーザーの個人情報を安全に保護するため、以下の対策を講じています：
+                        当アプリは、サービス提供のため以下の第三者サービスと情報を送受信します。各サービスのプライバシーポリシーが適用されますので、そちらもあわせてご確認ください。
                     </Text>
                     <Text style={[styles.listItem, { color: theme.colors.secondaryText }]}>
-                        • パスワードはbcryptによりハッシュ化してサーバーに保存{'\n'}
-                        • JWT認証によるセキュアなアクセス制御{'\n'}
-                        • 認証トークンは端末のSecureStore（暗号化ストレージ）に保存{'\n'}
-                        • 言語設定は端末のストレージに保存（サーバーへ送信しない）{'\n'}
-                        • HTTPS通信によるデータの暗号化{'\n'}
-                        • データベースへの適切なアクセス制御
+                        ・Supabase（バックエンド・認証・ストレージ。米 Supabase, Inc.）{'\n'}
+                        ・Apple（iOS のアプリ内課金・通知。Apple Inc.）{'\n'}
+                        ・Google（Android 配信時の Play 課金。Google LLC）{'\n'}
+                        ・Google AdMob（広告配信。無料プラン利用時。広告 ID・端末情報・大まかな位置情報を含む場合があります）{'\n'}
+                        ・Sentry（クラッシュレポート。導入時はエラー文脈と匿名化したユーザー識別子を送信）{'\n'}
+                        ・Expo / React Native（アプリ実行基盤。Expo Application Services によるビルド配信）
+                    </Text>
+                    <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
+                        広告配信は無料プランのご利用時のみ表示され、プレミアムプラン加入中は表示しません。広告にはターゲティング広告（パーソナライズ広告）が含まれる場合がありますが、iOS の App Tracking Transparency でトラッキングを許可しない選択をされた場合は、トラッキングを伴わない広告のみ表示されます。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        4. 情報の共有と開示
-                    </Text>
-                    <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        当アプリは、以下の場合を除き、ユーザーの個人情報を第三者に開示・共有することはありません：
+                        5. 情報の共有と開示
                     </Text>
                     <Text style={[styles.listItem, { color: theme.colors.secondaryText }]}>
-                        • ユーザーの同意がある場合{'\n'}
-                        • 法令に基づく開示が求められた場合{'\n'}
-                        • 人の生命、身体または財産の保護のために必要がある場合{'\n'}
-                        • サービスの提供に必要な業務委託先への開示（適切な管理下で）
+                        ・ユーザーの同意がある場合{'\n'}
+                        ・法令に基づく開示が求められた場合{'\n'}
+                        ・人の生命、身体または財産の保護のために必要がある場合{'\n'}
+                        ・サービスの提供に必要な業務委託先（前項の第三者サービス）への開示（適切な管理下で）
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        5. ユーザーの権利
-                    </Text>
-                    <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        ユーザーは、以下の権利を有します：
+                        6. ユーザーの権利
                     </Text>
                     <Text style={[styles.listItem, { color: theme.colors.secondaryText }]}>
-                        • 個人情報の閲覧・訂正・削除を請求する権利{'\n'}
-                        • 個人情報の利用停止を請求する権利{'\n'}
-                        • データのポータビリティを請求する権利
-                    </Text>
-                    <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        これらの権利を行使したい場合は、アプリ内の設定画面からお問い合わせください。
+                        ・個人情報の閲覧・訂正・削除を請求する権利{'\n'}
+                        ・個人情報の利用停止を請求する権利{'\n'}
+                        ・データのポータビリティを請求する権利{'\n'}
+                        ・アカウントの削除（退会）：設定 → ログイン情報 → アカウントの削除 から、ご自身でいつでも実行できます。削除すると関連するデータは速やかに削除または匿名化されます（法的保存義務がある場合を除く）。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        6. データの保存期間
+                        7. データの保存期間
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        当アプリは、ユーザーがアカウントを削除するまで、またはユーザーが削除を要求するまで、個人情報を保存します。アカウント削除後は、法的な保存義務がある場合を除き、個人情報を削除します。
+                        当アプリは、ユーザーがアカウントを削除するまで、またはユーザーが削除を要求するまで、個人情報を保存します。アカウント削除後は、法的な保存義務がある場合を除き、個人情報を削除します。バックアップから完全に消去されるまで最長 30 日かかる場合があります。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        7. クッキーおよびトラッキング技術
+                        8. クッキー・トラッキング技術
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        当アプリは、現在、クッキーやトラッキング技術を使用していません。将来的に使用する場合は、本ポリシーを更新して通知します。
+                        モバイルアプリのためブラウザクッキーは使用しませんが、広告配信およびクラッシュレポートのために、端末識別子（広告 ID 等）を利用する場合があります。iOS では App Tracking Transparency による同意取得を行います。トラッキングを許可しない選択をされた場合、当アプリはトラッキング目的で広告 ID を取得しません。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        8. 第三者サービス
+                        9. 子どもの個人情報
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        当アプリは、サービス提供のため当アプリが運用するサーバーと通信し、上記の情報を送受信します。現在、外部の分析サービス・広告サービス・SNS連携は使用していません。アプリの基盤としてExpo（React Native）等の技術を利用していますが、これらによる個人情報の第三者への送信は行っていません。将来的に第三者サービスを利用する場合は、本ポリシーを更新して通知します。
+                        当アプリは 13 歳未満の方の利用を想定していません。13 歳未満の方の個人情報を意図的に収集することはありません。誤って収集されたことが判明した場合、速やかに削除します。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        9. プライバシーポリシーの変更
+                        10. プライバシーポリシーの変更
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
                         当アプリは、必要に応じて本プライバシーポリシーを変更することがあります。重要な変更がある場合は、アプリ内で通知します。変更後もアプリを継続して利用する場合、変更後のポリシーに同意したものとみなします。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        10. お問い合わせ
+                        11. お問い合わせ
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        個人情報の取り扱いに関するご質問やご要望がございましたら、アプリ内の設定画面からお問い合わせください。
+                        個人情報の取り扱いに関するご質問やご要望がございましたら、設定 → お問い合わせ よりご連絡ください。
                     </Text>
                 </View>
             </ScrollView>

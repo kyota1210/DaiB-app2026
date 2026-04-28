@@ -6,6 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { AuthContext } from '../context/AuthContext';
 import ScreenHeader from '../components/ScreenHeader';
 import ResultModal from '../components/ResultModal';
+import { submitContact } from '../api/contact';
 
 const ContactScreen = ({ navigation }) => {
     const { theme } = useTheme();
@@ -18,6 +19,8 @@ const ContactScreen = ({ navigation }) => {
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
     const handleSubmit = async () => {
         if (!name.trim() || !email.trim() || !subject.trim() || !message.trim()) {
@@ -25,19 +28,32 @@ const ContactScreen = ({ navigation }) => {
         }
 
         setIsSubmitting(true);
-        
-        // TODO: 実際のAPIエンドポイントに送信する処理を実装
-        // 現在はモックとして2秒待機
-        setTimeout(() => {
-            setIsSubmitting(false);
+        try {
+            await submitContact({
+                name: name.trim(),
+                email: email.trim(),
+                subject: subject.trim(),
+                message: message.trim(),
+            });
             setShowSuccessModal(true);
             setTimeout(() => {
                 setShowSuccessModal(false);
-                // フォームをリセット
                 setSubject('');
                 setMessage('');
             }, 2000);
-        }, 1000);
+        } catch (e) {
+            const code = (e && e.message) || 'submit_failed';
+            const localized =
+                code === 'too_many_requests'
+                    ? t('contactRateLimited') || '送信が集中しています。しばらくしてから再度お試しください。'
+                    : code === 'invalid_email'
+                        ? t('invalidEmail') || 'メールアドレスの形式が正しくありません。'
+                        : t('contactSubmitFailed') || '送信に失敗しました。時間を置いてもう一度お試しください。';
+            setErrorMessage(localized);
+            setShowErrorModal(true);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const isFormValid = name.trim() && email.trim() && subject.trim() && message.trim();
@@ -159,6 +175,14 @@ const ContactScreen = ({ navigation }) => {
                 title="送信完了"
                 message={'お問い合わせありがとうございます。\n内容を確認次第、ご連絡いたします。'}
                 onClose={() => setShowSuccessModal(false)}
+            />
+
+            <ResultModal
+                type="error"
+                visible={showErrorModal}
+                title={t('error') || 'エラー'}
+                message={errorMessage}
+                onClose={() => setShowErrorModal(false)}
             />
         </SafeAreaView>
     );

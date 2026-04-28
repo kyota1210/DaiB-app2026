@@ -12,6 +12,9 @@ import { useRecordsApi } from '../api/records';
 import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getImageUrl } from '../utils/imageHelper';
+import { useSubscription } from '../context/SubscriptionContext';
+import { showInterstitialIfReady } from '../utils/interstitialAd';
+import { useFeatureGate } from '../hooks/useFeatureGate';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -20,6 +23,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
     const { userToken } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
+    const { isPremium } = useSubscription();
     
     // 編集モードの判定
     const editRecord = route.params?.record;
@@ -92,7 +96,8 @@ export default function PhotoPickerScreen({ navigation, route }) {
     }, [timelineDropdownOpen, closeTimelineDropdown]);
     
     const { createRecord, updateRecord } = useRecordsApi();
-    const { categories, loadCategories, loadingCategories, loadRecords } = useRecordsAndCategories();
+    const { categories, loadCategories, loadingCategories, loadRecords, records } = useRecordsAndCategories();
+    const { canCreateMorePosts, getMonthlyPostLimit } = useFeatureGate();
     
     // カテゴリーを取得（キャッシュになければ読み込む）
     useEffect(() => {
@@ -180,6 +185,30 @@ export default function PhotoPickerScreen({ navigation, route }) {
             return;
         }
 
+        // 無料プラン: 月間投稿上限チェック（編集時はスキップ）
+        if (!isEditMode) {
+            const now = new Date();
+            const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const currentMonthCount = (records || []).filter((r) =>
+                typeof r?.date_logged === 'string' && r.date_logged.startsWith(ym),
+            ).length;
+            if (!canCreateMorePosts(currentMonthCount)) {
+                Alert.alert(
+                    t('monthlyPostLimitReached') || '今月の投稿上限に達しました',
+                    (t('monthlyPostLimitMessage') || '無料プランは月{{limit}}件までです。プレミアムにアップグレードすると無制限で投稿できます。')
+                        .replace('{{limit}}', String(getMonthlyPostLimit())),
+                    [
+                        { text: t('cancel'), style: 'cancel' },
+                        {
+                            text: t('upgradeToPremium'),
+                            onPress: () => navigation.navigate('PremiumPlan'),
+                        },
+                    ],
+                );
+                return;
+            }
+        }
+
         setLoading(true);
         try {
             const y = dateLogged.getFullYear();
@@ -213,13 +242,21 @@ export default function PhotoPickerScreen({ navigation, route }) {
                 await createRecord(recordData);
                 await loadRecords(); // キャッシュを更新
                 setShowSuccessModal(true);
+                showInterstitialIfReady({ isPremium }).catch(() => { /* noop */ });
                 setTimeout(() => {
                     setShowSuccessModal(false);
                     navigation.goBack();
                 }, 2000);
             }
         } catch (error) {
-            setErrorMessage(error.message || (isEditMode ? t('updateFailed') : t('createFailed')));
+            const isBlocked =
+                error?.code === 'IMAGE_BLOCKED' ||
+                /image_blocked_by_moderation|avatar_blocked_by_moderation/.test(String(error?.message || ''));
+            if (isBlocked) {
+                setErrorMessage(t('imageBlockedByModeration') || 'この画像は利用規約に違反する可能性があるため、投稿できません。別の画像を選択してください。');
+            } else {
+                setErrorMessage(error.message || (isEditMode ? t('updateFailed') : t('createFailed')));
+            }
             setShowErrorModal(true);
         } finally {
             setLoading(false);

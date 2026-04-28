@@ -1,0 +1,73 @@
+name: EAS Build & Submit (iOS)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client-app/**'
+  push_tags:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'EAS profile (development | preview | production)'
+        required: true
+        default: preview
+        type: choice
+        options:
+          - development
+          - preview
+          - production
+      submit:
+        description: 'Submit to TestFlight / App Store after build'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client-app/package-lock.json
+
+      - run: npm ci
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Determine profile
+        id: profile
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "profile=${{ inputs.profile }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "profile=production" >> $GITHUB_OUTPUT
+          else
+            echo "profile=preview" >> $GITHUB_OUTPUT
+          fi
+
+      - name: EAS Build
+        run: eas build --platform ios --profile ${{ steps.profile.outputs.profile }} --non-interactive
+
+      - name: EAS Submit (production)
+        if: steps.profile.outputs.profile == 'production' && (startsWith(github.ref, 'refs/tags/v') || inputs.submit == 'true')
+        run: eas submit --platform ios --profile production --latest --non-interactive
+
+      - name: EAS Submit (preview / TestFlight)
+        if: steps.profile.outputs.profile == 'preview' && inputs.submit == 'true'
+        run: eas submit --platform ios --profile preview --latest --non-interactive

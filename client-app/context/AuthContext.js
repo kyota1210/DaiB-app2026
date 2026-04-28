@@ -3,6 +3,7 @@ import * as Linking from 'expo-linking';
 import { getUserInfo } from '../api/auth';
 import { supabase } from '../utils/supabase';
 import { getAuthEmailRedirectTo, applySupabaseAuthTokensFromUrl } from '../utils/supabaseAuthRedirect';
+import { setObservabilityUser, clearObservabilityUser } from '../utils/observability';
 
 export const AuthContext = createContext();
 
@@ -14,6 +15,7 @@ export const AuthProvider = ({ children }) => {
     const refreshUserFromApi = useCallback(async (accessToken) => {
         const data = await getUserInfo(accessToken);
         setUserInfo(data.user);
+        setObservabilityUser(data.user);
     }, []);
 
     useEffect(() => {
@@ -65,6 +67,7 @@ export const AuthProvider = ({ children }) => {
             } else {
                 setUserToken(null);
                 setUserInfo(null);
+                clearObservabilityUser();
             }
         });
 
@@ -135,6 +138,7 @@ export const AuthProvider = ({ children }) => {
                 await supabase.auth.signOut();
                 setUserToken(null);
                 setUserInfo(null);
+                clearObservabilityUser();
             } catch (e) {
                 console.error('ログアウトエラー', e);
             }

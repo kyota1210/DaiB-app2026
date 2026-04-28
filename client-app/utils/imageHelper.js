@@ -152,5 +152,8 @@ export const getImageUrl = (path, avatarCacheBust) => {
 
     const cleanPath = str.startsWith('/') ? str.substring(1) : str;
 
+    if (!SERVER_URL) {
+        return null;
+    }
     return `${SERVER_URL}/${cleanPath}`;
 };

@@ -19,6 +19,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { getOtherUserProfile, getOtherUserRecords } from '../api/user';
 import { follow, unfollow, approveFollow } from '../api/follows';
 import { getImageUrl } from '../utils/imageHelper';
+import { blockUser, unblockUser, isUserBlocked } from '../api/moderation';
+import ReportSheet from '../components/ReportSheet';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_PADDING = 16;
@@ -37,6 +39,8 @@ const UserProfileScreen = ({ navigation, route }) => {
     const [loading, setLoading] = useState(true);
     const [recordsLoading, setRecordsLoading] = useState(false);
     const [followBusy, setFollowBusy] = useState(false);
+    const [blocked, setBlocked] = useState(false);
+    const [reportVisible, setReportVisible] = useState(false);
     /** 投稿詳細から戻った次のフォーカスでは再取得しない（スクロール位置維持） */
     const skipRefetchOnNextFocusRef = useRef(false);
 
@@ -60,12 +64,67 @@ const UserProfileScreen = ({ navigation, route }) => {
                     console.error('User records fetch error', err);
                     setRecords([]);
                 }),
+                !isMe ? isUserBlocked(userId).then(setBlocked).catch(() => setBlocked(false)) : Promise.resolve(),
             ]);
         } finally {
             setLoading(false);
             setRecordsLoading(false);
         }
-    }, [userToken, userId]);
+    }, [userToken, userId, isMe]);
+
+    const handleBlock = () => {
+        if (!user) return;
+        Alert.alert('', t('blockUserConfirm'), [
+            { text: t('cancel'), style: 'cancel' },
+            {
+                text: t('blockUser'), style: 'destructive', onPress: async () => {
+                    try {
+                        await blockUser(user.id);
+                        setBlocked(true);
+                        setUser((prev) => prev ? { ...prev, is_following: false, is_followed_by: false, is_friend: false } : prev);
+                        setRecords([]);
+                        Alert.alert(t('completed'), t('blockUserDone'));
+                    } catch (e) {
+                        Alert.alert(t('error'), e.message || t('blockUserFailed'));
+                    }
+                },
+            },
+        ]);
+    };
+
+    const handleUnblock = () => {
+        if (!user) return;
+        Alert.alert('', t('unblockUserConfirm'), [
+            { text: t('cancel'), style: 'cancel' },
+            {
+                text: t('unblockUser'), onPress: async () => {
+                    try {
+                        await unblockUser(user.id);
+                        setBlocked(false);
+                        Alert.alert(t('completed'), t('unblockUserDone'));
+                        loadProfileAndRecords();
+                    } catch (e) {
+                        Alert.alert(t('error'), e.message);
+                    }
+                },
+            },
+        ]);
+    };
+
+    const handleMoreActions = () => {
+        if (isMe || !user) return;
+        const userName = (user.user_name || '').trim() || t('thisUser');
+        const buttons = [
+            { text: t('report'), onPress: () => setReportVisible(true) },
+        ];
+        if (blocked) {
+            buttons.push({ text: t('unblockUser'), onPress: handleUnblock });
+        } else {
+            buttons.push({ text: t('blockUser'), style: 'destructive', onPress: handleBlock });
+        }
+        buttons.push({ text: t('cancel'), style: 'cancel' });
+        Alert.alert(userName, '', buttons);
+    };
 
     useFocusEffect(
         useCallback(() => {
@@ -281,8 +340,29 @@ const UserProfileScreen = ({ navigation, route }) => {
                     <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
                 </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: theme.colors.text }]} numberOfLines={1}>{user.user_name || t('profile')}</Text>
-                <View style={styles.placeholder} />
+                {isMe ? (
+                    <View style={styles.placeholder} />
+                ) : (
+                    <TouchableOpacity onPress={handleMoreActions} style={styles.backButton} accessibilityLabel={t('report')}>
+                        <Ionicons name="ellipsis-horizontal" size={22} color={theme.colors.icon} />
+                    </TouchableOpacity>
+                )}
             </View>
+
+            {blocked ? (
+                <View style={[styles.blockedBanner, { backgroundColor: theme.colors.secondaryBackground }]}>
+                    <Ionicons name="hand-left-outline" size={16} color={theme.colors.secondaryText} />
+                    <Text style={[styles.blockedText, { color: theme.colors.secondaryText }]}>{t('blockedNotice')}</Text>
+                </View>
+            ) : null}
+
+            <ReportSheet
+                visible={reportVisible}
+                onClose={() => setReportVisible(false)}
+                targetType="user"
+                targetId={user.id}
+                targetLabel={user.user_name || ''}
+            />
 
             <FlatList
                 data={records}
@@ -336,6 +416,11 @@ const styles = StyleSheet.create({
     emptyRecordsText: { fontSize: 14 },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     errorText: { fontSize: 16 },
+    blockedBanner: {
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        paddingHorizontal: 16, paddingVertical: 10,
+    },
+    blockedText: { fontSize: 13 },
 });
 
 export default UserProfileScreen;

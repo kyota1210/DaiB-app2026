@@ -14,6 +14,7 @@ import { SERVER_URL } from '../config';
 import RecordCalendarSection from '../components/RecordCalendarSection';
 import RecordHeatmapSection from '../components/RecordHeatmapSection';
 import RecordLifeTimelineSection from '../components/RecordLifeTimelineSection';
+import AdBanner from '../components/AdBanner';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const IMAGE_PADDING = 1; // 画像間の余白
@@ -897,6 +898,7 @@ export default function RecordListScreen({ navigation }) {
                 </BlurView>
             </Modal>
 
+            <AdBanner />
         </SafeAreaView>
     );
 }

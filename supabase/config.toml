@@ -1,0 +1,69 @@
+# Supabase CLI ローカル開発設定
+# https://supabase.com/docs/guides/local-development/cli/config
+
+project_id = "daib-app"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "daibapp://"
+additional_redirect_urls = [
+  "daibapp://",
+  "daibapp://auth/callback",
+  "daibapp://invite",
+]
+jwt_expiry = 3600
+enable_signup = true
+enable_anonymous_sign_ins = false
+enable_manual_linking = false
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+secure_password_change = false
+
+[functions]
+
+# Edge Function: 招待リンク中継（既存）
+[functions.invite-redirect]
+verify_jwt = false
+
+# Edge Function: アカウント削除（F0-5a で実装）
+[functions.delete-account]
+verify_jwt = true
+
+# Edge Function: IAP レシート検証（F2-2a で実装）
+[functions.verify-iap-receipt]
+verify_jwt = true
+
+# Edge Function: Apple App Store Server Notifications V2（F2-2a で実装）
+[functions.apple-iap-webhook]
+verify_jwt = false
+
+# Edge Function: お問い合わせ受信（F0-6 で実装）
+[functions.submit-contact]
+verify_jwt = true

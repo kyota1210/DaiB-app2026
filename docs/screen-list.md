@@ -1,6 +1,20 @@
 # 画面一覧・遷移
 
-## 画面構成概要
+> **2026-04 更新**  
+> 以降の「画面構成概要」以降の記述のうち、**下部タブ / 友だち導線 / 認証**は実装と差が出ている。次節 **「現行ナビゲーション（コードに基づく）」** を正とし、下は移行中の参考として残す。正本の全体像は [アプリケーション仕様書](アプリケーション仕様書.md)。
+
+## 現行ナビゲーション（`client-app/navigation/AppNavigator.js`）
+
+- **未ログイン**  
+  - スタック: `Login` → `Signup`（`ForgotPassword` / `ResetPassword` 追加）。未ログイン時は `InviteHandler` も同スタック。  
+- **ログイン後**  
+  - `Main`（タブ相当）: **Home** = `RecordListScreen`、**Thread** = `ThreadScreen`。従来の常時表示2タブではなく、**右下フローティングボタン**で Home ↔ Thread を切替。  
+  - 同一ルートスタック: `RecordDetail` / `MyPage` / `ProfileEdit` / `LoginInfo` / `PremiumPlan` / `CategoryManagement` / `LanguageSetting` / `DisplaySettings` / `PhotoPicker` / 各種静的（Help, About, Terms, Privacy, Contact）/ **`FriendHub`** / `UserProfile` / **`InviteHandler`**.  
+- **廃止・未配線**（当メモ執筆時点）: 本ファイル後段の `UserSearch` / 独立 `FollowingList` 等は **`AppNavigator` に未登録**（`FollowListScreen.js` はファイルとして残存の可能性）。  
+- **Thread**: 友だち数表示 → `FriendHub`。追加は **QR/招待**（`ThreadScreen`）。  
+- **ProfileEdit**: 自己紹介・アバター等。旧「公開設定 public/private」は**実装要確認**（`ProfileEditScreen` 全体を要参照）。
+
+## 画面構成概要（参考・旧版）
 
 DaiBアプリは、認証状態に応じて2つのナビゲーションスタックに分かれます：
 

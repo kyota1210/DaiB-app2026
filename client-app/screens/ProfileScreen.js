@@ -134,6 +134,14 @@ const ProfileScreen = ({ navigation }) => {
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
                         <TouchableOpacity
+                            style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
+                            onPress={() => navigation.navigate('SpecifiedCommercialTransactions')}
+                        >
+                            <Ionicons name="receipt-outline" size={24} color={theme.colors.icon} />
+                            <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('specifiedCommercialTransactions')}</Text>
+                            <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
                             style={styles.menuItem}
                             onPress={() => navigation.navigate('Contact')}
                         >

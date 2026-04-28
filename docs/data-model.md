@@ -1,5 +1,10 @@
 # データモデル
 
+> **ステータス（2026-04 時点）**  
+> 本書は **旧 MySQL スキーマ**（`users` / `records` / `user_avatars` 等）の説明である。現行の正は **Supabase（PostgreSQL）** で、投稿は主に `posts`、プロフィールは `profiles`、アバターは `profiles.avatar_url` + **Storage** 等。  
+> **ER・表定義の正本**は [アプリケーション仕様書](アプリケーション仕様書.md) と `supabase/migrations/*.sql` を参照すること。  
+> 以降の記述は移行前後の用語照合用。
+
 ## エンティティ一覧
 
 DaiBアプリケーションは以下のエンティティで構成されています：

@@ -32,6 +32,7 @@ import TermsScreen from '../screens/TermsScreen';
 import PrivacyScreen from '../screens/PrivacyScreen';
 import ContactScreen from '../screens/ContactScreen';
 import InviteHandlerScreen from '../screens/InviteHandlerScreen';
+import SpecifiedCommercialTransactionsScreen from '../screens/SpecifiedCommercialTransactionsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -171,6 +172,7 @@ const AppNavigator = () => {
           <Stack.Screen name="About" component={AboutScreen} />
           <Stack.Screen name="Terms" component={TermsScreen} />
           <Stack.Screen name="Privacy" component={PrivacyScreen} />
+          <Stack.Screen name="SpecifiedCommercialTransactions" component={SpecifiedCommercialTransactionsScreen} />
           <Stack.Screen name="Contact" component={ContactScreen} />
           <Stack.Screen name="FriendHub" component={FriendHubScreen} />
           <Stack.Screen name="UserProfile" component={UserProfileScreen} />

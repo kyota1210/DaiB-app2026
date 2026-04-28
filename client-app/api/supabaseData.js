@@ -1,6 +1,7 @@
 import { supabase } from '../utils/supabase';
 import { POST_IMAGES_BUCKET, AVATARS_BUCKET } from '../config';
 import { imageUriToJpegArrayBuffer } from '../utils/normalizeImageForUpload';
+import { moderateImage } from './moderation_image';
 
 const ALLOWED_EMOJIS = ['❤️', '👍', '🌸', '🎉', '✨'];
 
@@ -468,7 +469,23 @@ export const createRecord = async (recordData) => {
       name: recordData.imageUri.split('/').pop() || 'record.jpg',
       type: 'image/jpeg',
     });
-    // Row just inserted; no invalidation_flag filter (avoids 0-row update).
+
+    // 画像モデレーション（NSFW / 暴力検出）。block 判定なら、アップロード済みオブジェクトと
+    // 投稿レコードを巻き戻してエラーにする。VISION 未設定時は内部で allow 扱い。
+    try {
+      const mod = await moderateImage({ bucket: POST_IMAGES_BUCKET, path: imagePath });
+      if (mod?.decision === 'block') {
+        await supabase.storage.from(POST_IMAGES_BUCKET).remove([imagePath]);
+        await supabase.from('posts').delete().eq('id', recordId);
+        const err = new Error('image_blocked_by_moderation');
+        err.code = 'IMAGE_BLOCKED';
+        throw err;
+      }
+    } catch (e) {
+      if (e?.code === 'IMAGE_BLOCKED') throw e;
+      // 判定通信エラー時は投稿継続（運用ログは Edge Function 側で出ている）。
+    }
+
     const { data: updatedRow, error: imgErr } = await supabase
       .from('posts')
       .update({ image_url: imagePath })
@@ -497,11 +514,23 @@ export const updateRecord = async (id, recordData) => {
   }
   if (recordData.imageUri && !recordData.imageUri.startsWith('http')) {
     const user = await requireUser();
-    patch.image_url = await uploadPostImagePath(user.id, id, {
+    const newPath = await uploadPostImagePath(user.id, id, {
       uri: recordData.imageUri,
       name: recordData.imageUri.split('/').pop() || 'record.jpg',
       type: 'image/jpeg',
     });
+    try {
+      const mod = await moderateImage({ bucket: POST_IMAGES_BUCKET, path: newPath });
+      if (mod?.decision === 'block') {
+        await supabase.storage.from(POST_IMAGES_BUCKET).remove([newPath]);
+        const err = new Error('image_blocked_by_moderation');
+        err.code = 'IMAGE_BLOCKED';
+        throw err;
+      }
+    } catch (e) {
+      if (e?.code === 'IMAGE_BLOCKED') throw e;
+    }
+    patch.image_url = newPath;
   }
   const { error } = await supabase.from('posts').update(patch).eq('id', id).eq('invalidation_flag', FLAG_ACTIVE);
   if (error) throw mapSupabaseError(error);
@@ -531,6 +560,18 @@ export const updateProfile = async ({ userName, bio, avatarFile }) => {
       avatarUrl = await uploadImageToBucket(AVATARS_BUCKET, user.id, avatarFile);
     } catch (e) {
       rethrowWithStep('[アバター画像のアップロード]', e);
+    }
+    try {
+      // avatars バケットの本人パスは {userId}/avatar.jpg 固定
+      const mod = await moderateImage({ bucket: AVATARS_BUCKET, path: `${user.id}/avatar.jpg` });
+      if (mod?.decision === 'block') {
+        await supabase.storage.from(AVATARS_BUCKET).remove([`${user.id}/avatar.jpg`]);
+        const err = new Error('avatar_blocked_by_moderation');
+        err.code = 'IMAGE_BLOCKED';
+        throw err;
+      }
+    } catch (e) {
+      if (e?.code === 'IMAGE_BLOCKED') rethrowWithStep('[アバター画像のモデレーション]', e);
     }
   }
   const patch = {};

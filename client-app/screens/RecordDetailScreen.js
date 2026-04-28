@@ -11,6 +11,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getImageUrl } from '../utils/imageHelper';
 import { useFocusEffect } from '@react-navigation/native';
+import { blockUser } from '../api/moderation';
+import ReportSheet from '../components/ReportSheet';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -289,6 +291,7 @@ export default function RecordDetailScreen({ route, navigation }) {
     const [isReactionBarExpanded, setIsReactionBarExpanded] = useState(false);
     const [isReactionBarClosing, setIsReactionBarClosing] = useState(false);
     const [burstEmoji, setBurstEmoji] = useState(null);
+    const [reportVisible, setReportVisible] = useState(false);
     const burstAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -433,6 +436,33 @@ export default function RecordDetailScreen({ route, navigation }) {
         }
     };
 
+    const handleOtherPostMore = () => {
+        if (!currentRecord) return;
+        const authorName = (currentRecord.author_name || '').trim() || t('thisUser');
+        Alert.alert(authorName, '', [
+            { text: t('report'), onPress: () => setReportVisible(true) },
+            {
+                text: t('blockUser'), style: 'destructive', onPress: () => {
+                    Alert.alert('', t('blockUserConfirm'), [
+                        { text: t('cancel'), style: 'cancel' },
+                        {
+                            text: t('blockUser'), style: 'destructive', onPress: async () => {
+                                try {
+                                    await blockUser(currentRecord.author_id);
+                                    Alert.alert(t('completed'), t('blockUserDone'));
+                                    navigation.goBack();
+                                } catch (e) {
+                                    Alert.alert(t('error'), e.message || t('blockUserFailed'));
+                                }
+                            },
+                        },
+                    ]);
+                },
+            },
+            { text: t('cancel'), style: 'cancel' },
+        ]);
+    };
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
             {/* ヘッダー（メニューバー） */}
@@ -468,9 +498,14 @@ export default function RecordDetailScreen({ route, navigation }) {
                     <View style={styles.headerSpacer} />
                 )}
                 {isTimelineOtherUser ? (
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
-                        <Ionicons name="close" size={26} color={theme.colors.icon} />
-                    </TouchableOpacity>
+                    <View style={styles.headerRightActions}>
+                        <TouchableOpacity onPress={handleOtherPostMore} style={styles.menuButton} accessibilityLabel={t('report')}>
+                            <Ionicons name="ellipsis-horizontal" size={22} color={theme.colors.icon} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
+                            <Ionicons name="close" size={26} color={theme.colors.icon} />
+                        </TouchableOpacity>
+                    </View>
                 ) : isOwnPost ? (
                     <TouchableOpacity 
                         ref={menuButtonRef}
@@ -633,6 +668,16 @@ export default function RecordDetailScreen({ route, navigation }) {
                 message={errorMessage}
                 onClose={() => setShowErrorModal(false)}
             />
+
+            {currentRecord && currentRecord.author_id != null ? (
+                <ReportSheet
+                    visible={reportVisible}
+                    onClose={() => setReportVisible(false)}
+                    targetType="post"
+                    targetId={currentRecord.id}
+                    targetLabel={currentRecord.title || ''}
+                />
+            ) : null}
         </SafeAreaView>
     );
 }
@@ -654,6 +699,11 @@ const styles = StyleSheet.create({
     },
     closeButton: {
         padding: 6,
+    },
+    headerRightActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
     },
     headerSpacer: {
         flex: 1,
