@@ -14,7 +14,11 @@ import { Platform } from 'react-native';
 const APP_ENV = process.env.EXPO_PUBLIC_APP_ENV || 'development';
 
 const TEST_BANNER_IOS = 'ca-app-pub-3940256099942544/2934735716';
+const TEST_BANNER_ANDROID = 'ca-app-pub-3940256099942544/6300978111';
 const TEST_INTERSTITIAL_IOS = 'ca-app-pub-3940256099942544/4411468910';
+
+/** フィードで N 投稿ごとにバナー行を差し込む（末尾の直後は付けない） */
+export const INLINE_BANNER_EVERY_N_POSTS = 4;
 
 let TrackingTransparency = null;
 let mobileAds = null;
@@ -44,9 +48,13 @@ const getEnv = (key, fallback) => {
 };
 
 export const getBannerUnitId = () => {
-    if (Platform.OS !== 'ios') return TEST_BANNER_IOS;
-    if (!isProductionLike) return TEST_BANNER_IOS;
-    return getEnv('EXPO_PUBLIC_ADMOB_IOS_BANNER_UNIT_ID', TEST_BANNER_IOS);
+    if (!isProductionLike) {
+        return Platform.OS === 'ios' ? TEST_BANNER_IOS : TEST_BANNER_ANDROID;
+    }
+    if (Platform.OS === 'ios') {
+        return getEnv('EXPO_PUBLIC_ADMOB_IOS_BANNER_UNIT_ID', TEST_BANNER_IOS);
+    }
+    return getEnv('EXPO_PUBLIC_ADMOB_ANDROID_BANNER_UNIT_ID', TEST_BANNER_ANDROID);
 };
 
 export const getInterstitialUnitId = () => {
