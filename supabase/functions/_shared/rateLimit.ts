@@ -3,7 +3,7 @@
 // 超過していたら true（== blocked）を返す。
 //
 // 利用側:
-//   const blocked = await checkRateLimit(admin, `verify-iap:${userId}`, 60, 10);
+//   const blocked = await checkRateLimit(admin, `some-action:${userId}`, 60, 10);
 //   if (blocked) return json(429, { error: 'too_many_requests' });
 
 // deno-lint-ignore-file no-explicit-any

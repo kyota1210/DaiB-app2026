@@ -4,6 +4,7 @@ import { getUserInfo } from '../api/auth';
 import { supabase } from '../utils/supabase';
 import { getAuthEmailRedirectTo, applySupabaseAuthTokensFromUrl } from '../utils/supabaseAuthRedirect';
 import { setObservabilityUser, clearObservabilityUser } from '../utils/observability';
+import { purchasesConfigure, purchasesLogIn, purchasesLogOut } from '../utils/purchases';
 
 export const AuthContext = createContext();
 
@@ -21,6 +22,8 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const init = async () => {
             try {
+                await purchasesConfigure();
+
                 const initialUrl = await Linking.getInitialURL();
                 if (initialUrl) {
                     const applied = await applySupabaseAuthTokensFromUrl(initialUrl);
@@ -32,6 +35,9 @@ export const AuthProvider = ({ children }) => {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session?.access_token) {
                     setUserToken(session.access_token);
+                    if (session?.user?.id) {
+                        await purchasesLogIn(session.user.id);
+                    }
                     try {
                         await refreshUserFromApi(session.access_token);
                     } catch (error) {
@@ -39,6 +45,7 @@ export const AuthProvider = ({ children }) => {
                         await supabase.auth.signOut();
                         setUserToken(null);
                         setUserInfo(null);
+                        await purchasesLogOut();
                     }
                 }
             } catch (e) {
@@ -54,8 +61,12 @@ export const AuthProvider = ({ children }) => {
             if (event === 'INITIAL_SESSION') {
                 return;
             }
+            await purchasesConfigure();
             if (session?.access_token) {
                 setUserToken(session.access_token);
+                if (session?.user?.id) {
+                    await purchasesLogIn(session.user.id);
+                }
                 try {
                     await refreshUserFromApi(session.access_token);
                 } catch (error) {
@@ -63,11 +74,13 @@ export const AuthProvider = ({ children }) => {
                     await supabase.auth.signOut();
                     setUserToken(null);
                     setUserInfo(null);
+                    await purchasesLogOut();
                 }
             } else {
                 setUserToken(null);
                 setUserInfo(null);
                 clearObservabilityUser();
+                await purchasesLogOut();
             }
         });
 
@@ -99,6 +112,9 @@ export const AuthProvider = ({ children }) => {
                     return { success: false, error: 'セッションを取得できませんでした。' };
                 }
                 setUserToken(token);
+                if (data.session?.user?.id) {
+                    await purchasesLogIn(data.session.user.id);
+                }
                 const info = await getUserInfo(token);
                 setUserInfo(info.user);
                 return { success: true };
@@ -123,6 +139,9 @@ export const AuthProvider = ({ children }) => {
                 if (data.session?.access_token) {
                     const token = data.session.access_token;
                     setUserToken(token);
+                    if (data.session?.user?.id) {
+                        await purchasesLogIn(data.session.user.id);
+                    }
                     const info = await getUserInfo(token);
                     setUserInfo(info.user);
                     return { success: true };

@@ -59,7 +59,7 @@
   - 価格: 980 円（または App Store の価格ティア）
   - 紹介オファー（任意）: 7 日間無料トライアル など
 - [ ] **App Store Server Notifications V2** の Webhook URL を設定
-  - URL: F2-2a で実装する Edge Function のエンドポイント `https://<supabase-project>.supabase.co/functions/v1/apple-iap-webhook`
+  - URL: RevenueCat → Supabase Edge Function `https://<supabase-project>.supabase.co/functions/v1/revenuecat-webhook`
   - Sandbox / Production の両環境で設定
 - [ ] **App Store Connect API Key** を発行（Issuer ID, Key ID, p8 ファイルを Supabase Edge Function の Secret に登録）
 

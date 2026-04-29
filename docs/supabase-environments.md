@@ -95,17 +95,10 @@ supabase db push
 各 Edge Function で必要な Secret を環境ごとに設定：
 
 ```bash
-# 例: IAP レシート検証用（prod 環境にリンク済みのとき）
+# RevenueCat Webhook（revenuecat-webhook → subscriptions 更新）
+# RevenueCat ダッシュボードの Webhook「Authorization」に設定する値と必ず一致させる
 supabase secrets set \
-  APPLE_ISSUER_ID=<App Store Connect Issuer ID> \
-  APPLE_KEY_ID=<App Store Connect Key ID> \
-  APPLE_PRIVATE_KEY=<p8 ファイル内容> \
-  APPLE_BUNDLE_ID=com.kytm1210.daibapp2026 \
-  APPLE_USE_SANDBOX=false  # staging では true
-
-# Apple Webhook 用
-supabase secrets set \
-  APPLE_WEBHOOK_SHARED_SECRET=<App Store Connect で発行した Shared Secret>
+  REVENUECAT_WEBHOOK_AUTHORIZATION=<RevenueCat Webhook authorization token>
 
 # お問い合わせ転送用（任意）
 supabase secrets set \

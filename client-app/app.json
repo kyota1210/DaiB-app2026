@@ -24,7 +24,7 @@
         "NSCameraUsageDescription": "QRコードの読み取りや写真の撮影に使用します。",
         "NSPhotoLibraryUsageDescription": "投稿やプロフィール画像のために写真ライブラリへアクセスします。",
         "NSPhotoLibraryAddUsageDescription": "保存した画像を写真ライブラリに追加するために使用します。",
-        "NSUserTrackingUsageDescription": "あなたの興味に合った広告を表示するために、識別子の使用を許可してください。",
+        "NSUserTrackingUsageDescription": "より関連性の高い広告を表示するために、広告識別子を使用します。",
         "SKAdNetworkItems": [
           { "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork" },
           { "SKAdNetworkIdentifier": "4fzdc2evr5.skadnetwork" },
@@ -97,21 +97,19 @@
       [
         "expo-tracking-transparency",
         {
-          "userTrackingPermission": "あなたの興味に合った広告を表示するために、識別子の使用を許可してください。"
+          "userTrackingPermission": "より関連性の高い広告を表示するために、広告識別子を使用します。"
         }
+      ],
+      [
+        "react-native-purchases",
+        {}
       ],
       [
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-3940256099942544~3347511713",
           "iosAppId": "ca-app-pub-3940256099942544~1458002511",
-          "userTrackingUsageDescription": "あなたの興味に合った広告を表示するために、識別子の使用を許可してください。"
-        }
-      ],
-      [
-        "react-native-iap",
-        {
-          "paymentProvider": "AppStore"
+          "userTrackingUsageDescription": "より関連性の高い広告を表示するために、広告識別子を使用します。"
         }
       ],
       "@sentry/react-native/expo"

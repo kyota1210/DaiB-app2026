@@ -225,7 +225,7 @@ App Store Connect → My Apps → 該当アプリ → **Monetization → Subscri
 
 ### 6.4 App Store Server Notifications V2
 
-- Production URL: `https://<supabase-project-ref>.supabase.co/functions/v1/apple-iap-webhook`
+- RevenueCat Webhook URL（Production / Sandbox）: `https://<supabase-project-ref>.supabase.co/functions/v1/revenuecat-webhook`（Authorization は Supabase Secret と RevenueCat ダッシュボードで一致させる）
 - Sandbox URL: 同上
 - Version: V2
 - 認証: Supabase Edge Function 側で署名検証（F2-2a で実装）

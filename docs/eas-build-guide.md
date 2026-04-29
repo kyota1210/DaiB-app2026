@@ -70,7 +70,7 @@ npx eas-cli secret:list
 
 ## 4. Dev Client への移行
 
-`react-native-google-mobile-ads` / `react-native-iap` などのネイティブモジュールは **Expo Go では動かない**ため、開発時から Dev Client を使う運用に切り替える。
+`react-native-google-mobile-ads` / `react-native-purchases` などのネイティブモジュールは **Expo Go では動かない**ため、開発時から Dev Client を使う運用に切り替える。
 
 ### 4.1 Dev Client iOS シミュレータビルド
 

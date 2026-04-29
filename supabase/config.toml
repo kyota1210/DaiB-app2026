@@ -56,12 +56,8 @@ verify_jwt = false
 [functions.delete-account]
 verify_jwt = true
 
-# Edge Function: IAP レシート検証（F2-2a で実装）
-[functions.verify-iap-receipt]
-verify_jwt = true
-
-# Edge Function: Apple App Store Server Notifications V2（F2-2a で実装）
-[functions.apple-iap-webhook]
+# Edge Function: RevenueCat Webhook → subscriptions 同期
+[functions.revenuecat-webhook]
 verify_jwt = false
 
 # Edge Function: お問い合わせ受信（F0-6 で実装）

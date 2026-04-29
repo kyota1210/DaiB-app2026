@@ -11,6 +11,9 @@ import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Platform } from 'react-native';
+import { useEffect } from 'react';
+import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 
 const linking = {
   prefixes: [Linking.createURL('/'), 'daibapp://'],
@@ -39,6 +42,20 @@ const AppContent = () => {
 // アプリ全体をNavigationContainerでラップし、認証コンテキスト（状態管理）を設定するシンプルな役割
 export default function App() {
   const [fontsLoaded] = useFonts({ Nunito_900Black });
+
+  useEffect(() => {
+    Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
+
+    // Platform-specific API keys
+    const iosApiKey = 'test_LVKxEWEHqlrZRRvKexKmWNHXcdI';
+    const androidApiKey = 'test_LVKxEWEHqlrZRRvKexKmWNHXcdI';
+
+    if (Platform.OS === 'ios') {
+       Purchases.configure({apiKey: iosApiKey});
+    } else if (Platform.OS === 'android') {
+       Purchases.configure({apiKey: androidApiKey});
+    }
+  }, []);
 
   React.useEffect(() => {
     // AdMob 初期化（ATT / UMP CMP を内部で要求）→ それを踏まえて Sentry/Analytics を初期化。

@@ -7,18 +7,13 @@ import ScreenHeader from '../components/ScreenHeader';
 import { useLanguage } from '../context/LanguageContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import {
-    iapInit,
-    iapEnd,
-    iapGetSubscriptions,
-    iapRequestSubscription,
-    iapGetAvailablePurchases,
-    iapFinishTransaction,
-    iapAddPurchaseListeners,
-    extractOriginalTransactionId,
-    isIapAvailable,
-    PREMIUM_MONTHLY_PRODUCT_ID,
-} from '../utils/iap';
-import { verifyIapReceipt } from '../api/iap';
+    purchasesConfigure,
+    purchasesGetMonthlyPackage,
+    purchasesPurchasePackage,
+    purchasesRestorePurchases,
+    purchasesGetProductInfoForDisplay,
+    isPurchasesAvailable,
+} from '../utils/purchases';
 
 const PremiumPlanScreen = ({ navigation }) => {
     const { theme } = useTheme();
@@ -27,83 +22,66 @@ const PremiumPlanScreen = ({ navigation }) => {
 
     const [loading, setLoading] = useState(false);
     const [restoring, setRestoring] = useState(false);
-    const [productInfo, setProductInfo] = useState(null);
+    const [priceDisplay, setPriceDisplay] = useState(null);
 
     useEffect(() => {
-        let unsub = () => {};
         let cancelled = false;
         (async () => {
-            const ok = await iapInit();
-            if (!ok) return;
-            const products = await iapGetSubscriptions([PREMIUM_MONTHLY_PRODUCT_ID]);
-            if (!cancelled && products && products.length > 0) {
-                setProductInfo(products[0]);
+            await purchasesConfigure();
+            const info = await purchasesGetProductInfoForDisplay();
+            if (!cancelled && info?.priceString) {
+                setPriceDisplay(info.priceString);
             }
-            unsub = iapAddPurchaseListeners(
-                async (purchase) => {
-                    try {
-                        const otid = extractOriginalTransactionId(purchase);
-                        if (otid) {
-                            await verifyIapReceipt({
-                                originalTransactionId: otid,
-                                productId: purchase?.productId,
-                            });
-                            await refresh();
-                        }
-                    } catch (e) {
-                        console.warn('verify after purchase failed', e?.message);
-                    } finally {
-                        await iapFinishTransaction(purchase);
-                    }
-                },
-                (err) => {
-                    if (err?.code === 'E_USER_CANCELLED') return;
-                    console.warn('iap purchase error', err?.message);
-                },
-            );
         })();
         return () => {
             cancelled = true;
-            try { unsub(); } catch (_) { /* noop */ }
-            iapEnd();
         };
-    }, [refresh]);
+    }, []);
 
     const handleSubscribe = useCallback(async () => {
-        if (!isIapAvailable()) {
+        if (!isPurchasesAvailable()) {
             Alert.alert(t('error') || 'エラー', t('iapNotAvailable') || '課金は実機ビルドでのみ利用できます。');
             return;
         }
         try {
             setLoading(true);
-            await iapRequestSubscription(PREMIUM_MONTHLY_PRODUCT_ID);
-            // 購入結果は purchaseUpdatedListener で処理する
-        } catch (e) {
-            if (e?.code !== 'E_USER_CANCELLED') {
-                Alert.alert(t('error') || 'エラー', e?.message || (t('subscribeFailed') || '購読処理に失敗しました'));
+            const pkg = await purchasesGetMonthlyPackage();
+            if (!pkg) {
+                Alert.alert(
+                    t('error') || 'エラー',
+                    t('subscribeFailed') || 'プラン情報を取得できませんでした。RevenueCat の Offering を確認してください。',
+                );
+                return;
             }
+            try {
+                await purchasesPurchasePackage(pkg);
+            } catch (e) {
+                if (e?.userCancelled === true || String(e?.code || '').includes('CANCEL')) {
+                    return;
+                }
+                throw e;
+            }
+            await refresh();
+        } catch (e) {
+            Alert.alert(t('error') || 'エラー', e?.message || (t('subscribeFailed') || '購読処理に失敗しました'));
         } finally {
             setLoading(false);
         }
-    }, [t]);
+    }, [t, refresh]);
 
     const handleRestore = useCallback(async () => {
-        if (!isIapAvailable()) {
+        if (!isPurchasesAvailable()) {
             Alert.alert(t('error') || 'エラー', t('iapNotAvailable') || '課金は実機ビルドでのみ利用できます。');
             return;
         }
         try {
             setRestoring(true);
-            const purchases = await iapGetAvailablePurchases();
-            const target = (purchases || []).find((p) => p?.productId === PREMIUM_MONTHLY_PRODUCT_ID);
-            if (!target) {
-                Alert.alert(t('completed') || '完了', t('restoreNotFound') || '購入履歴が見つかりませんでした。');
-                return;
+            try {
+                await purchasesRestorePurchases();
+            } catch (e) {
+                if (e?.userCancelled === true) return;
+                throw e;
             }
-            const otid = extractOriginalTransactionId(target);
-            if (!otid) throw new Error('missing_original_transaction_id');
-            await verifyIapReceipt({ originalTransactionId: otid, productId: target.productId });
-            await iapFinishTransaction(target);
             await refresh();
             Alert.alert(t('completed') || '完了', t('restoreSucceeded') || '購入履歴を復元しました。');
         } catch (e) {
@@ -114,7 +92,6 @@ const PremiumPlanScreen = ({ navigation }) => {
     }, [refresh, t]);
 
     const handleManageSubscription = useCallback(() => {
-        // App Store のサブスク管理画面に遷移（解約はここから）
         const url = Platform.OS === 'ios'
             ? 'https://apps.apple.com/account/subscriptions'
             : 'https://play.google.com/store/account/subscriptions';
@@ -126,7 +103,7 @@ const PremiumPlanScreen = ({ navigation }) => {
         try {
             const d = new Date(iso);
             return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
-        } catch (_) {
+        } catch {
             return '';
         }
     };
@@ -173,7 +150,7 @@ const PremiumPlanScreen = ({ navigation }) => {
                         <View style={[styles.priceCard, { backgroundColor: theme.colors.background }]}>
                             <View style={styles.priceRow}>
                                 <Text style={[styles.priceAmount, { color: theme.colors.primary }]}>
-                                    {productInfo?.localizedPrice || '¥980'}
+                                    {priceDisplay || '¥980'}
                                 </Text>
                                 <Text style={[styles.priceUnit, { color: theme.colors.secondaryText }]}>{t('perMonth')}</Text>
                             </View>
