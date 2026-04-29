@@ -8,6 +8,7 @@ import { getImageUrl } from '../utils/imageHelper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '../context/AuthContext';
 import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SERVER_URL } from '../config';
@@ -133,6 +134,7 @@ export default function RecordListScreen({ navigation }) {
     const insets = useSafeAreaInsets();
     const { categories, recordsByCategory, records, loadCategories, loadRecords, loadingCategories, loadingRecords } = useRecordsAndCategories();
     const { userInfo, userToken } = useContext(AuthContext);
+    const { isPremium } = useSubscription();
     const { theme } = useTheme();
     const { t, activeLanguage } = useLanguage();
     const horizontalScrollViewRef = useRef(null);
@@ -649,6 +651,17 @@ export default function RecordListScreen({ navigation }) {
                 {/* カテゴリタブUI */}
                 {renderCategoryTabs()}
 
+                {!isPremium ? (
+                    <View
+                        style={[
+                            styles.adBannerBelowTabs,
+                            { borderBottomColor: theme.colors.border, backgroundColor: theme.colors.background },
+                        ]}
+                    >
+                        <AdBanner />
+                    </View>
+                ) : null}
+
                 {/* 横スワイプ可能なカテゴリビュー */}
                 <ScrollView
                     ref={horizontalScrollViewRef}
@@ -898,7 +911,6 @@ export default function RecordListScreen({ navigation }) {
                 </BlurView>
             </Modal>
 
-            <AdBanner />
         </SafeAreaView>
     );
 }
@@ -1000,6 +1012,12 @@ const styles = StyleSheet.create({
     mainContent: {
         flex: 1,
         position: 'relative',
+    },
+    adBannerBelowTabs: {
+        width: '100%',
+        alignItems: 'center',
+        paddingVertical: 2,
+        borderBottomWidth: StyleSheet.hairlineWidth,
     },
     categoryTabsContainer: {
         paddingVertical: 6,
