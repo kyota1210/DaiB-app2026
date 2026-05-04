@@ -6,8 +6,12 @@ const UUID_SEGMENT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 /** postId は UUID または bigint 文字列 */
 const isPostIdPathSegment = (s) => UUID_SEGMENT.test(s) || /^\d+$/.test(s);
 
-/** アップロード時のファイル名: {timestamp}.{ext} */
-const isPostImageFilename = (s) => /^\d+\.[a-z0-9]{2,5}$/i.test(s);
+/** 投稿ストレージ上のファイル名（{timestamp}.jpg のほか、レガシー名も許容。パストラバーサルは除外） */
+const isPostImageFilename = (s) => {
+    if (!s || typeof s !== 'string') return false;
+    if (s.includes('..') || s.includes('/') || s.includes('\\')) return false;
+    return /\.(jpe?g|png|webp|gif|heic|avif)$/i.test(s);
+};
 
 /**
  * DB の image_url をバケット内オブジェクトキーに揃える。

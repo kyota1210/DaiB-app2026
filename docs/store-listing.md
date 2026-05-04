@@ -155,9 +155,9 @@ iOS 必須サイズ（[Apple ガイドライン](https://developer.apple.com/hel
 | Name（user_name 含む） | Yes | App Functionality | Supabase |
 | User Content（投稿、写真、コメント等） | Yes | App Functionality | Supabase |
 | Photos（投稿に添付） | Yes | App Functionality | Supabase |
-| User ID（uuid） | Yes | App Functionality, Analytics | Supabase, Sentry（導入後） |
+| User ID（uuid） | Yes | App Functionality, Analytics | Supabase（自社運営扱い） |
 | Purchases（IAP） | Yes | App Functionality | Apple |
-| Crash Data | Yes | App Functionality, Analytics | Sentry（導入後） |
+| Crash Data | No | — | アプリに組み込んだ第三者クラッシュ SDK はなし（ストア・OS が収集するクラッシュは各提供者のポリシーに従う） |
 
 ### 5.2 Data Used to Track You（広告のためにトラッキング）
 

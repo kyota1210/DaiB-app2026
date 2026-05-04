@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions, ScrollView as RNScrollView, TextInput, Platform, Modal, KeyboardAvoidingView, ActivityIndicator, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions, ScrollView as RNScrollView, TextInput, Platform, Modal, KeyboardAvoidingView, ActivityIndicator, Keyboard, TouchableWithoutFeedback, InteractionManager } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,7 +20,7 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function PhotoPickerScreen({ navigation, route }) {
     const insets = useSafeAreaInsets();
-    const { userToken } = useContext(AuthContext);
+    const { userToken, userInfo } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
     const { isPremium } = useSubscription();
@@ -78,6 +78,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
     // 各入力フィールドのref
     const titleInputRef = useRef(null);
     const captionInputRef = useRef(null);
+    const screenMountedRef = useRef(true);
 
     const closeTimelineDropdown = useCallback(() => {
         setTimelineDropdownOpen(false);
@@ -103,6 +104,13 @@ export default function PhotoPickerScreen({ navigation, route }) {
     useEffect(() => {
         loadCategories();
     }, [loadCategories]);
+
+    useEffect(() => {
+        screenMountedRef.current = true;
+        return () => {
+            screenMountedRef.current = false;
+        };
+    }, []);
 
     // キーボードイベントリスナー
     useEffect(() => {
@@ -242,11 +250,35 @@ export default function PhotoPickerScreen({ navigation, route }) {
                 await createRecord(recordData);
                 await loadRecords(); // キャッシュを更新
                 setShowSuccessModal(true);
-                showInterstitialIfReady({ isPremium }).catch(() => { /* noop */ });
-                setTimeout(() => {
-                    setShowSuccessModal(false);
-                    navigation.goBack();
-                }, 2000);
+                // インタースティシャルと goBack を同時に走らせない（広告表示中/直後の goBack で
+                // 下の画面のタッチが死ぬことがある）。成功表示 → 広告終了待ち → 遷移の順にする。
+                (async () => {
+                    try {
+                        await new Promise((r) => setTimeout(r, 1200));
+                        if (!screenMountedRef.current) return;
+                        setShowSuccessModal(false);
+                        await new Promise((r) => InteractionManager.runAfterInteractions(() => r()));
+                        if (!screenMountedRef.current) return;
+                        try {
+                            await showInterstitialIfReady({
+                                isPremium,
+                                userId: userInfo?.id,
+                            });
+                        } catch (_) {
+                            /* noop */
+                        }
+                        if (!screenMountedRef.current) return;
+                        await new Promise((r) => InteractionManager.runAfterInteractions(() => r()));
+                        if (!screenMountedRef.current) return;
+                        if (navigation.canGoBack()) {
+                            navigation.goBack();
+                        }
+                    } catch (_) {
+                        if (screenMountedRef.current && navigation.canGoBack()) {
+                            navigation.goBack();
+                        }
+                    }
+                })();
             }
         } catch (error) {
             const isBlocked =

@@ -58,7 +58,7 @@ export default function App() {
   }, []);
 
   React.useEffect(() => {
-    // AdMob 初期化（ATT / UMP CMP を内部で要求）→ それを踏まえて Sentry/Analytics を初期化。
+    // AdMob 初期化（ATT / UMP CMP を内部で要求）→ それを踏まえて Analytics（スタブ）を初期化。
     // Expo Go ではネイティブモジュールが無いため失敗する → 握り潰す。
     (async () => {
       let trackingAuthorized = false;

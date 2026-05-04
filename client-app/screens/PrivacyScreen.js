@@ -90,7 +90,6 @@ const PrivacyScreen = ({ navigation }) => {
                         ・Apple（iOS のアプリ内課金・通知。Apple Inc.）{'\n'}
                         ・Google（Android 配信時の Play 課金。Google LLC）{'\n'}
                         ・Google AdMob（広告配信。無料プラン利用時。広告 ID・端末情報・大まかな位置情報を含む場合があります）{'\n'}
-                        ・Sentry（クラッシュレポート。導入時はエラー文脈と匿名化したユーザー識別子を送信）{'\n'}
                         ・Expo / React Native（アプリ実行基盤。Expo Application Services によるビルド配信）
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>

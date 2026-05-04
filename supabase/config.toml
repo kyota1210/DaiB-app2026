@@ -63,3 +63,7 @@ verify_jwt = false
 # Edge Function: お問い合わせ受信（F0-6 で実装）
 [functions.submit-contact]
 verify_jwt = true
+
+# Edge Function: 画像モデレーション（Vision SafeSearch）
+[functions.moderate-image]
+verify_jwt = true

@@ -761,10 +761,10 @@ export const rejectIncomingFollow = async (followerId) => {
 export const getTimeline = async () => {
   const { data, error } = await supabase.rpc('get_timeline_posts');
   if (error) throw mapSupabaseError(error);
-  // user_id を author_id にマッピング
+  // RPC は r.user_id as author_id のみ返す（user_id 列は無い）。undefined で上書きしない。
   const records = (data || []).map((r) => ({
     ...r,
-    author_id: r.user_id,
+    author_id: r.author_id ?? r.user_id,
   }));
   return { records, memoryResurface: null };
 };

@@ -101,10 +101,6 @@
         }
       ],
       [
-        "react-native-purchases",
-        {}
-      ],
-      [
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-3940256099942544~3347511713",
@@ -112,7 +108,6 @@
           "userTrackingUsageDescription": "より関連性の高い広告を表示するために、広告識別子を使用します。"
         }
       ],
-      "@sentry/react-native/expo"
     ],
     "extra": {
       "eas": {

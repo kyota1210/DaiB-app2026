@@ -13,7 +13,6 @@ export const moderateImage = async ({ bucket, path }) => {
     if (error) {
         // Vision 未設定 / 一時エラーの場合は失敗を握り潰し、allow 扱いにする。
         // ここで投稿を止めると、Vision API の障害でアプリが詰むため。
-        console.warn('moderateImage error (treat as allow):', error?.message ?? error);
         return { ok: false, decision: 'allow', scores: null };
     }
     return data ?? { ok: true, decision: 'allow', scores: null };

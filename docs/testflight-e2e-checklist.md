@@ -14,7 +14,7 @@ App Store 提出前に preview ビルドを TestFlight に配布し、本書の�
 - [ ] 実機で「設定 → App Store → Sandbox Account」に Sandbox テスターでサインイン
 - [ ] Supabase prod or staging に `subscriptions` / `reports` / `user_blocks` migration が適用済み
 - [ ] Apple App Store Server Notifications V2 の URL が設定済み（[store-listing.md §6.4](store-listing.md)）
-- [ ] EAS Secrets に AdMob / Sentry / IAP product ID が登録済み（[eas-build-guide.md §3](eas-build-guide.md)）
+- [ ] EAS Secrets に AdMob / IAP product ID が登録済み（[eas-build-guide.md §3](eas-build-guide.md)）
 
 ---
 
@@ -92,7 +92,7 @@ App Store 提出前に preview ビルドを TestFlight に配布し、本書の�
 | シナリオ | 期待動作 | 結果 |
 |---|---|---|
 | 利用規約 | 課金条項・広告条項・通報モデレーション条項あり | [ ] |
-| プライバシーポリシー | 第三者広告 SDK / IAP / Sentry 記載あり | [ ] |
+| プライバシーポリシー | 第三者広告 SDK / IAP 記載あり | [ ] |
 | 特商法表記画面 | 運営事業者・住所・連絡先・サブスク料金/解約方法あり | [ ] |
 | About 画面 | 技術スタック（Supabase）、特商法へのリンクあり | [ ] |
 
@@ -102,9 +102,8 @@ App Store 提出前に preview ビルドを TestFlight に配布し、本書の�
 
 | シナリオ | 期待動作 | 結果 |
 |---|---|---|
-| Sentry にユーザー ID 連携 | `user.id` のみ送信、メール/名前は送らない | [ ] |
-| 強制クラッシュ（Sentry テスト） | Sentry に Issue が起票される | [ ] |
-| ATT 拒否時 | analytics オプトアウト、Sentry の `sendDefaultPii` も false | [ ] |
+| Supabase / Log Drain | `revenuecat-webhook` 等のエラーがログに残る（[ops-monitoring.md](ops-monitoring.md)） | [ ] |
+| ATT 拒否時 | アプリ内 analytics スタブは送信しない（開発時は `trackEvent` が no-op） | [ ] |
 
 ---
 

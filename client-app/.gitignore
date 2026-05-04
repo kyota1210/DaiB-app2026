@@ -40,5 +40,4 @@ yarn-error.*
 /ios
 /android
 
-# local config
-config.js
+# 注意: config.js は EXPO_PUBLIC_* を読むアプリ共通コードなので Git 追跡する（ローカルのみ値は .env で）

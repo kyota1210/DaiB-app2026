@@ -103,6 +103,20 @@ supabase secrets set \
 # お問い合わせ転送用（任意）
 supabase secrets set \
   CONTACT_NOTIFY_WEBHOOK=https://<運用通知 Webhook 等>
+
+# 画像モデレーション（moderate-image。未設定なら関数内で判定スキップ＝allow）
+supabase secrets set \
+  GOOGLE_CLOUD_VISION_API_KEY=<Google Cloud Vision API Key>
+```
+
+リポジトリ内の関数本体は `supabase/functions/<名前>/index.ts`。デプロイ例（リンク済みプロジェクトへ）：
+
+```bash
+supabase functions deploy invite-redirect
+supabase functions deploy delete-account
+supabase functions deploy revenuecat-webhook
+supabase functions deploy submit-contact
+supabase functions deploy moderate-image
 ```
 
 ### 4.2 Service Role Key

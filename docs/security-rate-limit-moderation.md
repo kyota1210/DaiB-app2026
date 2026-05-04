@@ -52,7 +52,7 @@ select public.rate_limit_cleanup(86400 * 7); -- 7 日より古い行を削除
 
 ### 2.2 判定エンジン
 
-Google Cloud Vision API の SafeSearch を使用。`VISION_API_KEY` 環境変数（Supabase Edge Secrets）で有効化。未設定時は判定をスキップ（== allow）し、アプリは止めない。
+Google Cloud Vision API の SafeSearch を使用。Edge Secrets の **`GOOGLE_CLOUD_VISION_API_KEY`** で有効化。未設定なら判定をスキップ（== allow）し、アプリは止めない。
 
 ### 2.3 判定基準
 
@@ -81,10 +81,10 @@ Likelihood: `UNKNOWN(0) / VERY_UNLIKELY(1) / UNLIKELY(2) / POSSIBLE(3) / LIKELY(
 ### 2.6 Edge Function のシークレット
 
 ```
-supabase secrets set VISION_API_KEY=xxxx --project-ref <ref>
+supabase secrets set GOOGLE_CLOUD_VISION_API_KEY=xxxxxxx --project-ref <ref>
 ```
 
-未設定時は安全側（allow）に倒れるが、本番は必ず設定する。
+未設定時は安全側（allow）に倒れるが、本番は必ず `GOOGLE_CLOUD_VISION_API_KEY` を設定する。
 
 ---
 
@@ -94,5 +94,5 @@ supabase secrets set VISION_API_KEY=xxxx --project-ref <ref>
 - [ ] `delete-account` を立て続けに呼ぶ → 4 回目が 429
 - [ ] （廃止）旧 `verify-iap-receipt` のユーザー単位レート制限は削除済み。Webhook はシークレット検証のみ。
 - [ ] `moderate-image` に他人の `<userId>/` パスを渡す → 403
-- [ ] `VISION_API_KEY` 未設定時、投稿が問題なく作成できる
-- [ ] `VISION_API_KEY` 設定 + NSFW テスト画像で `block` 判定 → 投稿失敗 + ストレージから削除されている
+- [ ] `GOOGLE_CLOUD_VISION_API_KEY` 未設定時、投稿が問題なく作成できる
+- [ ] `GOOGLE_CLOUD_VISION_API_KEY` 設定 + NSFW テスト画像で `block` 判定 → 投稿失敗 + ストレージから削除されている

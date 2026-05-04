@@ -4,13 +4,16 @@
 // クライアントは画像を Storage にアップロードした後、その bucket + path を渡してくる。
 // 本 Function 内で signed URL を発行し、Google Cloud Vision SafeSearch API で判定する。
 //
-// VISION_API_KEY が未設定の場合は判定をスキップ（== ok）して返す。
+// GOOGLE_CLOUD_VISION_API_KEY が未設定の場合は判定をスキップ（== ok）して返す。
 // これにより、開発環境や Vision API 未契約状態でもアプリは止まらない。
+//
+// Secrets 設定例（本番では xxxxxxx の代わりに実キー）:
+//   supabase secrets set GOOGLE_CLOUD_VISION_API_KEY=xxxxxxx --project-ref <ref>
 //
 // リクエスト:
 //   POST /functions/v1/moderate-image
 //   Authorization: Bearer <user JWT>
-//   Body: { "bucket": "posts", "path": "<userId>/<postId>/<file>.jpg" }
+//   Body: { "bucket": "posts" | "records" | "daib-dev-post-images" | "avatars", "path": "<userId>/..." }
 //
 // レスポンス:
 //   200 { ok: true, decision: "allow" | "review" | "block", scores: {...} }
@@ -24,9 +27,14 @@ const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 
 // Google Cloud Vision API key（Cloud Console で発行 / API 制限を Vision に絞る）
-const VISION_API_KEY = Deno.env.get('VISION_API_KEY') ?? '';
+const visionApiKey = Deno.env.get('GOOGLE_CLOUD_VISION_API_KEY') ?? '';
 
-const ALLOWED_BUCKETS = new Set(['posts', 'avatars']);
+// 投稿画像バケット: 標準は posts。migrations で records / daib-dev-post-images を使う環境との整合。
+const ALLOWED_BUCKETS = new Set([
+    'posts',
+    'avatars',
+    'daib-dev-post-images',
+]);
 
 // SafeSearch の各カテゴリでこのレベル以上なら block（VERY_LIKELY = 5, LIKELY = 4, POSSIBLE = 3）
 const BLOCK_LEVEL = 4; // LIKELY 以上
@@ -65,7 +73,7 @@ const callVisionSafeSearch = async (signedUrl: string): Promise<SafeSearchScores
         ],
     };
     const res = await fetch(
-        `https://vision.googleapis.com/v1/images:annotate?key=${VISION_API_KEY}`,
+        `https://vision.googleapis.com/v1/images:annotate?key=${visionApiKey}`,
         {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
@@ -117,7 +125,9 @@ Deno.serve(async (req) => {
     const bucket = String(payload.bucket ?? '').trim();
     const path = String(payload.path ?? '').trim();
     if (!bucket || !path) return json(400, { error: 'missing_fields' });
-    if (!ALLOWED_BUCKETS.has(bucket)) return json(400, { error: 'invalid_bucket' });
+    if (!ALLOWED_BUCKETS.has(bucket)) {
+        return json(400, { error: 'invalid_bucket', bucket, allowed: [...ALLOWED_BUCKETS] });
+    }
 
     const userClient = createClient(SUPABASE_URL, ANON_KEY || SERVICE_ROLE_KEY, {
         global: { headers: { Authorization: authHeader } },
@@ -143,7 +153,7 @@ Deno.serve(async (req) => {
     }
 
     // Vision API 未設定なら判定スキップ
-    if (!VISION_API_KEY) {
+    if (!visionApiKey) {
         return json(200, {
             ok: true,
             decision: 'allow',
@@ -166,7 +176,7 @@ Deno.serve(async (req) => {
         scores = await callVisionSafeSearch(signed.signedUrl);
     } catch (e) {
         // Vision 側エラー時は allow にフォールバック（投稿を止めない）。
-        // ただしログを残し、Sentry 経由でアラート対象にする。
+        // ただしログを残し、運用でモニタリングする。
         console.error(JSON.stringify({
             scope: 'moderate-image',
             step: 'vision-api',

@@ -53,9 +53,6 @@ npx eas-cli secret:create --scope project --name EXPO_PUBLIC_ADMOB_IOS_INTERSTIT
 
 # F2-2b で IAP 導入後に追加
 npx eas-cli secret:create --scope project --name EXPO_PUBLIC_IAP_PRODUCT_ID_PREMIUM_MONTHLY --value 'com.kytm1210.daibapp2026.premium.monthly'
-
-# F2-4 で Sentry 導入後に追加
-npx eas-cli secret:create --scope project --name EXPO_PUBLIC_SENTRY_DSN --value 'https://xxxx@oXXXX.ingest.sentry.io/XXXX'
 ```
 
 > **環境ごとに値を分けたい場合**は、`eas.json` の各 build プロファイルの `env` ブロックに値を直接書く（公開してよいIDのみ）か、`--scope project` ではなく `--profile <name>` を使ってプロファイル単位の Secret を登録する。

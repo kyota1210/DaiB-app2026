@@ -6,7 +6,19 @@
 node_modules
 npm-debug.log
 .env
+# 環境ファイル（公開テンプレ *.env.example は追跡する）
+.env.*
+!.env.example
+!client-app/.env.example
+!server-api/.env.example
+
 .DS_Store
+
+# --------------------------
+# Supabase CLI のローカル状態（リンク・キャッシュ／秘密が残ることがある）
+# --------------------------
+.supabase/
+supabase/.temp/
 
 # client-app のビルド結果
 client-app/web-build/
