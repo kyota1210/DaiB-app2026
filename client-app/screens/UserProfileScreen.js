@@ -114,9 +114,21 @@ const UserProfileScreen = ({ navigation, route }) => {
     const handleMoreActions = () => {
         if (isMe || !user) return;
         const userName = (user.user_name || '').trim() || t('thisUser');
-        const buttons = [
-            { text: t('report'), onPress: () => setReportVisible(true) },
-        ];
+        const buttons = [];
+        if (user.is_friend) {
+            buttons.push({
+                text: t('removeFriend'),
+                style: 'destructive',
+                onPress: () => {
+                    const message = t('removeFriendConfirmWithName').replace('{{name}}', userName);
+                    Alert.alert('', message, [
+                        { text: t('cancel'), style: 'cancel' },
+                        { text: t('removeFriend'), style: 'destructive', onPress: () => doUnfollow() },
+                    ]);
+                },
+            });
+        }
+        buttons.push({ text: t('report'), onPress: () => setReportVisible(true) });
         if (blocked) {
             buttons.push({ text: t('unblockUser'), onPress: handleUnblock });
         } else {
@@ -192,58 +204,8 @@ const UserProfileScreen = ({ navigation, route }) => {
         }
     };
 
-    if (userId == null) {
-        return (
-            <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
-                <View style={[styles.topBar, { borderBottomColor: theme.colors.border }]}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
-                    </TouchableOpacity>
-                    <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{t('profile')}</Text>
-                    <View style={styles.placeholder} />
-                </View>
-                <View style={styles.centered}>
-                    <Text style={[styles.errorText, { color: theme.colors.secondaryText }]}>{t('userNotFound')}</Text>
-                </View>
-            </SafeAreaView>
-        );
-    }
-
-    if (loading) {
-        return (
-            <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
-                <View style={[styles.topBar, { borderBottomColor: theme.colors.border }]}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
-                    </TouchableOpacity>
-                    <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{t('profile')}</Text>
-                    <View style={styles.placeholder} />
-                </View>
-                <View style={styles.centered}>
-                    <ActivityIndicator size="large" color={theme.colors.primary} />
-                </View>
-            </SafeAreaView>
-        );
-    }
-
-    if (!user) {
-        return (
-            <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
-                <View style={[styles.topBar, { borderBottomColor: theme.colors.border }]}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
-                    </TouchableOpacity>
-                    <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{t('profile')}</Text>
-                    <View style={styles.placeholder} />
-                </View>
-                <View style={styles.centered}>
-                    <Text style={[styles.errorText, { color: theme.colors.secondaryText }]}>{t('userNotFound')}</Text>
-                </View>
-            </SafeAreaView>
-        );
-    }
-
-    const avatarUrl = getImageUrl(user.avatar_url, user.updated_at);
+    const avatarUrl = user ? getImageUrl(user.avatar_url, user.updated_at) : null;
+    const headerTitle = loading ? '' : (user?.user_name || t('profile'));
 
     const openRecordDetail = (index) => {
         skipRefetchOnNextFocusRef.current = true;
@@ -276,61 +238,110 @@ const UserProfileScreen = ({ navigation, route }) => {
         );
     };
 
-    const listHeader = (
-        <View style={styles.profileHeaderWrap}>
-            <View style={styles.profileBlock}>
-                {avatarUrl ? (
-                    <Image source={{ uri: avatarUrl }} style={styles.avatar} />
-                ) : (
-                    <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.border }]}>
-                        <Ionicons name="person" size={48} color={theme.colors.inactive} />
-                    </View>
-                )}
-                <Text style={[styles.userName, { color: theme.colors.text }]}>{user.user_name || ''}</Text>
-                {recordsLoading ? <ActivityIndicator size="small" color={theme.colors.primary} style={styles.recordsLoader} /> : null}
-            </View>
-        </View>
-    );
-
-    const listFooter = (
-        <View style={styles.followButtonWrap}>
-            {isMe ? (
-                <TouchableOpacity
-                    style={[styles.followButton, { backgroundColor: theme.colors.secondaryBackground }]}
-                    onPress={() => navigation.navigate('MyPage')}
-                >
-                    <Text style={[styles.followButtonText, { color: theme.colors.text }]}>{t('settings')}</Text>
-                </TouchableOpacity>
-            ) : (
-                <TouchableOpacity
-                    style={[
-                        styles.followButton,
-                        (user.is_friend || user.is_following)
-                            ? { backgroundColor: theme.colors.secondaryBackground }
-                            : { backgroundColor: theme.colors.primary },
-                    ]}
-                    onPress={handleAction}
-                    disabled={followBusy}
-                >
-                    {followBusy ? (
-                        <ActivityIndicator size="small" color={theme.colors.text} />
+    const renderContent = () => {
+        if (userId == null || (!loading && !user)) {
+            return (
+                <View style={styles.centered}>
+                    <Text style={[styles.errorText, { color: theme.colors.secondaryText }]}>{t('userNotFound')}</Text>
+                </View>
+            );
+        }
+        if (loading) {
+            return (
+                <View style={styles.centered}>
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                </View>
+            );
+        }
+        const listHeader = (
+            <View style={styles.profileHeaderWrap}>
+                <View style={styles.profileBlock}>
+                    {avatarUrl ? (
+                        <Image source={{ uri: avatarUrl }} style={styles.avatar} />
                     ) : (
-                        <Text style={[styles.followButtonText, {
-                            color: (user.is_friend || user.is_following) ? theme.colors.text : '#fff',
-                        }]}>
-                            {user.is_friend
-                                ? t('removeFriend')
-                                : user.is_following
+                        <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.border }]}>
+                            <Ionicons name="person" size={48} color={theme.colors.inactive} />
+                        </View>
+                    )}
+                    <Text style={[styles.userName, { color: theme.colors.text }]}>{user.user_name || ''}</Text>
+                    {recordsLoading ? <ActivityIndicator size="small" color={theme.colors.primary} style={styles.recordsLoader} /> : null}
+                </View>
+            </View>
+        );
+
+        const listFooter = (
+            <View style={styles.followButtonWrap}>
+                {isMe ? (
+                    <TouchableOpacity
+                        style={[styles.followButton, { backgroundColor: theme.colors.secondaryBackground }]}
+                        onPress={() => navigation.navigate('MyPage')}
+                    >
+                        <Text style={[styles.followButtonText, { color: theme.colors.text }]}>{t('settings')}</Text>
+                    </TouchableOpacity>
+                ) : !user.is_friend ? (
+                    <TouchableOpacity
+                        style={[
+                            styles.followButton,
+                            user.is_following
+                                ? { backgroundColor: theme.colors.secondaryBackground }
+                                : { backgroundColor: theme.colors.primary },
+                        ]}
+                        onPress={handleAction}
+                        disabled={followBusy}
+                    >
+                        {followBusy ? (
+                            <ActivityIndicator size="small" color={theme.colors.text} />
+                        ) : (
+                            <Text style={[styles.followButtonText, {
+                                color: user.is_following ? theme.colors.text : '#fff',
+                            }]}>
+                                {user.is_following
                                     ? t('cancelFriendRequest')
                                     : user.is_followed_by && !user.is_followed_by_approved
                                         ? t('approveFriendRequest')
                                         : t('follow')}
-                        </Text>
-                    )}
-                </TouchableOpacity>
-            )}
-        </View>
-    );
+                            </Text>
+                        )}
+                    </TouchableOpacity>
+                ) : null}
+            </View>
+        );
+
+        return (
+            <>
+                {blocked ? (
+                    <View style={[styles.blockedBanner, { backgroundColor: theme.colors.secondaryBackground }]}>
+                        <Ionicons name="hand-left-outline" size={16} color={theme.colors.secondaryText} />
+                        <Text style={[styles.blockedText, { color: theme.colors.secondaryText }]}>{t('blockedNotice')}</Text>
+                    </View>
+                ) : null}
+                <ReportSheet
+                    visible={reportVisible}
+                    onClose={() => setReportVisible(false)}
+                    targetType="user"
+                    targetId={user.id}
+                    targetLabel={user.user_name || ''}
+                />
+                <FlatList
+                    data={records}
+                    keyExtractor={(item) => String(item.id)}
+                    renderItem={renderRecordItem}
+                    ListHeaderComponent={listHeader}
+                    ListFooterComponent={listFooter}
+                    numColumns={NUM_COLUMNS}
+                    columnWrapperStyle={styles.recordRow}
+                    contentContainerStyle={styles.listContent}
+                    ListEmptyComponent={
+                        !recordsLoading && records.length === 0 ? (
+                            <View style={styles.emptyRecords}>
+                                <Text style={[styles.emptyRecordsText, { color: theme.colors.secondaryText }]}>{t('noRecords')}</Text>
+                            </View>
+                        ) : null
+                    }
+                />
+            </>
+        );
+    };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
@@ -338,8 +349,8 @@ const UserProfileScreen = ({ navigation, route }) => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.colors.text }]} numberOfLines={1}>{user.user_name || t('profile')}</Text>
-                {isMe ? (
+                <Text style={[styles.headerTitle, { color: theme.colors.text }]} numberOfLines={1}>{headerTitle}</Text>
+                {isMe || !user ? (
                     <View style={styles.placeholder} />
                 ) : (
                     <TouchableOpacity onPress={handleMoreActions} style={styles.backButton} accessibilityLabel={t('report')}>
@@ -347,39 +358,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                     </TouchableOpacity>
                 )}
             </View>
-
-            {blocked ? (
-                <View style={[styles.blockedBanner, { backgroundColor: theme.colors.secondaryBackground }]}>
-                    <Ionicons name="hand-left-outline" size={16} color={theme.colors.secondaryText} />
-                    <Text style={[styles.blockedText, { color: theme.colors.secondaryText }]}>{t('blockedNotice')}</Text>
-                </View>
-            ) : null}
-
-            <ReportSheet
-                visible={reportVisible}
-                onClose={() => setReportVisible(false)}
-                targetType="user"
-                targetId={user.id}
-                targetLabel={user.user_name || ''}
-            />
-
-            <FlatList
-                data={records}
-                keyExtractor={(item) => String(item.id)}
-                renderItem={renderRecordItem}
-                ListHeaderComponent={listHeader}
-                ListFooterComponent={listFooter}
-                numColumns={NUM_COLUMNS}
-                columnWrapperStyle={styles.recordRow}
-                contentContainerStyle={styles.listContent}
-                ListEmptyComponent={
-                    !recordsLoading && records.length === 0 ? (
-                        <View style={styles.emptyRecords}>
-                            <Text style={[styles.emptyRecordsText, { color: theme.colors.secondaryText }]}>{t('noRecords')}</Text>
-                        </View>
-                    ) : null
-                }
-            />
+            {renderContent()}
         </SafeAreaView>
     );
 };
