@@ -632,9 +632,10 @@ const styles = StyleSheet.create({
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     listContent: { padding: 12, paddingBottom: 80 },
     inlineAdWrap: {
-        width: '100%',
+        marginBottom: 12,
+        borderRadius: 12,
+        overflow: 'hidden',
         alignItems: 'center',
-        paddingVertical: 4,
     },
     emptyContainer: { flex: 1, justifyContent: 'center', paddingBottom: 80 },
     emptyState: { alignItems: 'center', paddingVertical: 48 },
