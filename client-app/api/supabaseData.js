@@ -367,7 +367,7 @@ export const reorderCategories = async (categoryIds) => {
   return { message: '並び順を更新しました。' };
 };
 
-const POST_LIST_COLS = 'id,title,description,date_logged,image_url,show_in_timeline';
+const POST_LIST_COLS = 'id,title,description,date_logged,image_url,show_in_timeline,visibility';
 
 const mapRecordRow = (row) => ({
   id: row.id,
@@ -376,6 +376,7 @@ const mapRecordRow = (row) => ({
   date_logged: row.date_logged,
   image_url: row.image_url || null,
   show_in_timeline: !!row.show_in_timeline,
+  visibility: row.visibility || 'public',
   category_ids: row.post_categories?.map((x) => x.category_id) || [],
 });
 
@@ -471,7 +472,8 @@ export const createRecord = async (recordData) => {
       description: recordData.description || '',
       date_logged: recordData.date_logged,
       image_url: null,
-      show_in_timeline: asBooleanTimelineFlag(recordData.show_in_timeline),
+      visibility: recordData.visibility || 'public',
+      show_in_timeline: (recordData.visibility || 'public') === 'public',
     })
     .select('id')
     .single();
@@ -524,7 +526,10 @@ export const updateRecord = async (id, recordData) => {
     description: recordData.description || '',
     date_logged: recordData.date_logged,
   };
-  if (recordData.show_in_timeline !== undefined) {
+  if (recordData.visibility !== undefined) {
+    patch.visibility = recordData.visibility;
+    patch.show_in_timeline = recordData.visibility === 'public';
+  } else if (recordData.show_in_timeline !== undefined) {
     patch.show_in_timeline = asBooleanTimelineFlag(recordData.show_in_timeline);
   }
   if (recordData.imageUri && !recordData.imageUri.startsWith('http')) {
@@ -705,17 +710,22 @@ export const getFriends = async () => {
 
 export const getOtherUserRecords = async (userId) => {
   const viewer = await requireUser();
-  if (viewer.id !== userId) {
+  const isOwner = viewer.id === userId;
+  if (!isOwner) {
     const st = await getFollowStatus(viewer.id, userId);
     if (!st.is_friend) return { records: [], is_friend: false };
   }
-  const { data, error } = await supabase
+  let query = supabase
     .from('posts')
     .select(POST_LIST_COLS)
     .eq('user_id', userId)
     .eq('invalidation_flag', FLAG_ACTIVE)
     .order('date_logged', { ascending: false })
     .order('id', { ascending: false });
+  if (!isOwner) {
+    query = query.neq('visibility', 'private');
+  }
+  const { data, error } = await query;
   if (error) throw mapSupabaseError(error);
   const catMap = await categoryIdsMapForPosts((data || []).map((p) => p.id));
   return { records: attachCategoriesToPostRows(data, catMap), is_friend: true };

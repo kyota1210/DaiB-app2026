@@ -108,10 +108,17 @@ export default {
     editRecord: 'Edit Record',
     creating: 'Creating...',
     required: '*',
+    audience: 'Audience',
     showInTimeline: 'Show in thread',
-    threadDisplaySetting: 'Thread display',
+    threadDisplaySetting: 'Visibility',
     showInTimelineYes: 'Show',
     showInTimelineNo: "Don't show",
+    visibility_public: 'Public',
+    visibility_public_desc: 'Shown in the thread',
+    visibility_friends: 'Thread private',
+    visibility_friends_desc: 'Not shown in the thread',
+    visibility_private: 'Completely private',
+    visibility_private_desc: 'Only visible in your own post list',
     
     // Login/Signup
     login: 'Login',

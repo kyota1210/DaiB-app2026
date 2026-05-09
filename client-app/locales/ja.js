@@ -108,10 +108,17 @@ export default {
     editRecord: '記録を編集',
     creating: '作成中...',
     required: '*',
+    audience: 'オーディエンス',
     showInTimeline: 'スレッドに表示する',
-    threadDisplaySetting: 'スレッド表示設定',
+    threadDisplaySetting: '公開範囲',
     showInTimelineYes: '表示する',
     showInTimelineNo: '表示しない',
+    visibility_public: '公開',
+    visibility_public_desc: 'スレッド画面に表示されます',
+    visibility_friends: 'スレッド非公開',
+    visibility_friends_desc: 'スレッド画面に表示されません',
+    visibility_private: '完全非公開',
+    visibility_private_desc: 'あなたの投稿一覧にのみ表示されます',
     
     // ログイン・サインアップ
     login: 'ログイン',

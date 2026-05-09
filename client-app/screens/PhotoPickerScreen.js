@@ -54,18 +54,15 @@ export default function PhotoPickerScreen({ navigation, route }) {
         if (editRecord?.category_id) return [editRecord.category_id];
         return [];
     });
-    const [showInTimeline, setShowInTimeline] = useState(
-        editRecord
-            ? !(
-                  editRecord.show_in_timeline === false ||
-                  editRecord.show_in_timeline === 0 ||
-                  editRecord.show_in_timeline === '0'
-              )
-            : true
-    );
-    const [timelineDropdownOpen, setTimelineDropdownOpen] = useState(false);
-    const [timelineDropdownAnchor, setTimelineDropdownAnchor] = useState(null);
-    const timelineSelectWrapRef = useRef(null);
+    const [visibility, setVisibility] = useState(() => {
+        if (!editRecord) return 'public';
+        if (editRecord.visibility) return editRecord.visibility;
+        // 旧データ（visibility未設定）は show_in_timeline から変換
+        const sil = editRecord.show_in_timeline;
+        if (sil === false || sil === 0 || sil === '0') return 'friends';
+        return 'public';
+    });
+    const [visibilitySheetOpen, setVisibilitySheetOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showErrorModal, setShowErrorModal] = useState(false);
@@ -80,21 +77,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
     const captionInputRef = useRef(null);
     const screenMountedRef = useRef(true);
 
-    const closeTimelineDropdown = useCallback(() => {
-        setTimelineDropdownOpen(false);
-        setTimelineDropdownAnchor(null);
-    }, []);
-
-    const toggleTimelineDropdown = useCallback(() => {
-        if (timelineDropdownOpen) {
-            closeTimelineDropdown();
-            return;
-        }
-        timelineSelectWrapRef.current?.measureInWindow((x, y, width, height) => {
-            setTimelineDropdownAnchor({ x, y, width, height });
-            setTimelineDropdownOpen(true);
-        });
-    }, [timelineDropdownOpen, closeTimelineDropdown]);
+    const closeVisibilitySheet = useCallback(() => setVisibilitySheetOpen(false), []);
     
     const { createRecord, updateRecord } = useRecordsApi();
     const { categories, loadCategories, loadingCategories, loadRecords, records } = useRecordsAndCategories();
@@ -228,9 +211,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
                 date_logged: `${y}-${m}-${d}`, 
                 category_ids: selectedCategoryIds,
             };
-            if (!isEditMode) {
-                recordData.show_in_timeline = showInTimeline;
-            }
+            recordData.visibility = visibility;
             // New post: always send local image URI. Edit: only when user picked a new image.
             if (!isEditMode) {
                 recordData.imageUri = selectedImage;
@@ -381,7 +362,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
                         keyboardShouldPersistTaps="handled"
                         showsVerticalScrollIndicator={false}
                         scrollEnabled={true}
-                        onScrollBeginDrag={closeTimelineDropdown}
+                        onScrollBeginDrag={closeVisibilitySheet}
                     >
                         {selectedImage ? (
                             <>
@@ -535,108 +516,84 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                         )}
                                     </View>
 
-                                    {/* スレッドに表示する（新規作成時のみ） */}
-                                    {!isEditMode && (
-                                        <View style={styles.inputGroup}>
-                                            <Text style={[styles.label, { color: theme.colors.secondaryText }]}>
-                                                {t('threadDisplaySetting')}
+                                    {/* オーディエンス */}
+                                    <TouchableOpacity
+                                        style={[styles.audienceRow, { borderColor: theme.colors.border }]}
+                                        onPress={() => setVisibilitySheetOpen(true)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={styles.audienceLeft}>
+                                            <Ionicons name="people-outline" size={18} color={theme.colors.secondaryText} style={{ marginRight: 6 }} />
+                                            <Text style={[styles.audienceLabel, { color: theme.colors.secondaryText }]}>
+                                                {t('audience')}
                                             </Text>
-                                            <View ref={timelineSelectWrapRef} collapsable={false}>
-                                                <TouchableOpacity
-                                                    style={[
-                                                        styles.timelineSelectRow,
-                                                        {
-                                                            backgroundColor: theme.colors.secondaryBackground,
-                                                            borderColor: theme.colors.border,
-                                                        },
-                                                    ]}
-                                                    onPress={toggleTimelineDropdown}
-                                                    activeOpacity={0.7}
-                                                >
-                                                    <Text
-                                                        style={[styles.timelineSelectValue, { color: theme.colors.text }]}
-                                                        numberOfLines={1}
-                                                    >
-                                                        {showInTimeline ? t('showInTimelineYes') : t('showInTimelineNo')}
-                                                    </Text>
-                                                    <Ionicons
-                                                        name={timelineDropdownOpen ? 'chevron-up' : 'chevron-down'}
-                                                        size={20}
-                                                        color={theme.colors.secondaryText}
-                                                    />
-                                                </TouchableOpacity>
-                                            </View>
-                                            <Modal
-                                                visible={timelineDropdownOpen && !!timelineDropdownAnchor}
-                                                transparent
-                                                animationType="fade"
-                                                onRequestClose={closeTimelineDropdown}
-                                                statusBarTranslucent
-                                            >
-                                                <View style={styles.timelineDropdownModalRoot} pointerEvents="box-none">
-                                                    <TouchableOpacity
-                                                        style={StyleSheet.absoluteFill}
-                                                        activeOpacity={1}
-                                                        onPress={closeTimelineDropdown}
-                                                    />
-                                                    {timelineDropdownAnchor ? (
-                                                        <View
-                                                            style={[
-                                                                styles.timelineDropdownPanel,
-                                                                {
-                                                                    top: timelineDropdownAnchor.y + timelineDropdownAnchor.height + 2,
-                                                                    left: timelineDropdownAnchor.x,
-                                                                    width: timelineDropdownAnchor.width,
-                                                                    backgroundColor: theme.colors.card,
-                                                                    borderColor: theme.colors.border,
-                                                                },
-                                                            ]}
-                                                            onStartShouldSetResponder={() => true}
-                                                        >
-                                                            <TouchableOpacity
-                                                                style={[
-                                                                    styles.timelineDropdownOption,
-                                                                    styles.timelineDropdownOptionDivider,
-                                                                    { borderBottomColor: theme.colors.border },
-                                                                ]}
-                                                                onPress={() => {
-                                                                    setShowInTimeline(true);
-                                                                    closeTimelineDropdown();
-                                                                }}
-                                                                activeOpacity={0.7}
-                                                            >
-                                                                <Text style={[styles.timelineDropdownOptionLabel, { color: theme.colors.text }]}>
-                                                                    {t('showInTimelineYes')}
-                                                                </Text>
-                                                                {showInTimeline ? (
-                                                                    <Ionicons name="checkmark" size={22} color={theme.colors.primary} />
-                                                                ) : (
-                                                                    <View style={styles.timelineDropdownCheckPlaceholder} />
-                                                                )}
-                                                            </TouchableOpacity>
-                                                            <TouchableOpacity
-                                                                style={styles.timelineDropdownOption}
-                                                                onPress={() => {
-                                                                    setShowInTimeline(false);
-                                                                    closeTimelineDropdown();
-                                                                }}
-                                                                activeOpacity={0.7}
-                                                            >
-                                                                <Text style={[styles.timelineDropdownOptionLabel, { color: theme.colors.text }]}>
-                                                                    {t('showInTimelineNo')}
-                                                                </Text>
-                                                                {!showInTimeline ? (
-                                                                    <Ionicons name="checkmark" size={22} color={theme.colors.primary} />
-                                                                ) : (
-                                                                    <View style={styles.timelineDropdownCheckPlaceholder} />
-                                                                )}
-                                                            </TouchableOpacity>
-                                                        </View>
-                                                    ) : null}
-                                                </View>
-                                            </Modal>
                                         </View>
-                                    )}
+                                        <View style={styles.audienceRight}>
+                                            <Text style={[styles.audienceValue, { color: theme.colors.text }]} numberOfLines={1}>
+                                                {t(`visibility_${visibility}`)}
+                                            </Text>
+                                            <Ionicons name="chevron-forward" size={16} color={theme.colors.secondaryText} />
+                                        </View>
+                                    </TouchableOpacity>
+
+                                    {/* 公開範囲ボトムシート */}
+                                    <Modal
+                                        visible={visibilitySheetOpen}
+                                        transparent
+                                        animationType="slide"
+                                        onRequestClose={closeVisibilitySheet}
+                                        statusBarTranslucent
+                                    >
+                                        <View style={styles.visibilitySheetOverlay}>
+                                            <TouchableOpacity
+                                                style={StyleSheet.absoluteFill}
+                                                activeOpacity={1}
+                                                onPress={closeVisibilitySheet}
+                                            />
+                                            <View style={[styles.visibilitySheet, { backgroundColor: theme.colors.card }]}>
+                                                <View style={[styles.visibilitySheetHandle, { backgroundColor: theme.colors.border }]} />
+                                                <Text style={[styles.visibilitySheetTitle, { color: theme.colors.text }]}>
+                                                    {t('threadDisplaySetting')}
+                                                </Text>
+                                                {['public', 'friends', 'private'].map((val, idx, arr) => (
+                                                    <TouchableOpacity
+                                                        key={val}
+                                                        style={[
+                                                            styles.visibilitySheetOption,
+                                                            idx < arr.length - 1
+                                                                ? { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border }
+                                                                : null,
+                                                        ]}
+                                                        onPress={() => {
+                                                            setVisibility(val);
+                                                            closeVisibilitySheet();
+                                                        }}
+                                                        activeOpacity={0.7}
+                                                    >
+                                                        <View style={styles.visibilityOptionTextGroup}>
+                                                            <Text style={[styles.visibilitySheetOptionLabel, { color: theme.colors.text }]}>
+                                                                {t(`visibility_${val}`)}
+                                                            </Text>
+                                                            <Text style={[styles.visibilityOptionDesc, { color: theme.colors.secondaryText }]}>
+                                                                {t(`visibility_${val}_desc`)}
+                                                            </Text>
+                                                        </View>
+                                                        <View style={[
+                                                            styles.visibilityRadio,
+                                                            {
+                                                                borderColor: visibility === val ? theme.colors.primary : theme.colors.border,
+                                                                backgroundColor: visibility === val ? theme.colors.primary : 'transparent',
+                                                            },
+                                                        ]}>
+                                                            {visibility === val && (
+                                                                <View style={styles.visibilityRadioInner} />
+                                                            )}
+                                                        </View>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </View>
+                                        </View>
+                                    </Modal>
 
                                     {/* キャプション（内部スクロールなし＝親の ScrollView で全体スクロール） */}
                                     <View style={styles.captionGroup} ref={captionInputRef}>
@@ -853,52 +810,89 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '500',
     },
-    timelineSelectRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        height: 44,
-        paddingHorizontal: 16,
-        borderWidth: 1,
-        borderRadius: 12,
-    },
-    timelineSelectValue: {
-        flex: 1,
-        fontSize: 16,
-        marginRight: 8,
-    },
-    timelineDropdownModalRoot: {
-        flex: 1,
-    },
-    timelineDropdownPanel: {
-        position: 'absolute',
-        borderWidth: 1,
-        borderRadius: 12,
-        overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.12,
-        shadowRadius: 8,
-        elevation: 12,
-    },
-    timelineDropdownOption: {
+    audienceRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingVertical: 12,
-        paddingHorizontal: 16,
-    },
-    timelineDropdownOptionDivider: {
         borderBottomWidth: StyleSheet.hairlineWidth,
+        marginBottom: 8,
     },
-    timelineDropdownOptionLabel: {
+    audienceLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    audienceLabel: {
+        fontSize: 15,
+    },
+    audienceRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        flexShrink: 1,
+        marginLeft: 8,
+    },
+    audienceValue: {
+        fontSize: 15,
+        flexShrink: 1,
+    },
+    visibilitySheetOverlay: {
         flex: 1,
-        fontSize: 16,
-        marginRight: 12,
+        justifyContent: 'flex-end',
     },
-    timelineDropdownCheckPlaceholder: {
+    visibilitySheet: {
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        paddingBottom: 40,
+        paddingTop: 12,
+    },
+    visibilitySheetHandle: {
+        width: 40,
+        height: 4,
+        borderRadius: 2,
+        alignSelf: 'center',
+        marginBottom: 16,
+    },
+    visibilitySheetTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        textAlign: 'center',
+        paddingHorizontal: 20,
+        marginBottom: 8,
+    },
+    visibilitySheetOption: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+    },
+    visibilitySheetOptionLabel: {
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    visibilityOptionTextGroup: {
+        flex: 1,
+        marginRight: 16,
+    },
+    visibilityOptionDesc: {
+        fontSize: 13,
+        marginTop: 3,
+    },
+    visibilityRadio: {
         width: 22,
         height: 22,
+        borderRadius: 11,
+        borderWidth: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 2,
+    },
+    visibilityRadioInner: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#fff',
     },
     captionInput: {
         fontSize: 16,
