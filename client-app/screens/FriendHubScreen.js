@@ -211,7 +211,6 @@ const FriendHubScreen = ({ navigation }) => {
                     )}
                     <View style={styles.userInfo}>
                         <Text style={[styles.userName, { color: theme.colors.text }]} numberOfLines={1}>{item.user_name || ''}</Text>
-                        {item.bio ? <Text style={[styles.bio, { color: theme.colors.secondaryText }]} numberOfLines={2}>{item.bio}</Text> : null}
                     </View>
                 </TouchableOpacity>
                 {showApproveButton && (
@@ -348,7 +347,6 @@ const styles = StyleSheet.create({
     avatarPlaceholder: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
     userInfo: { flex: 1, marginLeft: 12 },
     userName: { fontSize: 16, fontWeight: '600' },
-    bio: { fontSize: 12, marginTop: 2 },
     actionButtons: {
         flexDirection: 'row',
         alignItems: 'center',

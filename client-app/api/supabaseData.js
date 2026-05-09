@@ -128,13 +128,9 @@ const isProfilesSchemaColumnError = (msg) => {
 const insertProfileRow = async (userId, fallbackName) => {
   const short = String(fallbackName).slice(0, 25);
   const attempts = [
-    { id: userId, user_name: short, bio: null },
     { id: userId, user_name: short },
-    { id: userId, username: short, bio: null },
     { id: userId, username: short },
-    { id: userId, name: short, bio: null },
     { id: userId, name: short },
-    { id: userId, display_name: short, bio: null },
     { id: userId, display_name: short },
   ];
   let lastErr;
@@ -262,7 +258,7 @@ const getFriendsList = async (userId) => {
   if (friendIds.length === 0) return [];
   const { data: users, error: usersErr } = await supabase
     .from('profiles')
-    .select('id,user_name,bio,avatar_url,updated_at')
+    .select('id,user_name,avatar_url,updated_at')
     .in('id', friendIds);
   if (usersErr) throw mapSupabaseError(usersErr);
   return users || [];
@@ -550,7 +546,7 @@ export const deleteRecord = async (id) => {
   return { message: '記録が削除されました。' };
 };
 
-export const updateProfile = async ({ userName, bio, avatarFile }) => {
+export const updateProfile = async ({ userName, avatarFile }) => {
   const user = await requireUser();
   try {
     await ensureProfileRowBeforeUpdate();
@@ -579,7 +575,6 @@ export const updateProfile = async ({ userName, bio, avatarFile }) => {
   }
   const patch = {};
   if (userName !== undefined) patch.user_name = String(userName).trim();
-  if (bio !== undefined) patch.bio = bio;
   if (avatarUrl !== undefined) patch.avatar_url = avatarUrl;
   try {
     const { error } = await supabase.from('profiles').update(patch).eq('id', user.id);
@@ -612,7 +607,7 @@ export const getOtherUserProfile = async (userId) => {
   const viewer = await requireUser();
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('id,user_name,bio,avatar_url,updated_at')
+    .select('id,user_name,avatar_url,updated_at')
     .eq('id', userId)
     .maybeSingle();
   if (error) throw mapSupabaseError(error);
@@ -633,7 +628,7 @@ export const updateDisplaySettings = async (settings) => {
 
 const listProfiles = async (ids) => {
   if (ids.length === 0) return [];
-  const { data, error } = await supabase.from('profiles').select('id,user_name,bio,avatar_url,updated_at').in('id', ids);
+  const { data, error } = await supabase.from('profiles').select('id,user_name,avatar_url,updated_at').in('id', ids);
   if (error) throw mapSupabaseError(error);
   return data || [];
 };

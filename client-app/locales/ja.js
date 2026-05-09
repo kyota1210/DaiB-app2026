@@ -155,8 +155,6 @@ export default {
     // プロフィール編集
     userName: 'ユーザー名',
     userNamePlaceholder: 'ユーザー名を入力',
-    bio: '自己紹介',
-    bioPlaceholder: '自己紹介を入力（100文字まで）',
     tapToSelectPhoto: 'タップして写真を選択',
     
     // ログイン情報変更

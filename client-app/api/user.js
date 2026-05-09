@@ -9,8 +9,8 @@ import {
   getOtherUserRecords as getOtherUserRecordsDirect,
 } from './supabaseData';
 
-export const updateProfile = async (_token, userName, bio, avatarFile) =>
-  updateProfileDirect({ userName, bio, avatarFile });
+export const updateProfile = async (_token, userName, avatarFile) =>
+  updateProfileDirect({ userName, avatarFile });
 
 export const getUserProfile = async (_token) => getUserProfileDirect();
 export const getFollowing = async (_token) => getFollowingDirect();

@@ -30,11 +30,6 @@ const UserRow = ({
             <Text style={[styles.userName, { color: theme.colors.text }]} numberOfLines={1}>
                 {user.user_name || ''}
             </Text>
-            {user.bio ? (
-                <Text style={[styles.bio, { color: theme.colors.secondaryText }]} numberOfLines={2}>
-                    {user.bio}
-                </Text>
-            ) : null}
         </View>
     );
 
@@ -106,10 +101,6 @@ const styles = StyleSheet.create({
     userName: {
         fontSize: 16,
         fontWeight: '600',
-    },
-    bio: {
-        fontSize: 12,
-        marginTop: 2,
     },
     followButton: {
         paddingHorizontal: 16,

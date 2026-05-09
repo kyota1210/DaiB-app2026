@@ -1,4 +1,4 @@
-import React, { useContext, useState, useRef, useCallback } from 'react';
+import React, { useContext, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../components/ScreenHeader';
@@ -17,15 +17,12 @@ const ProfileEditScreen = ({ navigation }) => {
     const { theme } = useTheme();
     const { t } = useLanguage();
     const [userName, setUserName] = useState(userInfo?.user_name || '');
-    const [bio, setBio] = useState(userInfo?.bio || '');
     const [avatarUri, setAvatarUri] = useState(
         userInfo?.avatar_url ? getImageUrl(userInfo.avatar_url, userInfo.updated_at) : null
     );
     const [selectedFile, setSelectedFile] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const scrollViewRef = useRef(null);
-    const bioInputRef = useRef(null);
 
     useFocusEffect(
         useCallback(() => {
@@ -82,7 +79,7 @@ const ProfileEditScreen = ({ navigation }) => {
         setIsLoading(true);
         try {
             // プロフィール更新APIを呼び出す
-            const data = await updateProfile(userToken, userName, bio, selectedFile);
+            const data = await updateProfile(userToken, userName, selectedFile);
             
             // AuthContextのユーザー情報を更新
             authContext.updateUserInfo(data.user);
@@ -131,7 +128,6 @@ const ProfileEditScreen = ({ navigation }) => {
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
             >
                 <ScrollView
-                    ref={scrollViewRef}
                     style={[styles.scrollView, { backgroundColor: theme.colors.background }]}
                     contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
@@ -174,36 +170,6 @@ const ProfileEditScreen = ({ navigation }) => {
                             placeholder={t('userNamePlaceholder')}
                             placeholderTextColor={theme.colors.inactive}
                             maxLength={25}
-                        />
-                    </View>
-                    <View style={styles.inputGroup}>
-                        <Text style={[styles.label, { color: theme.colors.text }]}>
-                            {t('bio')} ({bio.length}/100)
-                        </Text>
-                        <TextInput
-                            ref={bioInputRef}
-                            style={[styles.bioInput, {
-                                backgroundColor: theme.colors.secondaryBackground,
-                                borderColor: theme.colors.border,
-                                color: theme.colors.text
-                            }]}
-                            value={bio}
-                            onChangeText={(text) => {
-                                if (text.length <= 100) {
-                                    setBio(text);
-                                }
-                            }}
-                            onFocus={() => {
-                                // キーボード表示時に自己紹介欄が見えるようにスクロール
-                                setTimeout(() => {
-                                    scrollViewRef.current?.scrollToEnd({ animated: true });
-                                }, 300);
-                            }}
-                            placeholder={t('bioPlaceholder')}
-                            placeholderTextColor={theme.colors.inactive}
-                            multiline
-                            numberOfLines={5}
-                            maxLength={100}
                         />
                     </View>
                 </View>
@@ -310,15 +276,6 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         fontSize: 16,
         borderWidth: 1,
-    },
-    bioInput: {
-        borderRadius: 8,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        fontSize: 16,
-        borderWidth: 1,
-        minHeight: 140,
-        textAlignVertical: 'top',
     },
 });
 

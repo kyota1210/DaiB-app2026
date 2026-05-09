@@ -287,7 +287,6 @@ const UserProfileScreen = ({ navigation, route }) => {
                     </View>
                 )}
                 <Text style={[styles.userName, { color: theme.colors.text }]}>{user.user_name || ''}</Text>
-                {user.bio ? <Text style={[styles.bio, { color: theme.colors.secondaryText }]}>{user.bio}</Text> : null}
                 {recordsLoading ? <ActivityIndicator size="small" color={theme.colors.primary} style={styles.recordsLoader} /> : null}
             </View>
         </View>
@@ -403,7 +402,6 @@ const styles = StyleSheet.create({
     avatar: { width: 96, height: 96, borderRadius: 48 },
     avatarPlaceholder: { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center' },
     userName: { fontSize: 20, fontWeight: '600', marginTop: 12, textAlign: 'center' },
-    bio: { fontSize: 14, marginTop: 8, textAlign: 'center', width: '100%' },
     followButtonWrap: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 32, alignItems: 'center' },
     followButton: { paddingVertical: 12, paddingHorizontal: 24, borderRadius: 24, minWidth: 140, alignItems: 'center' },
     followButtonText: { fontSize: 16, fontWeight: '600' },

@@ -155,8 +155,6 @@ export default {
     // Profile edit
     userName: 'User Name',
     userNamePlaceholder: 'Enter user name',
-    bio: 'Bio',
-    bioPlaceholder: 'Enter bio (max 100 characters)',
     tapToSelectPhoto: 'Tap to select photo',
     
     // Login info change

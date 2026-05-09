@@ -117,7 +117,6 @@ export default function RecordListScreen({ navigation }) {
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
     const [categoryName, setCategoryName] = useState('');
-    const [expandedBio, setExpandedBio] = useState(false);
     const [showCategorySuccessModal, setShowCategorySuccessModal] = useState(false);
     const [showCategoryErrorModal, setShowCategoryErrorModal] = useState(false);
     const [categoryErrorMessage, setCategoryErrorMessage] = useState('');
@@ -610,24 +609,23 @@ export default function RecordListScreen({ navigation }) {
                         </View>
                     </TouchableOpacity>
 
-                    {/* ユーザー名と自己紹介 */}
+                    {/* ユーザー名と投稿数 */}
                     <View style={styles.userInfoSection}>
                         <Text style={[styles.userNameText, { color: theme.colors.text }]}>
                             {userInfo?.user_name || 'ゲスト'}
                         </Text>
-                        {userInfo?.bio && (
-                            <TouchableOpacity
-                                activeOpacity={0.7}
-                                onPress={() => setExpandedBio(!expandedBio)}
-                            >
-                                <Text 
-                                    style={[styles.userBio, { color: theme.colors.secondaryText }]} 
-                                    numberOfLines={expandedBio ? undefined : 3}
-                                >
-                                    {userInfo.bio}
-                                </Text>
-                            </TouchableOpacity>
-                        )}
+                        <View style={styles.userPostCountBlock}>
+                            <Text style={[styles.userPostCountNumber, { color: theme.colors.text }]}>
+                                {String(records?.length ?? 0)}
+                            </Text>
+                            <Text style={[styles.userPostCountCaption, { color: theme.colors.secondaryText }]}>
+                                {activeLanguage === 'en'
+                                    ? (records?.length ?? 0) === 1
+                                        ? 'Post'
+                                        : t('posts')
+                                    : t('posts')}
+                            </Text>
+                        </View>
                     </View>
                 </View>
 
@@ -979,10 +977,19 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
-    userBio: {
-        fontSize: 11,
-        marginTop: 4,
-        lineHeight: 15,
+    userPostCountBlock: {
+        marginTop: 10,
+        alignItems: 'flex-start',
+    },
+    userPostCountNumber: {
+        fontSize: 17,
+        fontWeight: '600',
+        lineHeight: 22,
+    },
+    userPostCountCaption: {
+        fontSize: 12,
+        marginTop: 2,
+        lineHeight: 16,
     },
     mainContent: {
         flex: 1,
