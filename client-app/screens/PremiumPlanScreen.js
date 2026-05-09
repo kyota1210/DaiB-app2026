@@ -168,6 +168,12 @@ const PremiumPlanScreen = ({ navigation }) => {
                             title={t('premiumBenefitPostsTitle')}
                             description={postsBenefitDescription}
                             theme={theme}
+                        />
+                        <FeatureItem
+                            icon="time-outline"
+                            title={t('premiumBenefitMemoryTitle')}
+                            description={t('premiumBenefitMemoryDesc')}
+                            theme={theme}
                             isLast
                         />
                     </View>

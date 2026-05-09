@@ -772,15 +772,28 @@ export const rejectIncomingFollow = async (followerId) => {
   return { message: '申請を却下しました。', rejected: true };
 };
 
-export const getTimeline = async () => {
-  const { data, error } = await supabase.rpc('get_timeline_posts');
-  if (error) throw mapSupabaseError(error);
+export const getTimeline = async (clientTz) => {
+  const tz = clientTz || 'Asia/Tokyo';
+  const [timelineResult, memoryResult] = await Promise.all([
+    supabase.rpc('get_timeline_posts'),
+    supabase.rpc('get_thread_memory_resurface', { p_client_tz: tz }),
+  ]);
+  if (timelineResult.error) throw mapSupabaseError(timelineResult.error);
   // RPC は r.user_id as author_id のみ返す（user_id 列は無い）。undefined で上書きしない。
-  const records = (data || []).map((r) => ({
+  const records = (timelineResult.data || []).map((r) => ({
     ...r,
     author_id: r.author_id ?? r.user_id,
   }));
-  return { records, memoryResurface: null };
+  const memoryItems = (memoryResult.data || []).map((r) => ({
+    ...r,
+    author_id: r.author_id ?? r.user_id,
+    is_memory_resurface: true,
+    memory_horizon: r.horizon,
+  }));
+  return {
+    records,
+    memoryResurface: memoryItems.length > 0 ? { items: memoryItems } : null,
+  };
 };
 
 export const addReaction = async (recordId, emoji) => {

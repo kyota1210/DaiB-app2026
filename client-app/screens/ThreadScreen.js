@@ -37,6 +37,18 @@ const REACTION_EMOJIS = ['❤️', '👍', '🌸', '🎉', '✨'];
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const QR_SIZE = Math.min(SCREEN_WIDTH - 80, 240);
 
+function getMemoryHorizonLabel(horizon, t) {
+    switch (horizon) {
+        case '1M': return t('memoryResurface1MonthAgoToday');
+        case '3M': return t('memoryResurface3MonthsAgoToday');
+        case '6M': return t('memoryResurface6MonthsAgoToday');
+        case '1Y': return t('memoryResurfaceYearsAgoToday').replace('{{years}}', '1');
+        case '3Y': return t('memoryResurfaceYearsAgoToday').replace('{{years}}', '3');
+        case '5Y': return t('memoryResurfaceYearsAgoToday').replace('{{years}}', '5');
+        default:   return t('memoryResurfaceSerendipity');
+    }
+}
+
 const AnimatedReactionBar = React.memo(({ emojis, onSelect, isClosing, onCloseComplete }) => {
     const anim = useRef(new Animated.Value(0)).current;
     useEffect(() => {
@@ -116,15 +128,8 @@ const ThreadScreen = ({ navigation }) => {
             });
             const base = timelineRes.records ?? [];
             const mem = timelineRes.memoryResurface;
-            if (mem?.record) {
-                setRecords([
-                    {
-                        ...mem.record,
-                        memory_kind: mem.kind,
-                        memory_years_ago: mem.yearsAgo,
-                    },
-                    ...base,
-                ]);
+            if (mem?.items?.length > 0) {
+                setRecords([...mem.items, ...base]);
             } else {
                 setRecords(base);
             }
@@ -297,11 +302,9 @@ const ThreadScreen = ({ navigation }) => {
         };
 
         const isMemoryResurface = !!item.is_memory_resurface;
-        const memoryLabelText =
-            isMemoryResurface &&
-            (item.memory_kind === 'anniversary' && item.memory_years_ago != null
-                ? t('memoryResurfaceYearsAgoToday').replace('{{years}}', String(item.memory_years_ago))
-                : t('memoryResurfaceSerendipity'));
+        const memoryLabelText = isMemoryResurface
+            ? getMemoryHorizonLabel(item.memory_horizon, t)
+            : null;
 
         return (
             <TouchableOpacity
@@ -586,7 +589,7 @@ const ThreadScreen = ({ navigation }) => {
                         row.feedKind === 'ad'
                             ? row.id
                             : row.record.is_memory_resurface
-                              ? `mem-${row.record.id}`
+                              ? `mem-${row.record.id}-${row.record.memory_horizon ?? ''}`
                               : String(row.record.id)
                     }
                     getItemType={(row) => row.feedKind}

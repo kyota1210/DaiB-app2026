@@ -33,6 +33,9 @@ export default {
     thisUser: 'このユーザー',
     noTimeline: 'フレンドの投稿がここに表示されます',
     memoryResurfaceYearsAgoToday: '{{years}}年前の今日',
+    memoryResurface1MonthAgoToday: '1ヶ月前の今日',
+    memoryResurface3MonthsAgoToday: '3ヶ月前の今日',
+    memoryResurface6MonthsAgoToday: '6ヶ月前の今日',
     memoryResurfaceSerendipity: '過去の思い出',
     followingList: 'フレンド申請中',
     followersList: 'フレンドリクエスト',
@@ -233,6 +236,9 @@ export default {
     premiumBenefitCategoriesTitle: 'カテゴリーを無制限に作成',
     premiumBenefitCategoriesDesc:
         'フリープランでは自分用のカテゴリーを最大{{limit}}個まで。Plus なら上限なしで、テーマや用途ごとにいくつでも整理できます。',
+    premiumBenefitMemoryTitle: 'メモリー再浮上',
+    premiumBenefitMemoryDesc:
+        '1ヶ月・3ヶ月・6ヶ月・1年・3年・5年前の今日に投稿した記録をスレッド画面の先頭に表示します。フリープランは1年前のみ。あなたのスレッド画面にのみ表示され、他ユーザーのスレッド画面には表示されません。',
     subscriptionPriceOnStore:
         '料金は App Store または Google Play に表示された金額が適用されます。購入手続きの前に必ずご確認ください。',
     pricingPlan: '料金プラン',

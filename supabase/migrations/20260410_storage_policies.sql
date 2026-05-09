@@ -4,11 +4,13 @@ values
   ('posts', 'posts', true)
 on conflict (id) do nothing;
 
+drop policy if exists "avatars_public_read" on storage.objects;
 create policy "avatars_public_read"
   on storage.objects for select
   to public
   using (bucket_id = 'avatars');
 
+drop policy if exists "avatars_owner_write" on storage.objects;
 create policy "avatars_owner_write"
   on storage.objects for insert
   to authenticated
@@ -17,6 +19,7 @@ create policy "avatars_owner_write"
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
+drop policy if exists "avatars_owner_update" on storage.objects;
 create policy "avatars_owner_update"
   on storage.objects for update
   to authenticated
@@ -29,6 +32,7 @@ create policy "avatars_owner_update"
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
+drop policy if exists "avatars_owner_delete" on storage.objects;
 create policy "avatars_owner_delete"
   on storage.objects for delete
   to authenticated
@@ -37,11 +41,13 @@ create policy "avatars_owner_delete"
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
+drop policy if exists "posts_public_read" on storage.objects;
 create policy "posts_public_read"
   on storage.objects for select
   to public
   using (bucket_id = 'posts');
 
+drop policy if exists "posts_owner_write" on storage.objects;
 create policy "posts_owner_write"
   on storage.objects for insert
   to authenticated
@@ -50,6 +56,7 @@ create policy "posts_owner_write"
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
+drop policy if exists "posts_owner_update" on storage.objects;
 create policy "posts_owner_update"
   on storage.objects for update
   to authenticated
@@ -62,6 +69,7 @@ create policy "posts_owner_update"
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
+drop policy if exists "posts_owner_delete" on storage.objects;
 create policy "posts_owner_delete"
   on storage.objects for delete
   to authenticated

@@ -4,6 +4,7 @@
 drop policy if exists "follows_write_self" on public.follows;
 
 -- 自分が送った申請（follower_id）は全操作可能
+drop policy if exists "follows_write_as_follower" on public.follows;
 create policy "follows_write_as_follower"
   on public.follows for all
   to authenticated
@@ -11,6 +12,7 @@ create policy "follows_write_as_follower"
   with check (follower_id = auth.uid());
 
 -- 自分宛ての申請（following_id）は approved のみ更新可能
+drop policy if exists "follows_approve_as_following" on public.follows;
 create policy "follows_approve_as_following"
   on public.follows for update
   to authenticated

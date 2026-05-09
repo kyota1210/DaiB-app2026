@@ -33,6 +33,9 @@ export default {
     thisUser: 'this user',
     noTimeline: 'Posts from your friends will appear here',
     memoryResurfaceYearsAgoToday: '{{years}} years ago today',
+    memoryResurface1MonthAgoToday: '1 month ago today',
+    memoryResurface3MonthsAgoToday: '3 months ago today',
+    memoryResurface6MonthsAgoToday: '6 months ago today',
     memoryResurfaceSerendipity: 'A memory from the past',
     followingList: 'Requests sent',
     followersList: 'Requests received',
@@ -235,6 +238,9 @@ export default {
     premiumBenefitCategoriesTitle: 'Create unlimited categories',
     premiumBenefitCategoriesDesc:
         'On the free plan you can add up to {{limit}} of your own categories. With Plus, create as many as you need to organize by theme.',
+    premiumBenefitMemoryTitle: 'Memory Resurface',
+    premiumBenefitMemoryDesc:
+        'Posts from 1 month, 3 months, 6 months, 1 year, 3 years, and 5 years ago today surface at the top of your thread. Free plan shows 1 year back only. Visible only on your own thread — never shown on other users\' threads.',
     subscriptionPriceOnStore:
         'Pricing follows the amount shown in the App Store or Google Play. Please confirm there before you subscribe.',
     pricingPlan: 'Pricing Plan',
