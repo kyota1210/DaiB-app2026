@@ -1,5 +1,5 @@
-// 機能ゲート（プレミアム特典）の判定をまとめるフック。
-// プレミアム未契約時の上限値はここで一元管理する。
+// 機能ゲート（Plus プラン特典）の判定をまとめるフック。
+// Plus プラン未契約時の上限値はここで一元管理する。
 
 import { useSubscription } from '../context/SubscriptionContext';
 

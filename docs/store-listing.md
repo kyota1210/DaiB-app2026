@@ -37,7 +37,7 @@ DaiB は、毎日の出来事や気持ちをシンプルに残せる日記アプ
 - フレンド申請でつながり、限定したタイムラインを共有
 - 過去の今日（年前メモリー）を自動でリサーフェス
 
-■ プレミアムプラン（任意）
+■ Plusプラン（任意）
 - 広告非表示
 - 詳細な統計
 - ストレージ容量の拡張
@@ -49,7 +49,7 @@ DaiB は、毎日の出来事や気持ちをシンプルに残せる日記アプ
 - 日本語・英語に対応
 
 ■ サブスクリプションについて
-- 商品名: DaiB プレミアム（月額）
+- 商品名: DaiB Plus（月額）
 - 期間: 1 ヶ月（自動更新）
 - 価格: 980 円 / 月
 - 自動更新は期間終了の 24 時間以上前にキャンセルしない限り、同額で更新されます
@@ -94,14 +94,14 @@ DaiB is a simple journaling app that lets you capture daily moments — text, ph
 - Connect with friends and share a private timeline
 - "Years ago today" memories resurfaced automatically
 
-■ Premium Plan (Optional)
+■ Plus Plan (Optional)
 - Remove ads
 - Detailed stats
 - Expanded storage
 (Monthly auto-renewing subscription — see bottom of this description)
 
 ■ Subscription Details
-- Title: DaiB Premium (Monthly)
+- Title: DaiB Plus (Monthly)
 - Length: 1 month, auto-renewing
 - Price: 980 JPY / month
 - Auto-renew unless cancelled at least 24 hours before the period ends
@@ -138,7 +138,7 @@ iOS 必須サイズ（[Apple ガイドライン](https://developer.apple.com/hel
 2. 投稿作成画面（カテゴリ・写真・本文）
 3. メモリー（過去の今日）
 4. プロフィール / 統計
-5. プレミアム特典の紹介
+5. Plusプラン特典の紹介
 6. ダークモード版
 
 ---
@@ -186,14 +186,14 @@ App Store Connect → My Apps → 該当アプリ → **Monetization → Subscri
 
 ### 6.1 サブスクリプショングループ
 
-- Reference Name: `daib_premium`
-- Group Display Name: `DaiB Premium`
+- Reference Name: `daib_plus`
+- Group Display Name: `DaiB Plus`
 
 ### 6.2 サブスクリプション商品（月額）
 
 | フィールド | 値 |
 |---|---|
-| Reference Name | DaiB Premium Monthly |
+| Reference Name | DaiB Plus Monthly |
 | Product ID | `com.kytm1210.daibapp2026.premium.monthly` |
 | Subscription Duration | 1 Month |
 | Cleared for Sale | Yes（提出前まではテスター限定） |
@@ -204,14 +204,14 @@ App Store Connect → My Apps → 該当アプリ → **Monetization → Subscri
 
 | フィールド | 値 |
 |---|---|
-| Display Name | DaiB プレミアム |
+| Display Name | DaiB Plus |
 | Description | 広告非表示・詳細統計・ストレージ拡張を含む月額プラン |
 
 #### Localization（英語）
 
 | フィールド | 値 |
 |---|---|
-| Display Name | DaiB Premium |
+| Display Name | DaiB Plus |
 | Description | Monthly plan: ad-free, detailed stats, expanded storage |
 
 #### Review Information

@@ -180,8 +180,8 @@ const uploadPostImagePath = async (userId, postId, file) => {
   return path;
 };
 
-const getMyProfile = async () => {
-  const user = await requireUser();
+const getMyProfile = async (authUser) => {
+  const user = authUser ?? (await requireUser());
   const { data: existing, error: fetchError } = await supabase
     .from('profiles')
     .select('*')
@@ -281,8 +281,11 @@ export const resetPasswordWithSession = async ({ new_password }) => {
 };
 
 export const getUserInfo = async () => {
-  const profile = await getMyProfile();
-  return { user: await appendFollowCounts(profile.id, profile) };
+  const authUser = await requireUser();
+  const profile = await getMyProfile(authUser);
+  // メールは Supabase Auth（auth.users）側のみにあり profiles 行にはないため結合する
+  const user = { ...profile, email: authUser.email ?? null };
+  return { user: await appendFollowCounts(user.id, user) };
 };
 
 const categoryDisplayName = (row) =>

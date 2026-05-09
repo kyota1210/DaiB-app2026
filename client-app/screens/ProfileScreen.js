@@ -42,7 +42,7 @@ const ProfileScreen = ({ navigation }) => {
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
                             onPress={() => navigation.navigate('LoginInfo')}
                         >
-                            <Ionicons name="key-outline" size={24} color={theme.colors.icon} />
+                            <Ionicons name="person-outline" size={24} color={theme.colors.icon} />
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('loginInfo')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>

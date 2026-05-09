@@ -9,7 +9,14 @@ export const deleteOwnAccount = async () => {
     method: 'POST',
   });
   if (error) {
+    const jsonBody = error?.context?.json;
+    if (jsonBody?.error === 'premium_active') {
+      const err = new Error('premium_active');
+      err.code = 'premium_active';
+      throw err;
+    }
     const message =
+      jsonBody?.detail ||
       error?.context?.json?.detail ||
       error?.context?.json?.error ||
       error.message ||

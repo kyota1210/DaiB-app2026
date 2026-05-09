@@ -59,7 +59,7 @@ create trigger trg_subscriptions_set_updated_at
     before update on public.subscriptions
     for each row execute function public.subscriptions_set_updated_at();
 
--- ヘルパー: 現在のユーザーがプレミアムか判定
+-- ヘルパー: 現在のユーザーがPlusプラン（有料購読）か判定
 create or replace function public.is_current_user_premium()
 returns boolean
 language sql

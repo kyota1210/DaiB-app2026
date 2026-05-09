@@ -72,7 +72,7 @@ export const purchasesLogOut = async () => {
 };
 
 /**
- * 現在の Offering から月額プレミアムの Package を返す。
+ * 現在の Offering から月額 Plus プランの Package を返す。
  * @returns {Promise<import('react-native-purchases').PurchasesPackage | null>}
  */
 export const purchasesGetMonthlyPackage = async () => {

@@ -22,7 +22,7 @@ try {
 
 /**
  * 共通バナー広告。
- * プレミアム時は何も描画しない。
+ * Plus プラン利用時は何も描画しない。
  */
 const AdBanner = ({ size }) => {
     const { isPremium } = useSubscription();

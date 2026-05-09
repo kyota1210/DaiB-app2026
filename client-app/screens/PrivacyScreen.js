@@ -40,7 +40,7 @@ const PrivacyScreen = ({ navigation }) => {
                         ・通報・ブロック：ユーザーや投稿に対して行った通報・ブロック内容{'\n'}
                         ・認証情報：Supabase Auth が発行するアクセストークン（端末の暗号化ストレージに保存）{'\n'}
                         ・端末内の設定：表示言語、表示モード等（端末内ストレージに保存）{'\n'}
-                        ・サブスクリプション情報：プレミアムプランの加入状況、有効期限、ストア種別（Apple／Google）、original transaction ID（個別の決済情報・カード情報は当アプリでは取得しません）{'\n'}
+                        ・サブスクリプション情報：Plusプランの加入状況、有効期限、ストア種別（Apple／Google）、original transaction ID（個別の決済情報・カード情報は当アプリでは取得しません）{'\n'}
                         ・サーバー側のログ：アクセス・エラー等の記録（運用・障害対応のため）
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
@@ -93,7 +93,7 @@ const PrivacyScreen = ({ navigation }) => {
                         ・Expo / React Native（アプリ実行基盤。Expo Application Services によるビルド配信）
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        広告配信は無料プランのご利用時のみ表示され、プレミアムプラン加入中は表示しません。広告にはターゲティング広告（パーソナライズ広告）が含まれる場合がありますが、iOS の App Tracking Transparency でトラッキングを許可しない選択をされた場合は、トラッキングを伴わない広告のみ表示されます。
+                        広告配信は無料プランのご利用時のみ表示され、Plusプラン加入中は表示しません。広告にはターゲティング広告（パーソナライズ広告）が含まれる場合がありますが、iOS の App Tracking Transparency でトラッキングを許可しない選択をされた場合は、トラッキングを伴わない広告のみ表示されます。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>

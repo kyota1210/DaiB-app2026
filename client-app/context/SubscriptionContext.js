@@ -1,4 +1,4 @@
-// SubscriptionContext: プレミアム購読状態をアプリ全体に提供する。
+// SubscriptionContext: Plus（有料）プランの購読状態をアプリ全体に提供する。
 //
 // - `userToken` が変化したら自動で `subscriptions` テーブルから状態を読み直す。
 // - `refresh()` で明示再取得（IAP 購入直後に呼ぶ）。

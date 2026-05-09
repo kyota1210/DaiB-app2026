@@ -142,14 +142,14 @@ DaiBアプリは、認証状態に応じて2つのナビゲーションスタッ
 - **パス**: `/MyPage`
 - **説明**: ユーザーの設定・各種管理画面への入口
 - **主要要素**:
-  - アカウント設定（ログイン情報、プレミアムプラン）
+  - アカウント設定（アカウント、Plusプラン）
   - DaiB設定（カテゴリー管理、表示設定）
   - アプリ設定（通知設定（未実装）、言語設定）
   - その他（ヘルプ、このアプリについて、利用規約、プライバシー、お問い合わせ）
   - ログアウトボタン
 - **遷移先**:
   - ログイン情報 → LoginInfoScreen
-  - プレミアムプラン → PremiumPlanScreen
+  - Plusプラン → PremiumPlanScreen
   - カテゴリー管理 → CategoryManagementScreen
   - 表示設定 → DisplaySettingsScreen
   - 言語設定 → LanguageSettingScreen
@@ -191,11 +191,11 @@ DaiBアプリは、認証状態に応じて2つのナビゲーションスタッ
 
 ---
 
-##### 10. PremiumPlanScreen（プレミアムプラン画面）
+##### 10. PremiumPlanScreen（Plusプラン画面）
 - **パス**: `/PremiumPlan`
-- **説明**: プレミアムプランの情報を表示する画面（現状はプレースホルダー）
+- **説明**: Plusプランの情報・購入・復元を表示する画面
 - **主要要素**:
-  - プレミアムプランの説明
+  - Plusプランの説明・機能一覧
 - **遷移先**:
   - 戻る → ProfileScreen
 

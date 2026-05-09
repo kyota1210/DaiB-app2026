@@ -58,8 +58,8 @@ export default {
     
     // 設定画面
     accountSettings: 'アカウント設定',
-    loginInfo: 'ログイン情報の変更',
-    premiumPlan: 'プレミアムプランの設定',
+    loginInfo: 'アカウント',
+    premiumPlan: 'Plusプランの設定',
     daibSettings: 'DaiB設定',
     categoryManagement: 'カテゴリー管理',
     displaySettings: '表示設定',
@@ -179,7 +179,13 @@ export default {
     reauthRequired: '再ログインが必要です。',
     dangerZone: 'アカウントの削除',
     deleteAccount: 'アカウントを削除する',
-    deleteAccountDescription: 'アカウントを削除すると、投稿・カテゴリー・フォロー関係を含むすべてのデータが消去されます。この操作は元に戻せません。\nプレミアムプランをご利用中の場合は、必ず先にアプリストアからサブスクリプションを解約してください。',
+    deleteAccountDescription: 'アカウントを削除すると、投稿・カテゴリー・フォロー関係を含むすべてのデータが消去されます。この操作は元に戻せません。\nPlusプランをご利用中の場合は、サブスクリプションを解約した後にのみ削除できます。',
+    deleteAccountPremiumBlockedTitle: 'Plusプラン利用中',
+    deleteAccountPremiumBlocked:
+        'アカウントを削除するには、App Store または Google Play でサブスクリプションを解約し、反映をお待ちください（サブスク状態の反映まで時間がかかることがあります）。「Plusプランの設定」からサブスクリプションを管理できます。',
+    deleteAccountPremiumMustCancelHint:
+        '現在Plusプランをご利用中です。アカウントを削除するには、先にサブスクリプションを解約してください。',
+    deleteAccountPremiumCheckFailed: '購読状態を確認できませんでした。通信状況を確認して再度お試しください。',
     deleteAccountConfirm: '本当にアカウントを削除しますか？この操作は元に戻せません。',
     deleteAccountFinalConfirm: '最終確認: アカウントとすべての関連データを削除します。よろしいですか？',
     deleteAccountConfirmAction: '削除する',
@@ -215,16 +221,16 @@ export default {
     blockedNotice: 'このユーザーをブロックしています。',
     passwordSection: 'パスワード',
     
-    // プレミアムプラン
-    premiumActive: 'プレミアムプラン利用中',
+    // Plusプラン（課金）
+    premiumActive: 'Plusプラン利用中',
     freePlan: 'フリープラン',
     nextRenewal: '次回更新日',
     freeForever: '無料でご利用いただけます',
-    premiumFeatures: 'プレミアム機能',
+    premiumFeatures: 'Plusの機能',
     pricingPlan: '料金プラン',
     perMonth: '/月',
     cancelAnytime: 'いつでもキャンセル可能',
-    upgradeToPremium: 'プレミアムにアップグレード',
+    upgradeToPremium: 'Plusにアップグレード',
     cancelPlan: 'プランを解約',
     manageSubscription: 'サブスクリプションを管理',
     restorePurchases: '購入履歴を復元',
@@ -235,7 +241,7 @@ export default {
     iapNotAvailable: '課金は実機ビルドでのみご利用いただけます。',
     iapDisclaimer: '自動更新サブスクリプションです。期間終了の24時間以上前にキャンセルしない限り、同額で自動更新されます。設定 → Apple ID → サブスクリプションからいつでもキャンセルできます。',
     monthlyPostLimitReached: '今月の投稿上限に達しました',
-    monthlyPostLimitMessage: '無料プランは月{{limit}}件まで投稿できます。プレミアムにアップグレードすると無制限で投稿できます。',
+    monthlyPostLimitMessage: '無料プランは月{{limit}}件まで投稿できます。Plusにアップグレードすると無制限で投稿できます。',
     imageBlockedByModeration: 'この画像は利用規約に違反する可能性があるため、投稿できません。別の画像を選択してください。',
     unlimitedStorage: '無制限のクラウドストレージ',
     allPhotosCloud: 'すべての写真と動画をクラウドに保存',
@@ -313,8 +319,8 @@ export default {
     categoryAdded: 'カテゴリーを追加しました',
     categoryUpdated: 'カテゴリーを更新しました',
     categoryDeleted: 'カテゴリーを削除しました',
-    upgradedToPremium: 'プレミアムプランにアップグレードしました',
-    planCanceled: 'プレミアムプランを解約しました',
+    upgradedToPremium: 'Plusプランにアップグレードしました',
+    planCanceled: 'Plusプランを解約しました',
     
     // リアクション
     reactions: 'リアクション',

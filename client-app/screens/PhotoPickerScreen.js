@@ -203,7 +203,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
             if (!canCreateMorePosts(currentMonthCount)) {
                 Alert.alert(
                     t('monthlyPostLimitReached') || '今月の投稿上限に達しました',
-                    (t('monthlyPostLimitMessage') || '無料プランは月{{limit}}件までです。プレミアムにアップグレードすると無制限で投稿できます。')
+                    (t('monthlyPostLimitMessage') || '無料プランは月{{limit}}件までです。Plusにアップグレードすると無制限で投稿できます。')
                         .replace('{{limit}}', String(getMonthlyPostLimit())),
                     [
                         { text: t('cancel'), style: 'cancel' },

@@ -38,7 +38,7 @@ const SpecifiedCommercialTransactionsScreen = ({ navigation }) => {
                         販売価格
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        プレミアムプラン（月額）：980 円（税込）{'\n'}
+                        Plusプラン（月額）：980 円（税込）{'\n'}
                         ※ 価格は App Store の表示価格に従います。為替や課税の都合で表示価格が変動する場合があります。
                     </Text>
 
@@ -67,7 +67,7 @@ const SpecifiedCommercialTransactionsScreen = ({ navigation }) => {
                         サービスの提供時期
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        決済完了後、即時にプレミアム機能をご利用いただけます。
+                        決済完了後、即時にPlusの機能をご利用いただけます。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>

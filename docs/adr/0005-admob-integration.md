@@ -6,7 +6,7 @@
 
 ## コンテキスト
 
-無料プランで広告を表示しつつ、プレミアム購読者には広告を出さない構成を採用する。Expo / React Native 環境で広告 SDK を選定する際、選択肢は次のとおりだった。
+無料プランで広告を表示しつつ、Plusプラン購読者には広告を出さない構成を採用する。Expo / React Native 環境で広告 SDK を選定する際、選択肢は次のとおりだった。
 
 1. `expo-ads-admob`（旧 Expo モジュール、SDK 49 で deprecated → SDK 50 で削除）
 2. `react-native-google-mobile-ads`（公式 Google Mobile Ads SDK のラッパー、Expo Config Plugin あり）
@@ -23,8 +23,8 @@
 - 依存: `react-native-google-mobile-ads`、`expo-tracking-transparency`
 - 設定: `client-app/app.json` の `plugins` に両者を登録、`SKAdNetworkItems` と `iosAppId` をテスト ID で構成（本番 ID は EAS Secrets 経由で置換）
 - 初期化: `client-app/utils/ads.js` の `initAds()` を `App.js` 起動時に呼ぶ。Expo Go 検出時は no-op。
-- バナー: `client-app/components/AdBanner.js`（プレミアム時 `null`）
-- インタースティシャル: `client-app/utils/interstitialAd.js`（投稿作成完了直後に低頻度で表示、プレミアム時は出さない）
+- バナー: `client-app/components/AdBanner.js`（Plusプラン時 `null`）
+- インタースティシャル: `client-app/utils/interstitialAd.js`（投稿作成完了直後に低頻度で表示、Plusプラン時は出さない）
 - ATT: `expo-tracking-transparency` の `requestTrackingPermissionsAsync()`。拒否時は `nonPersonalizedAdsOnly: true` で AdMob 初期化。
 - UMP: `AdsConsent`（`react-native-google-mobile-ads/consent`）で同意フォームを表示。
 
@@ -69,7 +69,7 @@
 
 `__DEV__` か `Constants.executionEnvironment === 'storeClient'` でテスト ID にフォールバックする。
 
-### プレミアム判定との連携
+### Plusプラン判定との連携
 
 `SubscriptionContext.isPremium === true` のとき、`AdBanner` は `null` を返し、`showInterstitialIfReady({ isPremium })` も即 return する。これにより、ADR-0004 の購読状態が広告抑制に直結する。
 

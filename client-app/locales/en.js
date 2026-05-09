@@ -58,8 +58,8 @@ export default {
     
     // Settings screen
     accountSettings: 'Account Settings',
-    loginInfo: 'Change Login Info',
-    premiumPlan: 'Premium Plan Settings',
+    loginInfo: 'Account',
+    premiumPlan: 'Plus Plan Settings',
     daibSettings: 'DaiB Settings',
     categoryManagement: 'Category Management',
     displaySettings: 'Display Settings',
@@ -180,7 +180,14 @@ export default {
     reauthRequired: 'Please sign in again.',
     dangerZone: 'Delete Account',
     deleteAccount: 'Delete account',
-    deleteAccountDescription: 'Deleting your account will permanently remove all of your posts, categories, friend relationships, and other data. This action cannot be undone.\nIf you have an active premium subscription, please cancel it from the App Store first.',
+    deleteAccountDescription:
+        'Deleting your account will permanently remove all of your posts, categories, friend relationships, and other data. This action cannot be undone.\nIf you have an active Plus subscription, you must cancel your subscription before you can delete your account.',
+    deleteAccountPremiumBlockedTitle: 'Active Plus subscription',
+    deleteAccountPremiumBlocked:
+        'To delete your account, cancel your subscription in the App Store or Google Play and wait for the status to update (this can take some time). Open Plus Plan Settings to manage your subscription.',
+    deleteAccountPremiumMustCancelHint:
+        'You are currently subscribed to Plus. Cancel your subscription before deleting your account.',
+    deleteAccountPremiumCheckFailed: 'Could not verify your subscription status. Check your connection and try again.',
     deleteAccountConfirm: 'Are you sure you want to delete your account? This action cannot be undone.',
     deleteAccountFinalConfirm: 'Final confirmation: your account and all related data will be deleted. Continue?',
     deleteAccountConfirmAction: 'Delete',
@@ -215,16 +222,16 @@ export default {
     blockUserFailed: 'Failed to block the user.',
     blockedNotice: 'You have blocked this user.',
     
-    // Premium plan
-    premiumActive: 'Premium Plan Active',
+    // Plus plan (subscriptions)
+    premiumActive: 'Plus Plan Active',
     freePlan: 'Free Plan',
     nextRenewal: 'Next renewal',
     freeForever: 'Free forever',
-    premiumFeatures: 'Premium Features',
+    premiumFeatures: 'Plus features',
     pricingPlan: 'Pricing Plan',
     perMonth: '/month',
     cancelAnytime: 'Cancel anytime',
-    upgradeToPremium: 'Upgrade to Premium',
+    upgradeToPremium: 'Upgrade to Plus',
     cancelPlan: 'Cancel Plan',
     manageSubscription: 'Manage Subscription',
     restorePurchases: 'Restore Purchases',
@@ -235,7 +242,7 @@ export default {
     iapNotAvailable: 'In-app purchases are available only on real device builds.',
     iapDisclaimer: 'This is an auto-renewing subscription. Unless you cancel at least 24 hours before the period ends, it will renew automatically at the same price. You can cancel anytime in Settings → Apple ID → Subscriptions.',
     monthlyPostLimitReached: 'Monthly post limit reached',
-    monthlyPostLimitMessage: 'The free plan allows {{limit}} posts per month. Upgrade to Premium for unlimited posts.',
+    monthlyPostLimitMessage: 'The free plan allows {{limit}} posts per month. Upgrade to Plus for unlimited posts.',
     imageBlockedByModeration: 'This image may violate our content policy and cannot be posted. Please choose a different image.',
     unlimitedStorage: 'Unlimited Cloud Storage',
     allPhotosCloud: 'Store all photos and videos in the cloud',
@@ -316,8 +323,8 @@ export default {
     categoryAdded: 'Category has been added',
     categoryUpdated: 'Category has been updated',
     categoryDeleted: 'Category has been deleted',
-    upgradedToPremium: 'Upgraded to Premium Plan',
-    planCanceled: 'Premium Plan has been canceled',
+    upgradedToPremium: 'Upgraded to Plus plan',
+    planCanceled: 'Plus plan has been canceled',
     
     // Reactions
     reactions: 'Reactions',

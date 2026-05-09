@@ -17,6 +17,19 @@ const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const POST_IMAGES_BUCKET = 'posts';
 const AVATARS_BUCKET = 'avatars';
 
+const PREMIUM_SUBSCRIPTION_STATUSES = ['active', 'in_grace_period', 'in_billing_retry'] as const;
+
+const hasActivePremiumSubscription = (
+  row: { status: string; expires_at: string | null } | null,
+): boolean => {
+  if (!row) return false;
+  if (!PREMIUM_SUBSCRIPTION_STATUSES.includes(row.status as (typeof PREMIUM_SUBSCRIPTION_STATUSES)[number])) {
+    return false;
+  }
+  if (row.expires_at == null || row.expires_at === '') return true;
+  return new Date(row.expires_at).getTime() > Date.now();
+};
+
 const json = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), {
     status,
@@ -83,6 +96,28 @@ Deno.serve(async (req) => {
   // レート制限: 1 時間に最大 3 回（誤操作 / 攻撃緩和）
   if (await isRateLimited(admin, `delete-account:${userId}`, 3600, 3)) {
     return json(429, { error: 'too_many_requests' });
+  }
+
+  const { data: subRow, error: subErr } = await admin
+    .from('subscriptions')
+    .select('status, expires_at')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (subErr) {
+    const msg = String(subErr.message ?? '');
+    if (!/does not exist|relation .* does not exist/i.test(msg)) {
+      console.warn('delete-account: subscriptions select failed', msg);
+      return json(503, { error: 'subscription_check_failed', detail: msg });
+    }
+  }
+
+  if (hasActivePremiumSubscription(subRow ?? null)) {
+    return json(409, {
+      error: 'premium_active',
+      detail:
+        'Cancel your Plus subscription in the App Store or Google Play before deleting your account.',
+    });
   }
 
   try {
