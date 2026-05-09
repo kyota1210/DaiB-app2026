@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -10,12 +10,14 @@ import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext'
 import { createCategory, updateCategory, deleteCategory, reorderCategories } from '../api/categories';
 import ScreenHeader from '../components/ScreenHeader';
 import ResultModal from '../components/ResultModal';
+import { useFeatureGate, FREE_LIMITS } from '../hooks/useFeatureGate';
 
 const CategoryManagementScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
     const { userToken } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
+    const { canCreateMoreCategories } = useFeatureGate();
     const { categories, loadCategories, loadingCategories } = useRecordsAndCategories();
 
     // デフォルトカテゴリー（削除不可、DBには保存しない）
@@ -45,7 +47,24 @@ const CategoryManagementScreen = ({ navigation }) => {
         }, [loadCategories])
     );
 
+    const showCategoryLimitAlert = () => {
+        Alert.alert(
+            t('categoryLimitReachedTitle'),
+            t('categoryLimitReachedMessage').replace('{{limit}}', String(FREE_LIMITS.maxCustomCategories)),
+            [
+                { text: t('cancel'), style: 'cancel' },
+                { text: t('upgradeToPremium'), onPress: () => navigation.navigate('PremiumPlan') },
+            ],
+        );
+    };
 
+    const openAddCategoryModal = () => {
+        if (!canCreateMoreCategories(customCategories.length)) {
+            showCategoryLimitAlert();
+            return;
+        }
+        setShowAddModal(true);
+    };
 
     const handleAddCategory = async () => {
         if (!categoryName.trim()) {
@@ -56,6 +75,11 @@ const CategoryManagementScreen = ({ navigation }) => {
         if (categoryName.trim().length > 25) {
             setErrorMessage('カテゴリー名は25文字以内で入力してください');
             setShowErrorModal(true);
+            return;
+        }
+
+        if (!canCreateMoreCategories(customCategories.length)) {
+            showCategoryLimitAlert();
             return;
         }
 
@@ -74,6 +98,10 @@ const CategoryManagementScreen = ({ navigation }) => {
             }, 2000);
         } catch (error) {
             console.error('カテゴリー作成エラー:', error);
+            if (error?.code === 'CATEGORY_LIMIT_FREE') {
+                showCategoryLimitAlert();
+                return;
+            }
             setErrorMessage(error.message || 'カテゴリーの追加に失敗しました');
             setShowErrorModal(true);
         } finally {
@@ -267,7 +295,7 @@ const CategoryManagementScreen = ({ navigation }) => {
                 <View style={styles.addButtonSection}>
                     <TouchableOpacity 
                         style={[styles.addButton, { backgroundColor: theme.colors.primary }]}
-                        onPress={() => setShowAddModal(true)}
+                        onPress={openAddCategoryModal}
                     >
                         <Ionicons name="add-circle" size={24} color="#fff" />
                         <Text style={styles.addButtonText}>新しいカテゴリーを追加</Text>

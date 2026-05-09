@@ -90,6 +90,7 @@ export default {
     // Records screen
     noRecords: 'No records yet.',
     posts: 'Posts',
+    homeAddCategory: 'Add category',
     recordDetail: 'Record Detail',
     
     // Create/Edit screen
@@ -231,6 +232,9 @@ export default {
     premiumBenefitPostsTitle: 'No monthly post limit',
     premiumBenefitPostsDesc:
         'Free plan: up to {{limit}} posts per month. Plus removes the cap so you can add records whenever you want.',
+    premiumBenefitCategoriesTitle: 'Create unlimited categories',
+    premiumBenefitCategoriesDesc:
+        'On the free plan you can add up to {{limit}} of your own categories. With Plus, create as many as you need to organize by theme.',
     subscriptionPriceOnStore:
         'Pricing follows the amount shown in the App Store or Google Play. Please confirm there before you subscribe.',
     pricingPlan: 'Pricing Plan',
@@ -248,6 +252,9 @@ export default {
     iapDisclaimer: 'This is an auto-renewing subscription. Unless you cancel at least 24 hours before the period ends, it will renew automatically at the same price. You can cancel anytime in Settings → Apple ID → Subscriptions.',
     monthlyPostLimitReached: 'Monthly post limit reached',
     monthlyPostLimitMessage: 'The free plan allows {{limit}} posts per month. Upgrade to Plus for unlimited posts.',
+    categoryLimitReachedTitle: 'Category limit reached',
+    categoryLimitReachedMessage:
+        'The free plan allows up to {{limit}} custom categories. Upgrade to Plus for unlimited categories.',
     imageBlockedByModeration: 'This image may violate our content policy and cannot be posted. Please choose a different image.',
     unlimitedStorage: 'Unlimited Cloud Storage',
     allPhotosCloud: 'Store all photos and videos in the cloud',

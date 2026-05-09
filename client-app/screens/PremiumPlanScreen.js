@@ -114,6 +114,11 @@ const PremiumPlanScreen = ({ navigation }) => {
         String(FREE_LIMITS.monthlyPostCount),
     );
 
+    const categoriesBenefitDescription = t('premiumBenefitCategoriesDesc').replace(
+        '{{limit}}',
+        String(FREE_LIMITS.maxCustomCategories),
+    );
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
             <ScreenHeader title={t('subscriptionScreenTitle')} onBack={() => navigation.goBack()} />
@@ -150,6 +155,12 @@ const PremiumPlanScreen = ({ navigation }) => {
                             icon="notifications-off"
                             title={t('premiumBenefitNoAdsTitle')}
                             description={t('premiumBenefitNoAdsDesc')}
+                            theme={theme}
+                        />
+                        <FeatureItem
+                            icon="folder-open-outline"
+                            title={t('premiumBenefitCategoriesTitle')}
+                            description={categoriesBenefitDescription}
                             theme={theme}
                         />
                         <FeatureItem

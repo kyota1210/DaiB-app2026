@@ -90,6 +90,7 @@ export default {
     // 記録画面
     noRecords: 'まだ記録がありません。',
     posts: '投稿',
+    homeAddCategory: 'カテゴリー追加',
     recordDetail: '記録の詳細',
     
     // 作成・編集画面
@@ -229,6 +230,9 @@ export default {
     premiumBenefitPostsTitle: '月の投稿数を気にせず',
     premiumBenefitPostsDesc:
         '無料プランは月{{limit}}件まで。Plus では月あたりの投稿上限がなく、思い出のタイミングで追加できます。',
+    premiumBenefitCategoriesTitle: 'カテゴリーを無制限に作成',
+    premiumBenefitCategoriesDesc:
+        'フリープランでは自分用のカテゴリーを最大{{limit}}個まで。Plus なら上限なしで、テーマや用途ごとにいくつでも整理できます。',
     subscriptionPriceOnStore:
         '料金は App Store または Google Play に表示された金額が適用されます。購入手続きの前に必ずご確認ください。',
     pricingPlan: '料金プラン',
@@ -246,6 +250,9 @@ export default {
     iapDisclaimer: '自動更新サブスクリプションです。期間終了の24時間以上前にキャンセルしない限り、同額で自動更新されます。設定 → Apple ID → サブスクリプションからいつでもキャンセルできます。',
     monthlyPostLimitReached: '今月の投稿上限に達しました',
     monthlyPostLimitMessage: '無料プランは月{{limit}}件まで投稿できます。Plusにアップグレードすると無制限で投稿できます。',
+    categoryLimitReachedTitle: 'カテゴリー数の上限に達しました',
+    categoryLimitReachedMessage:
+        '無料プランではカスタムカテゴリーを{{limit}}個まで作成できます。Plusにアップグレードすると無制限に作成できます。',
     imageBlockedByModeration: 'この画像は利用規約に違反する可能性があるため、投稿できません。別の画像を選択してください。',
     unlimitedStorage: '無制限のクラウドストレージ',
     allPhotosCloud: 'すべての写真と動画をクラウドに保存',

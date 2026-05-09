@@ -309,23 +309,23 @@ export default function RecordListScreen({ navigation }) {
 
         return (
             <View style={styles.categoryTabsContainer}>
-                <ScrollView 
+                <ScrollView
                     ref={categoryTabsScrollRef}
-                    horizontal 
+                    horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.categoryTabsContent}
                 >
                     {categories.map((category, index) => {
                         const isSelected = selectedCategory === category.id;
                         const isAllCategory = category.id === 'all';
-                        
+
                         return (
                             <TouchableOpacity
                                 key={category.id}
                                 style={[
                                     styles.categoryTab,
                                     isAllCategory && styles.categoryTabIcon,
-                                    isSelected && styles.categoryTabSelected
+                                    isSelected && styles.categoryTabSelected,
                                 ]}
                                 onLayout={(e) => {
                                     const { x, width } = e.nativeEvent.layout;
@@ -337,7 +337,7 @@ export default function RecordListScreen({ navigation }) {
                                     if (horizontalScrollViewRef.current) {
                                         horizontalScrollViewRef.current.scrollTo({
                                             x: index * SCREEN_WIDTH,
-                                            animated: true
+                                            animated: true,
                                         });
                                     }
                                     setTimeout(() => {
@@ -355,10 +355,12 @@ export default function RecordListScreen({ navigation }) {
                                 }}
                                 activeOpacity={0.85}
                             >
-                                <View style={[
-                                    styles.categoryTabGlass,
-                                    isSelected && styles.categoryTabGlassSelected
-                                ]}>
+                                <View
+                                    style={[
+                                        styles.categoryTabGlass,
+                                        isSelected && styles.categoryTabGlassSelected,
+                                    ]}
+                                >
                                     <BlurView
                                         intensity={60}
                                         tint="light"
@@ -367,18 +369,20 @@ export default function RecordListScreen({ navigation }) {
                                     <View style={styles.categoryTabGlassContent}>
                                         {isAllCategory ? (
                                             <View style={styles.categoryTabContent}>
-                                                <Ionicons 
-                                                    name="apps" 
-                                                    size={18} 
-                                                    color={theme.colors.text} 
+                                                <Ionicons
+                                                    name="apps"
+                                                    size={18}
+                                                    color={theme.colors.text}
                                                 />
                                             </View>
                                         ) : (
                                             <View style={styles.categoryTabContent}>
-                                                <Text style={[
-                                                    styles.categoryTabText,
-                                                    { color: theme.colors.text }
-                                                ]}>
+                                                <Text
+                                                    style={[
+                                                        styles.categoryTabText,
+                                                        { color: theme.colors.text },
+                                                    ]}
+                                                >
                                                     {category.name}
                                                 </Text>
                                             </View>
@@ -388,6 +392,35 @@ export default function RecordListScreen({ navigation }) {
                             </TouchableOpacity>
                         );
                     })}
+                    <TouchableOpacity
+                        style={styles.categoryTab}
+                        onPress={() => navigation.navigate('CategoryManagement')}
+                        activeOpacity={0.85}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('homeAddCategory')}
+                    >
+                        <View style={styles.categoryTabGlass}>
+                            <BlurView
+                                intensity={60}
+                                tint="light"
+                                style={StyleSheet.absoluteFillObject}
+                            />
+                            <View style={styles.categoryTabGlassContent}>
+                                <View style={styles.categoryAddTabInner}>
+                                    <Ionicons name="add" size={18} color={theme.colors.primary} />
+                                    <Text
+                                        style={[
+                                            styles.categoryTabText,
+                                            { color: theme.colors.primary },
+                                        ]}
+                                        numberOfLines={1}
+                                    >
+                                        {t('homeAddCategory')}
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
                 </ScrollView>
             </View>
         );
@@ -1002,6 +1035,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         alignItems: 'center',
         paddingVertical: 2,
+    },
+    categoryAddTabInner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
     },
     categoryTab: {
         marginRight: 6,

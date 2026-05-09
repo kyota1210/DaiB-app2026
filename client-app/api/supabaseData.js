@@ -2,6 +2,7 @@ import { supabase } from '../utils/supabase';
 import { POST_IMAGES_BUCKET, AVATARS_BUCKET } from '../config';
 import { imageUriToJpegArrayBuffer } from '../utils/normalizeImageForUpload';
 import { moderateImage } from './moderation_image';
+import { FREE_LIMITS } from '../hooks/useFeatureGate';
 
 const ALLOWED_EMOJIS = ['❤️', '👍', '🌸', '🎉', '✨'];
 
@@ -305,6 +306,21 @@ export const fetchCategories = async () => {
 
 export const createCategory = async ({ name }) => {
   const user = await requireUser();
+  const { data: isPremium, error: premErr } = await supabase.rpc('is_current_user_premium');
+  if (premErr) throw mapSupabaseError(premErr);
+  if (!isPremium) {
+    const { count, error: cntError } = await supabase
+      .from('categories')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('invalidation_flag', 0);
+    if (cntError) throw mapSupabaseError(cntError);
+    if ((count ?? 0) >= FREE_LIMITS.maxCustomCategories) {
+      const err = new Error('category_limit_free_plan');
+      err.code = 'CATEGORY_LIMIT_FREE';
+      throw err;
+    }
+  }
   const { data: last } = await supabase
     .from('categories')
     .select('sort_order')
