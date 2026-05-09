@@ -19,6 +19,8 @@
 //   200 { ok: true, decision: "allow" | "review" | "block", scores: {...} }
 
 // deno-lint-ignore-file no-explicit-any
+/// <reference path="../_shared/deno.d.ts" />
+// @ts-ignore URL imports are resolved by the Deno runtime, not the TS LSP.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { isRateLimited } from '../_shared/rateLimit.ts';
 
