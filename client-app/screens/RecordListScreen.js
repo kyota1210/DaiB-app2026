@@ -12,7 +12,6 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SERVER_URL } from '../config';
 import RecordCalendarSection from '../components/RecordCalendarSection';
-import RecordHeatmapSection from '../components/RecordHeatmapSection';
 import RecordLifeTimelineSection from '../components/RecordLifeTimelineSection';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -23,7 +22,7 @@ const TILE_PADDING = 16;
 const TILE_GAP = 8;
 const TILE_SIZE = (SCREEN_WIDTH - TILE_PADDING * 2 - TILE_GAP * (3 - 1)) / 3;
 
-const LIST_AREA_MODES = ['gallery', 'calendar', 'heatmap', 'lifeTimeline'];
+const LIST_AREA_MODES = ['gallery', 'calendar', 'lifeTimeline'];
 
 function advanceListAreaMode(prev) {
     const i = LIST_AREA_MODES.indexOf(prev);
@@ -34,8 +33,6 @@ function listAreaModeIcon(mode) {
     switch (mode) {
         case 'calendar':
             return 'calendar';
-        case 'heatmap':
-            return 'flame';
         case 'lifeTimeline':
             return 'git-branch-outline';
         default:
@@ -116,7 +113,7 @@ const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid
 export default function RecordListScreen({ navigation }) {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', 'booklist', 'tile'
-    const [listAreaMode, setListAreaMode] = useState('gallery'); // gallery | calendar | heatmap | lifeTimeline
+    const [listAreaMode, setListAreaMode] = useState('gallery'); // gallery | calendar | lifeTimeline
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
     const [categoryName, setCategoryName] = useState('');
@@ -690,14 +687,6 @@ export default function RecordListScreen({ navigation }) {
                                         navigation={navigation}
                                         language={activeLanguage}
                                         containerHeight={calendarPagerViewportHeight}
-                                    />
-                                ) : listAreaMode === 'heatmap' ? (
-                                    <RecordHeatmapSection
-                                        records={sortedCategoryRecords}
-                                        theme={theme}
-                                        navigation={navigation}
-                                        language={activeLanguage}
-                                        t={t}
                                     />
                                 ) : listAreaMode === 'lifeTimeline' ? (
                                     <RecordLifeTimelineSection

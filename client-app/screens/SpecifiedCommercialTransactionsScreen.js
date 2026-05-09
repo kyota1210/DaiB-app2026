@@ -10,6 +10,9 @@ import ScreenHeader from '../components/ScreenHeader';
  *
  * 注: 各値は運営者情報が確定後、固定値に置換すること（docs/release-checklist.md §1.2）。
  * 個人情報の取扱いを避けたい場合は、住所・電話の項目を「請求があれば遅滞なく開示」運用も可。
+ *
+ * TODO: 「販売価格」の Plus 月額はプレースホルダ。App Store / Google Play の販売価格確定後、
+ *       本文の金額とストア表示を同期すること。
  */
 const SpecifiedCommercialTransactionsScreen = ({ navigation }) => {
     const { theme } = useTheme();

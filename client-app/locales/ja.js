@@ -59,7 +59,8 @@ export default {
     // 設定画面
     accountSettings: 'アカウント設定',
     loginInfo: 'アカウント',
-    premiumPlan: 'Plusプランの設定',
+    premiumPlan: 'サブスクリプション',
+    subscriptionScreenTitle: 'サブスクリプション',
     daibSettings: 'DaiB設定',
     categoryManagement: 'カテゴリー管理',
     displaySettings: '表示設定',
@@ -71,9 +72,6 @@ export default {
     selectDefaultViewMode: '一覧画面のデフォルトの表示形式を選択',
     calendarTapDayHint: '写真のある日をタップすると、その日の投稿を開きます。上下にスクロールして月を切り替えられます。',
     calendarNoPostsThisDay: 'この日の投稿はありません。',
-    heatmapForYear: '{{year}}年',
-    heatmapLess: '少ない',
-    heatmapMore: '多い',
     lifeTimelineNoDates: '日付のある投稿がありません。',
     appSettings: 'アプリ設定',
     notificationSettings: '通知設定',
@@ -182,7 +180,7 @@ export default {
     deleteAccountDescription: 'アカウントを削除すると、投稿・カテゴリー・フォロー関係を含むすべてのデータが消去されます。この操作は元に戻せません。\nPlusプランをご利用中の場合は、サブスクリプションを解約した後にのみ削除できます。',
     deleteAccountPremiumBlockedTitle: 'Plusプラン利用中',
     deleteAccountPremiumBlocked:
-        'アカウントを削除するには、App Store または Google Play でサブスクリプションを解約し、反映をお待ちください（サブスク状態の反映まで時間がかかることがあります）。「Plusプランの設定」からサブスクリプションを管理できます。',
+        'アカウントを削除するには、App Store または Google Play でサブスクリプションを解約し、反映をお待ちください（サブスク状態の反映まで時間がかかることがあります）。設定の「サブスクリプション」から管理できます。',
     deleteAccountPremiumMustCancelHint:
         '現在Plusプランをご利用中です。アカウントを削除するには、先にサブスクリプションを解約してください。',
     deleteAccountPremiumCheckFailed: '購読状態を確認できませんでした。通信状況を確認して再度お試しください。',
@@ -227,6 +225,14 @@ export default {
     nextRenewal: '次回更新日',
     freeForever: '無料でご利用いただけます',
     premiumFeatures: 'Plusの機能',
+    subscriptionBenefitsTitle: 'Plus の特典',
+    premiumBenefitNoAdsTitle: '広告なしで快適に',
+    premiumBenefitNoAdsDesc: '画面上下のバナー広告を表示しません。記録をひと続きで楽しめます。',
+    premiumBenefitPostsTitle: '月の投稿数を気にせず',
+    premiumBenefitPostsDesc:
+        '無料プランは月{{limit}}件まで。Plus では月あたりの投稿上限がなく、思い出のタイミングで追加できます。',
+    subscriptionPriceOnStore:
+        '料金は App Store または Google Play に表示された金額が適用されます。購入手続きの前に必ずご確認ください。',
     pricingPlan: '料金プラン',
     perMonth: '/月',
     cancelAnytime: 'いつでもキャンセル可能',

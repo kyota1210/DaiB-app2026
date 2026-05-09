@@ -14,7 +14,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { getImageUrl } from '../utils/imageHelper';
 import { useSubscription } from '../context/SubscriptionContext';
 import { showInterstitialIfReady } from '../utils/interstitialAd';
-import { useFeatureGate } from '../hooks/useFeatureGate';
+import { useFeatureGate, FREE_LIMITS } from '../hooks/useFeatureGate';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -98,7 +98,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
     
     const { createRecord, updateRecord } = useRecordsApi();
     const { categories, loadCategories, loadingCategories, loadRecords, records } = useRecordsAndCategories();
-    const { canCreateMorePosts, getMonthlyPostLimit } = useFeatureGate();
+    const { canCreateMorePosts } = useFeatureGate();
     
     // カテゴリーを取得（キャッシュになければ読み込む）
     useEffect(() => {
@@ -204,7 +204,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
                 Alert.alert(
                     t('monthlyPostLimitReached') || '今月の投稿上限に達しました',
                     (t('monthlyPostLimitMessage') || '無料プランは月{{limit}}件までです。Plusにアップグレードすると無制限で投稿できます。')
-                        .replace('{{limit}}', String(getMonthlyPostLimit())),
+                        .replace('{{limit}}', String(FREE_LIMITS.monthlyPostCount)),
                     [
                         { text: t('cancel'), style: 'cancel' },
                         {

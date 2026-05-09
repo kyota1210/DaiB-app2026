@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import ScreenHeader from '../components/ScreenHeader';
 import { useLanguage } from '../context/LanguageContext';
 import { useSubscription } from '../context/SubscriptionContext';
+import { FREE_LIMITS } from '../hooks/useFeatureGate';
 import {
     purchasesConfigure,
     purchasesGetMonthlyPackage,
@@ -108,19 +109,28 @@ const PremiumPlanScreen = ({ navigation }) => {
         }
     };
 
+    const postsBenefitDescription = t('premiumBenefitPostsDesc').replace(
+        '{{limit}}',
+        String(FREE_LIMITS.monthlyPostCount),
+    );
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
-            <ScreenHeader title={t('premiumPlan')} onBack={() => navigation.goBack()} />
+            <ScreenHeader title={t('subscriptionScreenTitle')} onBack={() => navigation.goBack()} />
 
             <ScrollView style={[styles.scrollView, { backgroundColor: theme.colors.background }]}>
-                <View style={[styles.statusCard, { backgroundColor: theme.colors.background }]}>
-                    <View style={styles.statusIconContainer}>
-                        <Ionicons
-                            name={isPremium ? 'diamond' : 'diamond-outline'}
-                            size={48}
-                            color={isPremium ? '#FFD700' : theme.colors.inactive}
-                        />
-                    </View>
+                <View
+                    style={[
+                        styles.statusCard,
+                        { backgroundColor: theme.colors.background },
+                        !isPremium && styles.statusCardNoIcon,
+                    ]}
+                >
+                    {isPremium ? (
+                        <View style={styles.statusIconContainer}>
+                            <Ionicons name="diamond" size={48} color="#FFD700" />
+                        </View>
+                    ) : null}
                     <Text style={[styles.statusTitle, { color: theme.colors.text }]}>
                         {isPremium ? t('premiumActive') : t('freePlan')}
                     </Text>
@@ -134,13 +144,21 @@ const PremiumPlanScreen = ({ navigation }) => {
                 </View>
 
                 <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('premiumFeatures')}</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('subscriptionBenefitsTitle')}</Text>
                     <View style={[styles.featureCard, { backgroundColor: theme.colors.background }]}>
-                        <FeatureItem icon="cloud-upload" title={t('unlimitedStorage')} description={t('allPhotosCloud')} theme={theme} />
-                        <FeatureItem icon="sparkles" title={t('advancedFilters')} description={t('professionalTools')} theme={theme} />
-                        <FeatureItem icon="stats-chart" title={t('detailedStats')} description={t('analyzeTrends')} theme={theme} />
-                        <FeatureItem icon="notifications-off" title={t('noAds')} description={t('comfortableViewing')} theme={theme} />
-                        <FeatureItem icon="people" title={t('prioritySupport')} description={t('rapidSupport')} theme={theme} />
+                        <FeatureItem
+                            icon="notifications-off"
+                            title={t('premiumBenefitNoAdsTitle')}
+                            description={t('premiumBenefitNoAdsDesc')}
+                            theme={theme}
+                        />
+                        <FeatureItem
+                            icon="infinite"
+                            title={t('premiumBenefitPostsTitle')}
+                            description={postsBenefitDescription}
+                            theme={theme}
+                            isLast
+                        />
                     </View>
                 </View>
 
@@ -148,12 +166,16 @@ const PremiumPlanScreen = ({ navigation }) => {
                     <View style={styles.section}>
                         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('pricingPlan')}</Text>
                         <View style={[styles.priceCard, { backgroundColor: theme.colors.background }]}>
-                            <View style={styles.priceRow}>
-                                <Text style={[styles.priceAmount, { color: theme.colors.primary }]}>
-                                    {priceDisplay || '¥980'}
+                            {priceDisplay ? (
+                                <View style={styles.priceRow}>
+                                    <Text style={[styles.priceAmount, { color: theme.colors.primary }]}>{priceDisplay}</Text>
+                                    <Text style={[styles.priceUnit, { color: theme.colors.secondaryText }]}>{t('perMonth')}</Text>
+                                </View>
+                            ) : (
+                                <Text style={[styles.priceOnStoreNote, { color: theme.colors.secondaryText }]}>
+                                    {t('subscriptionPriceOnStore')}
                                 </Text>
-                                <Text style={[styles.priceUnit, { color: theme.colors.secondaryText }]}>{t('perMonth')}</Text>
-                            </View>
+                            )}
                             <Text style={[styles.priceNote, { color: theme.colors.inactive }]}>{t('cancelAnytime')}</Text>
                         </View>
                     </View>
@@ -208,8 +230,8 @@ const PremiumPlanScreen = ({ navigation }) => {
     );
 };
 
-const FeatureItem = ({ icon, title, description, theme }) => (
-    <View style={[styles.featureItem, { borderBottomColor: theme.colors.border }]}>
+const FeatureItem = ({ icon, title, description, theme, isLast }) => (
+    <View style={[styles.featureItem, { borderBottomColor: theme.colors.border, borderBottomWidth: isLast ? 0 : 1 }]}>
         <View style={[styles.featureIconContainer, { backgroundColor: theme.isDark ? '#1a3a5c' : '#E8F4FF' }]}>
             <Ionicons name={icon} size={24} color={theme.colors.primary} />
         </View>
@@ -236,6 +258,7 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 3,
     },
+    statusCardNoIcon: { paddingTop: 48 },
     statusIconContainer: { marginBottom: 16 },
     statusTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 8 },
     statusSubtitle: { fontSize: 14 },
@@ -254,7 +277,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 16,
-        borderBottomWidth: 1,
     },
     featureIconContainer: {
         width: 40,
@@ -280,6 +302,7 @@ const styles = StyleSheet.create({
     priceRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 8 },
     priceAmount: { fontSize: 48, fontWeight: 'bold' },
     priceUnit: { fontSize: 20, marginLeft: 4 },
+    priceOnStoreNote: { fontSize: 15, lineHeight: 22, textAlign: 'center', marginBottom: 8 },
     priceNote: { fontSize: 14 },
     buttonSection: {
         paddingHorizontal: 16,

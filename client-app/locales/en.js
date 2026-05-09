@@ -59,7 +59,8 @@ export default {
     // Settings screen
     accountSettings: 'Account Settings',
     loginInfo: 'Account',
-    premiumPlan: 'Plus Plan Settings',
+    premiumPlan: 'Subscription',
+    subscriptionScreenTitle: 'Subscription',
     daibSettings: 'DaiB Settings',
     categoryManagement: 'Category Management',
     displaySettings: 'Display Settings',
@@ -71,9 +72,6 @@ export default {
     selectDefaultViewMode: 'Select the layout shown when opening the list',
     calendarTapDayHint: 'Tap a day with a photo to open posts from that day. Scroll up or down to change months.',
     calendarNoPostsThisDay: 'No posts on this day.',
-    heatmapForYear: '{{year}}',
-    heatmapLess: 'Less',
-    heatmapMore: 'More',
     lifeTimelineNoDates: 'No posts with a date in this category.',
     appSettings: 'App Settings',
     notificationSettings: 'Notification Settings',
@@ -184,7 +182,7 @@ export default {
         'Deleting your account will permanently remove all of your posts, categories, friend relationships, and other data. This action cannot be undone.\nIf you have an active Plus subscription, you must cancel your subscription before you can delete your account.',
     deleteAccountPremiumBlockedTitle: 'Active Plus subscription',
     deleteAccountPremiumBlocked:
-        'To delete your account, cancel your subscription in the App Store or Google Play and wait for the status to update (this can take some time). Open Plus Plan Settings to manage your subscription.',
+        'To delete your account, cancel your subscription in the App Store or Google Play and wait for the status to update (this can take some time). Open Subscription under Settings to manage it.',
     deleteAccountPremiumMustCancelHint:
         'You are currently subscribed to Plus. Cancel your subscription before deleting your account.',
     deleteAccountPremiumCheckFailed: 'Could not verify your subscription status. Check your connection and try again.',
@@ -228,6 +226,15 @@ export default {
     nextRenewal: 'Next renewal',
     freeForever: 'Free forever',
     premiumFeatures: 'Plus features',
+    subscriptionBenefitsTitle: 'Included with Plus',
+    premiumBenefitNoAdsTitle: 'Ad-free viewing',
+    premiumBenefitNoAdsDesc:
+        'Skip banner ads at the top and bottom of the app. Browse your memories without interruptions.',
+    premiumBenefitPostsTitle: 'No monthly post limit',
+    premiumBenefitPostsDesc:
+        'Free plan: up to {{limit}} posts per month. Plus removes the cap so you can add records whenever you want.',
+    subscriptionPriceOnStore:
+        'Pricing follows the amount shown in the App Store or Google Play. Please confirm there before you subscribe.',
     pricingPlan: 'Pricing Plan',
     perMonth: '/month',
     cancelAnytime: 'Cancel anytime',

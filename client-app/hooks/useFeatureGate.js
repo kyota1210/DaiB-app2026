@@ -3,7 +3,8 @@
 
 import { useSubscription } from '../context/SubscriptionContext';
 
-const FREE_LIMITS = {
+/** 無料プランの上限（表示・ゲートで共有） */
+export const FREE_LIMITS = {
     monthlyPostCount: 30,
     storageBytes: 200 * 1024 * 1024, // 200MB（参考値、バックエンド側でも別途制限予定）
 };
