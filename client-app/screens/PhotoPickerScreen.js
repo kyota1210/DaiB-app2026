@@ -256,7 +256,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
                     try {
                         await new Promise((r) => setTimeout(r, 1200));
                         if (!screenMountedRef.current) return;
-                        setShowSuccessModal(false);
+                        Keyboard.dismiss();
                         await new Promise((r) => InteractionManager.runAfterInteractions(() => r()));
                         if (!screenMountedRef.current) return;
                         try {
@@ -268,14 +268,16 @@ export default function PhotoPickerScreen({ navigation, route }) {
                             /* noop */
                         }
                         if (!screenMountedRef.current) return;
+                        setShowSuccessModal(false);
                         await new Promise((r) => InteractionManager.runAfterInteractions(() => r()));
                         if (!screenMountedRef.current) return;
                         if (navigation.canGoBack()) {
                             navigation.goBack();
                         }
                     } catch (_) {
-                        if (screenMountedRef.current && navigation.canGoBack()) {
-                            navigation.goBack();
+                        if (screenMountedRef.current) {
+                            setShowSuccessModal(false);
+                            if (navigation.canGoBack()) navigation.goBack();
                         }
                     }
                 })();
