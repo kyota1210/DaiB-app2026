@@ -24,16 +24,14 @@ const linking = {
   },
 };
 
-// ステータスバーとナビゲーションをラップするコンポーネント
 const AppContent = () => {
   const { theme } = useTheme();
-  
+
   return (
     <>
-      {/* ステータスバーのスタイルをテーマに応じて変更 */}
       <StatusBar style={theme.isDark ? 'light' : 'dark'} />
       <NavigationContainer linking={linking}>
-        <AppNavigator /> 
+        <AppNavigator />
       </NavigationContainer>
     </>
   );

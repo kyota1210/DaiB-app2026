@@ -370,4 +370,33 @@ export default {
     checkingAuth: 'Checking authentication...',
     noImage: 'No Image',
     average: 'Average',
+
+    // Notification Settings
+    notifSectionSystem: 'Announcements',
+    notifSystemTitle: 'System Notifications',
+    notifSystemDesc: 'Important announcements will appear in the app',
+    notifications: 'Notifications',
+    notificationsEmpty: 'No notifications',
+    markAllRead: 'Mark all read',
+
+    // Admin screen
+    adminSection: 'Admin',
+    adminTitle: 'Send Announcement',
+    adminNotifSectionNew: 'New Announcement',
+    adminNotifLabelTitle: 'Title',
+    adminNotifLabelBody: 'Body',
+    adminNotifPlaceholderTitle: 'Enter announcement title',
+    adminNotifPlaceholderBody: 'Enter announcement body',
+    adminNotifSend: 'Send to All Users',
+    adminNotifNote: 'This action will deliver the announcement to all users. Please review the content carefully before sending.',
+    adminNotifConfirmTitle: 'Confirm Delivery',
+    adminNotifConfirmMessage: 'This announcement will be delivered to all users. Are you sure?',
+    adminNotifSentTitle: 'Delivery Complete',
+    adminNotifSentMessage: 'Announcement delivered to {{count}} users.',
+    adminNotifErrorTitle: 'Delivery Error',
+    adminNotifTitleRequired: 'Please enter a title.',
+    adminNotifBodyRequired: 'Please enter a body.',
+    adminNotifErrorGeneric: 'An error occurred during delivery.',
+    adminNotifSectionHistory: 'Delivery History',
+    adminNotifHistoryEmpty: 'No delivery history',
 };

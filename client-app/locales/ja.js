@@ -365,4 +365,33 @@ export default {
     checkingAuth: '認証状態を確認中...',
     noImage: 'No Image',
     average: '平均',
+
+    // 通知設定
+    notifSectionSystem: 'お知らせ通知',
+    notifSystemTitle: 'システム通知',
+    notifSystemDesc: '重要なお知らせをアプリ内でお知らせします',
+    notifications: 'お知らせ',
+    notificationsEmpty: 'お知らせはありません',
+    markAllRead: 'すべて既読',
+
+    // 管理画面
+    adminSection: '管理者メニュー',
+    adminTitle: 'お知らせ配信',
+    adminNotifSectionNew: '新規お知らせ配信',
+    adminNotifLabelTitle: 'タイトル',
+    adminNotifLabelBody: '本文',
+    adminNotifPlaceholderTitle: 'お知らせのタイトルを入力',
+    adminNotifPlaceholderBody: 'お知らせの内容を入力',
+    adminNotifSend: '全ユーザーに配信する',
+    adminNotifNote: 'この操作は全ユーザーのお知らせに配信されます。内容を確認してから送信してください。',
+    adminNotifConfirmTitle: '配信確認',
+    adminNotifConfirmMessage: '全ユーザーにこのお知らせを配信します。よろしいですか？',
+    adminNotifSentTitle: '配信完了',
+    adminNotifSentMessage: '{{count}}件のユーザーにお知らせを配信しました。',
+    adminNotifErrorTitle: '配信エラー',
+    adminNotifTitleRequired: 'タイトルを入力してください。',
+    adminNotifBodyRequired: '本文を入力してください。',
+    adminNotifErrorGeneric: '配信中にエラーが発生しました。',
+    adminNotifSectionHistory: '配信履歴',
+    adminNotifHistoryEmpty: '配信履歴はありません',
 };

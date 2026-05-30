@@ -33,6 +33,8 @@ import PrivacyScreen from '../screens/PrivacyScreen';
 import ContactScreen from '../screens/ContactScreen';
 import InviteHandlerScreen from '../screens/InviteHandlerScreen';
 import SpecifiedCommercialTransactionsScreen from '../screens/SpecifiedCommercialTransactionsScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
+import AdminScreen from '../screens/AdminScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -144,9 +146,10 @@ const AuthStack = () => {
 };
 
 const AppNavigator = () => {
-  const { isLoading, userToken } = React.useContext(AuthContext);
+  const { isLoading, userToken, userInfo } = React.useContext(AuthContext);
   const { theme } = useTheme();
   const { t } = useLanguage();
+  const isAdmin = userInfo?.is_admin === true;
 
   if (isLoading) {
     return (
@@ -180,6 +183,10 @@ const AppNavigator = () => {
           <Stack.Screen name="FriendHub" component={FriendHubScreen} />
           <Stack.Screen name="UserProfile" component={UserProfileScreen} />
           <Stack.Screen name="InviteHandler" component={InviteHandlerScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          {isAdmin && (
+            <Stack.Screen name="Admin" component={AdminScreen} />
+          )}
         </Stack.Navigator>
       </RecordsAndCategoriesProvider>
     );

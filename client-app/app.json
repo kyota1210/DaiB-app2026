@@ -107,7 +107,7 @@
           "iosAppId": "ca-app-pub-3940256099942544~1458002511",
           "userTrackingUsageDescription": "より関連性の高い広告を表示するために、広告識別子を使用します。"
         }
-      ],
+      ]
     ],
     "extra": {
       "eas": {

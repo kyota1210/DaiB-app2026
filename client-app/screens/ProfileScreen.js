@@ -11,6 +11,7 @@ const ProfileScreen = ({ navigation }) => {
     const { userInfo, authContext } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
+    const isAdmin = userInfo?.is_admin === true;
 
     const handleLogout = () => {
         Alert.alert(
@@ -35,6 +36,21 @@ const ProfileScreen = ({ navigation }) => {
             <ScreenHeader title={t('settings')} onBack={() => navigation.goBack()} />
 
             <ScrollView style={[styles.scrollView, { backgroundColor: theme.colors.background }]}>
+                {isAdmin && (
+                    <View style={styles.section}>
+                        <Text style={[styles.sectionTitle, { color: '#E53935' }]}>{t('adminSection')}</Text>
+                        <View style={[styles.menuSection, { backgroundColor: theme.colors.background }]}>
+                            <TouchableOpacity
+                                style={styles.menuItem}
+                                onPress={() => navigation.navigate('Admin')}
+                            >
+                                <Ionicons name="megaphone" size={24} color="#E53935" />
+                                <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('adminTitle')}</Text>
+                                <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('accountSettings')}</Text>
                     <View style={[styles.menuSection, { backgroundColor: theme.colors.background }]}>
@@ -58,7 +74,7 @@ const ProfileScreen = ({ navigation }) => {
                 </View>
 
                 <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('daibSettings')}</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('appSettings')}</Text>
                     <View style={[styles.menuSection, { backgroundColor: theme.colors.background }]}>
                         <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
@@ -76,17 +92,6 @@ const ProfileScreen = ({ navigation }) => {
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('displaySettings')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
-                    </View>
-                </View>
-
-                <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('appSettings')}</Text>
-                    <View style={[styles.menuSection, { backgroundColor: theme.colors.background }]}>
-                        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}>
-                            <Ionicons name="notifications-outline" size={24} color={theme.colors.icon} />
-                            <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('notificationSettings')}</Text>
-                            <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
-                        </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
                             onPress={() => navigation.navigate('LanguageSetting')}
@@ -101,6 +106,14 @@ const ProfileScreen = ({ navigation }) => {
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('other')}</Text>
                     <View style={[styles.menuSection, { backgroundColor: theme.colors.background }]}>
+                        <TouchableOpacity
+                            style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
+                            onPress={() => navigation.navigate('Notifications')}
+                        >
+                            <Ionicons name="megaphone-outline" size={24} color={theme.colors.icon} />
+                            <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('notifications')}</Text>
+                            <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
+                        </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
                             onPress={() => navigation.navigate('Help')}

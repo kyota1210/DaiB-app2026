@@ -76,6 +76,7 @@ export const AuthProvider = ({ children }) => {
                     setUserInfo(null);
                     await purchasesLogOut();
                 }
+                // ログイン時のセキュリティ通知メールは廃止
             } else {
                 setUserToken(null);
                 setUserInfo(null);
