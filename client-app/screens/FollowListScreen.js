@@ -21,6 +21,11 @@ import { getFollowing, getFollowers, getFriends } from '../api/user';
 import { approveFollow } from '../api/follows';
 import { getImageUrl } from '../utils/imageHelper';
 
+/**
+ * 単独スタック画面としては未登録（`AppNavigator` に無し）。一覧・申請は `FriendHubScreen` が正。
+ * ユーザー検索は提供せず、新規フォローは招待 URL / QR のみという要件のため、この画面はレガシー残置。
+ */
+
 const FollowListScreen = ({ navigation, route }) => {
     const mode = route.params?.mode ?? 'following'; // 'following' | 'followers' | 'friends'
     const { userToken } = useContext(AuthContext);

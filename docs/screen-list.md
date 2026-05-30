@@ -10,7 +10,7 @@
 - **ログイン後**  
   - `Main`（タブ相当）: **Home** = `RecordListScreen`、**Thread** = `ThreadScreen`。従来の常時表示2タブではなく、**右下フローティングボタン**で Home ↔ Thread を切替。  
   - 同一ルートスタック: `RecordDetail` / `MyPage` / `ProfileEdit` / `LoginInfo` / `PremiumPlan` / `CategoryManagement` / `LanguageSetting` / `DisplaySettings` / `PhotoPicker` / 各種静的（Help, About, Terms, Privacy, Contact）/ **`FriendHub`** / `UserProfile` / **`InviteHandler`**.  
-- **廃止・未配線**（当メモ執筆時点）: 本ファイル後段の `UserSearch` / 独立 `FollowingList` 等は **`AppNavigator` に未登録**（`FollowListScreen.js` はファイルとして残存の可能性）。  
+- **廃止・対象外**（方針確定）: **ユーザー検索機能は提供しない**。新規フォローは招待URLまたはQRのみ。旧ドラフトの `UserSearch` / 単独の `FollowingList` スタックルートは `AppNavigator` に**未登録**（`FollowListScreen.js` はコードベースに残る場合のみ）。  
 - **Thread**: 友だち数表示 → `FriendHub`。追加は **QR/招待**（`ThreadScreen`）。  
 - **ProfileEdit**: 自己紹介・アバター等。旧「公開設定 public/private」は**実装要確認**（`ProfileEditScreen` 全体を要参照）。
 
@@ -60,7 +60,7 @@ DaiBアプリは、認証状態に応じて2つのナビゲーションスタッ
 
 #### タブナビゲーション（MainTabNavigator）
 
-認証済みユーザーは、下部に2つのタブが表示されます：
+認証済みユーザーは、従来型の下部タブの代わりに **ホーム⇔スレッド切替フローティングボタン** が使われます（UI の詳細は「現行ナビゲーション」節および `AppNavigator.js` が正）。
 
 ##### 3. RecordListScreen（ホーム・ギャラリー画面）
 - **タブ名**: Home
@@ -86,18 +86,18 @@ DaiBアプリは、認証状態に応じて2つのナビゲーションスタッ
 - **タブ名**: Thread
 - **アイコン**: chatbubbles / chatbubbles-outline
 - **パス**: `/Main/Thread`
-- **説明**: フォロー中ユーザーの直近7日間の記録をタイムライン表示。ユーザー検索・フォロー管理・QRコード機能
+- **説明**: フレンドの直近7日間の投稿をタイムライン表示。**友だち管理**・**自分の QR 表示**・**QR 読み取り・招待リンクの共有（シェア）**で新規フォロー開始。ユーザー名検索はない。
 - **主要要素**:
-  - フォロー数・フォロワー数表示
-  - タイムライン（フォロー中の記録一覧）
-  - ユーザー検索ボタン
-  - フォロー中/フォロワー一覧ボタン
-  - QRコード表示・スキャン（非公開ユーザー検索用）
+  - 友だち人数表示／**FriendHub** への入口
+  - タイムライン（フレンドの投稿一覧）
+  - QR コード表示およびカメラで QR 読み取り（相手ユーザー特定）
+  - 招待ページ URL の共有（`InviteHandler` と連動する Deep Link / Web 招待）
+  - メモリ再浮上など（詳細は [アプリケーション仕様書](アプリケーション仕様書.md)）
 - **遷移先**:
   - 記録タップ → RecordDetailScreen
   - 投稿者タップ → UserProfileScreen
-  - ユーザー検索 → UserSearchScreen
-  - フォロー中/フォロワー → FollowListScreen
+  - 友だち・申請一覧 → FriendHubScreen
+  - QR 読み取りまたは招待リンク → ユーザー特定後、`UserProfile` またはフォロー申請フローへ
 
 ---
 
@@ -238,27 +238,23 @@ DaiBアプリは、認証状態に応じて2つのナビゲーションスタッ
 
 ---
 
-##### 14. UserSearchScreen（ユーザー検索画面）
-- **パス**: `/UserSearch`
-- **説明**: ユーザーを検索する画面（公開は部分一致、非公開は検索キー完全一致）
+##### 14. FriendHubScreen（友だちハブ）
+- **パス**: `/FriendHub`
+- **説明**: 友だち一覧、フォロー中・フォロワー、フォロー申請の承認/拒否などを集約。**ユーザー検索は行わず**、`ThreadScreen` からの QR・招待とは別経路でもフォロー関係の状態を一覧できる。
 - **主要要素**:
-  - 検索入力フィールド
-  - 検索結果一覧
-  - フォローボタン
+  - タブまたはセクションに応じたユーザー一覧、アバター、申請状態
+  - （実装詳細は `FriendHubScreen.js` に準拠）
 - **遷移先**:
   - ユーザータップ → UserProfileScreen
-  - 戻る → ThreadScreen
+  - 戻る → 直前画面（通常は Thread）
 
 ---
 
-##### 15. FollowListScreen（フォロー一覧画面）
-- **パス**: `/FollowingList` または `/FollowersList`
-- **説明**: フォロー中またはフォロワー一覧を表示する画面
-- **主要要素**:
-  - ユーザー一覧（アバター、名前、フォロー状態）
-- **遷移先**:
-  - ユーザータップ → UserProfileScreen
-  - 戻る → ThreadScreen
+##### 15. ユーザー検索・旧ドラフト一覧画面について（提供しない）
+
+- **ユーザー検索**（名前・キーワード等）: **本プロダクトでは提供しない**。
+- **`UserSearchScreen`**: アプリ構成の正本には含めない。旧ドキュメントの画面番号のみのドラフトとして本文を削除済み。
+- **`FollowListScreen`**: **単独のスタック画面としては未到達**。一覧系は **`FriendHub` に統合**。`FollowListScreen.js` がリポジトリに残る場合はレガシー。
 
 ---
 
@@ -397,9 +393,9 @@ NavigationContainer
 
 ```
 NavigationContainer
-└── Stack.Navigator
+└── Stack.Navigator (headerShown: false)
     └── Stack.Screen name="Main"
-        └── Tab.Navigator (MainTabNavigator)
+        └── Tab.Navigator (MainTabNavigator, ホーム⇔スレッドはフローティングボタンで切替)
             ├── Tab.Screen name="Home" → RecordListScreen
             └── Tab.Screen name="Thread" → ThreadScreen
     ├── Stack.Screen name="RecordDetail" → RecordDetailScreen
@@ -415,11 +411,11 @@ NavigationContainer
     ├── Stack.Screen name="About" → AboutScreen
     ├── Stack.Screen name="Terms" → TermsScreen
     ├── Stack.Screen name="Privacy" → PrivacyScreen
+    ├── Stack.Screen name="SpecifiedCommercialTransactions" → SpecifiedCommercialTransactionsScreen
     ├── Stack.Screen name="Contact" → ContactScreen
-    ├── Stack.Screen name="UserSearch" → UserSearchScreen
-    ├── Stack.Screen name="FollowingList" → FollowListScreen
-    ├── Stack.Screen name="FollowersList" → FollowListScreen
-    └── Stack.Screen name="UserProfile" → UserProfileScreen
+    ├── Stack.Screen name="FriendHub" → FriendHubScreen
+    ├── Stack.Screen name="UserProfile" → UserProfileScreen
+    └── Stack.Screen name="InviteHandler" → InviteHandlerScreen
 ```
 
 ## 画面遷移のルール
@@ -428,9 +424,9 @@ NavigationContainer
    - トークンがある場合: MainTabNavigator を表示
    - トークンがない場合: AuthStack を表示
 
-2. **タブナビゲーション**
-   - 下部のタブで2つの主要画面（Home・Thread）を切り替え
-   - タブ間の遷移は履歴を保持しない
+2. **ホーム⇔スレッドの切り替え**
+   - **`CustomTabBar` 相当のフローティングボタン**で Home と Thread を切り替える
+   - 切替は単純遷移（タブごとの履歴保持はナビゲータ実装に従う）
 
 3. **スタックナビゲーション**
    - 詳細画面はスタックで管理
