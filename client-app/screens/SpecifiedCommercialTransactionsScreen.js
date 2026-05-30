@@ -28,21 +28,19 @@ const SpecifiedCommercialTransactionsScreen = ({ navigation }) => {
             >
                 <View style={[styles.content, { backgroundColor: theme.colors.background }]}>
                     <Text style={[styles.lastUpdated, { color: theme.colors.secondaryText }]}>
-                        最終更新日: 2026年4月26日
+                        最終更新日: 2026年5月31日
                     </Text>
 
-                    <Row label="販売事業者" value="（運営者の氏名または法人名を記載）" theme={theme} />
+                    <Row label="販売事業者" value="Moriyama Kyota" theme={theme} />
                     <Row label="所在地" value="ご請求があれば遅滞なく開示します" theme={theme} />
                     <Row label="連絡先" value="ご請求があれば遅滞なく開示します" theme={theme} />
                     <Row label="メールアドレス" value="（運営連絡先メールアドレスを記載）" theme={theme} />
-                    <Row label="運営責任者" value="（運営責任者氏名を記載）" theme={theme} />
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
                         販売価格
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        Plusプラン（月額）：980 円（税込）{'\n'}
-                        ※ 価格は App Store の表示価格に従います。為替や課税の都合で表示価格が変動する場合があります。
+                        Plusプラン（月額）：980 円（税込）
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
