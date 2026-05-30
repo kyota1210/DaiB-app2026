@@ -48,8 +48,8 @@ const CustomTabBar = React.memo(({ state, navigation }) => {
   };
 
   const IconComponent = isOnHome ? Ionicons : MaterialIcons;
-  const iconName = isOnHome ? 'newspaper-outline' : 'home';
-  const accessibilityLabel = isOnHome ? t('thread') : t('gallery');
+  const iconName = isOnHome ? 'people-outline' : 'home';
+  const accessibilityLabel = isOnHome ? t('friends') : t('gallery');
 
   return (
     <View style={styles.switchButtonWrapper} pointerEvents="box-none">
