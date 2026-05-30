@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TextInput, Alert, TouchableOpacity, Image, KeyboardAvoidingView, ScrollView, Platform, Keyboard } from 'react-native';
+import { StyleSheet, Text, View, TextInput, Alert, TouchableOpacity, KeyboardAvoidingView, ScrollView, Platform, Keyboard } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -62,11 +62,6 @@ export default function LoginScreen({ navigation }) {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.container}>
-                    <Image
-                        source={require('../assets/icon_clear.png')}
-                        style={styles.appIcon}
-                        resizeMode="contain"
-                    />
                     <Text style={[styles.title, { color: theme.colors.text }]}>
                         {tDevice('login')}
                     </Text>
@@ -148,11 +143,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 20,
         paddingTop: 56,
-    },
-    appIcon: {
-        width: 170,
-        height: 170,
-        marginBottom: 24,
     },
     title: {
         fontSize: 32,
