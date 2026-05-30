@@ -125,6 +125,7 @@ const AuthStack = () => {
           title: t('appName'),
           headerStyle: { backgroundColor: '#E8E6E1' },
           headerTintColor: '#1c1c1e',
+          headerBackTitle: t('login'),
         }}
       />
       <Stack.Screen
@@ -136,6 +137,8 @@ const AuthStack = () => {
           headerTintColor: '#1c1c1e',
         }}
       />
+      <Stack.Screen name="Terms" component={TermsScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Privacy" component={PrivacyScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 };

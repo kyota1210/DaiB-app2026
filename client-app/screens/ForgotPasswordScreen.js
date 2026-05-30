@@ -89,16 +89,6 @@ export default function ForgotPasswordScreen({ navigation }) {
                             {loading ? tDevice('sendingResetLink') : tDevice('sendResetLink')}
                         </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.secondaryButton, { borderColor: theme.colors.primary }]}
-                        onPress={() => navigation.goBack()}
-                        disabled={loading}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={[styles.secondaryButtonText, { color: theme.colors.primary }]}>
-                            {tDevice('backToLogin')}
-                        </Text>
-                    </TouchableOpacity>
                 </View>
             </ScrollView>
         </KeyboardAvoidingView>
@@ -110,7 +100,7 @@ const styles = StyleSheet.create({
     scrollContent: { flexGrow: 1, padding: 20, paddingTop: 24 },
     container: { alignItems: 'center' },
     title: { fontSize: 24, fontWeight: 'bold', marginBottom: 12 },
-    description: { fontSize: 14, marginBottom: 24, textAlign: 'center' },
+    description: { fontSize: 14, marginBottom: 24, textAlign: 'left', width: '100%' },
     input: {
         width: '100%',
         height: 50,
@@ -129,14 +119,4 @@ const styles = StyleSheet.create({
         marginTop: 8,
     },
     primaryButtonText: { fontSize: 17, fontWeight: '600', color: '#ffffff' },
-    secondaryButton: {
-        width: '100%',
-        height: 50,
-        borderRadius: 8,
-        borderWidth: 2,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 12,
-    },
-    secondaryButtonText: { fontSize: 17, fontWeight: '600' },
 });
