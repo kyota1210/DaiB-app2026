@@ -89,6 +89,24 @@ const LoginInfoScreen = ({ navigation }) => {
         }
     };
 
+    const handleLogout = () => {
+        Alert.alert(
+            t('logout'),
+            t('logoutConfirm'),
+            [
+                { text: t('cancel'), style: 'cancel' },
+                {
+                    text: t('logout'),
+                    style: 'destructive',
+                    onPress: async () => {
+                        await authContext.signOut();
+                    },
+                },
+            ],
+            { cancelable: true },
+        );
+    };
+
     const handleDeleteAccount = () => {
         void (async () => {
             const { data: premiumActive, error: rpcError } = await supabase.rpc('is_current_user_premium');
@@ -240,6 +258,13 @@ const LoginInfoScreen = ({ navigation }) => {
                     </View>
                 </View>
 
+                <View style={styles.logoutSection}>
+                    <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.6}>
+                        <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
+                        <Text style={styles.logoutText}>{t('logout')}</Text>
+                    </TouchableOpacity>
+                </View>
+
                 <View style={styles.sectionCompact}>
                     <Text style={[styles.sectionTitleCompact, { color: theme.colors.secondaryText }]}>{t('dangerZone')}</Text>
                     <View style={[styles.cardCompact, { backgroundColor: theme.colors.background }]}>
@@ -358,6 +383,21 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: '#FF3B30',
+    },
+    logoutSection: {
+        marginTop: 24,
+        paddingHorizontal: 20,
+    },
+    logoutButton: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 12,
+    },
+    logoutText: {
+        fontSize: 14,
+        color: '#FF3B30',
+        marginLeft: 6,
     },
 });
 

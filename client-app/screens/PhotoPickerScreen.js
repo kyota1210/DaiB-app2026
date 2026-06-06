@@ -417,12 +417,8 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                     {/* タイトル */}
                                     <View style={styles.inputGroup} ref={titleInputRef}>
                                         <TextInput
-                                            style={[styles.titleInput, { 
-                                                backgroundColor: theme.colors.secondaryBackground,
-                                                color: theme.colors.text,
-                                                borderColor: theme.colors.border
-                                            }]}
-                                            placeholder={t('title')}
+                                            style={[styles.simpleTextInput, { color: theme.colors.text }]}
+                                            placeholder={t('titlePlaceholder')}
                                             placeholderTextColor={theme.colors.secondaryText}
                                             value={title}
                                             onChangeText={setTitle}
@@ -430,8 +426,25 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                         />
                                     </View>
 
+                                    {/* キャプション（内部スクロールなし＝親の ScrollView で全体スクロール） */}
+                                    <View style={styles.captionGroup} ref={captionInputRef}>
+                                        <TextInput
+                                            style={[styles.simpleTextInput, styles.captionInput, { 
+                                                color: theme.colors.text
+                                            }]}
+                                            placeholder={t('キャプションを入力...')}
+                                            placeholderTextColor={theme.colors.secondaryText}
+                                            value={description}
+                                            onChangeText={setDescription}
+                                            multiline
+                                            scrollEnabled={false}
+                                            textAlignVertical="top"
+                                            onFocus={() => handleInputFocus(captionInputRef)}
+                                        />
+                                    </View>
+
                                     {/* カテゴリー */}
-                                    <View style={styles.inputGroup}>
+                                    <View style={styles.categoryGroup}>
                                         {loadingCategories ? (
                                             <ActivityIndicator size="small" color={theme.colors.primary} />
                                         ) : (
@@ -561,23 +574,6 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                             </View>
                                         </View>
                                     </Modal>
-
-                                    {/* キャプション（内部スクロールなし＝親の ScrollView で全体スクロール） */}
-                                    <View style={styles.captionGroup} ref={captionInputRef}>
-                                        <TextInput
-                                            style={[styles.captionInput, { 
-                                                color: theme.colors.text
-                                            }]}
-                                            placeholder={t('キャプションを入力...')}
-                                            placeholderTextColor={theme.colors.secondaryText}
-                                            value={description}
-                                            onChangeText={setDescription}
-                                            multiline
-                                            scrollEnabled={false}
-                                            textAlignVertical="top"
-                                            onFocus={() => handleInputFocus(captionInputRef)}
-                                        />
-                                    </View>
                                 </View>
                             </>
                         ) : (
@@ -734,6 +730,10 @@ const styles = StyleSheet.create({
     captionGroup: {
         marginTop: 8,
     },
+    categoryGroup: {
+        marginTop: 8,
+        marginBottom: 8,
+    },
     simpleDateContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -743,12 +743,12 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '500',
     },
-    titleInput: {
-        borderWidth: 1,
-        borderRadius: 12,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+    simpleTextInput: {
         fontSize: 16,
+        paddingTop: 8,
+        paddingBottom: 8,
+        lineHeight: 24,
+        minHeight: 40,
     },
     categoryScrollView: {
         flexGrow: 0,
@@ -777,8 +777,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingVertical: 12,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        marginBottom: 8,
+        borderTopWidth: StyleSheet.hairlineWidth,
+        marginTop: 8,
     },
     audienceLeft: {
         flexDirection: 'row',
@@ -857,10 +857,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     captionInput: {
-        fontSize: 16,
         minHeight: 100,
-        paddingVertical: 8,
-        lineHeight: 24,
     },
     modalOverlay: {
         flex: 1,

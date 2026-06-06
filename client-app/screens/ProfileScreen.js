@@ -1,41 +1,40 @@
-import React, { useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useContext, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
+import { getUnreadCount } from '../api/notifications';
 
 const ProfileScreen = ({ navigation }) => {
-    const { userInfo, authContext } = useContext(AuthContext);
+    const { userInfo } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
     const isAdmin = userInfo?.is_admin === true;
+    const [unreadCount, setUnreadCount] = useState(0);
 
-    const handleLogout = () => {
-        Alert.alert(
-            t('logout'),
-            t('logoutConfirm'),
-            [
-                { text: t('cancel'), style: 'cancel' },
-                {
-                    text: t('logout'),
-                    style: 'destructive',
-                    onPress: async () => {
-                        await authContext.signOut();
-                    },
-                },
-            ],
-            { cancelable: true }
-        );
-    };
+    const loadUnreadCount = useCallback(async () => {
+        const count = await getUnreadCount();
+        setUnreadCount(count);
+    }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadUnreadCount();
+        }, [loadUnreadCount]),
+    );
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
             <ScreenHeader title={t('settings')} onBack={() => navigation.goBack()} />
 
-            <ScrollView style={[styles.scrollView, { backgroundColor: theme.colors.background }]}>
+            <ScrollView
+                style={[styles.scrollView, { backgroundColor: theme.colors.background }]}
+                contentContainerStyle={styles.scrollContent}
+            >
                 {isAdmin && (
                     <View style={styles.section}>
                         <Text style={[styles.sectionTitle, { color: '#E53935' }]}>{t('adminSection')}</Text>
@@ -112,7 +111,16 @@ const ProfileScreen = ({ navigation }) => {
                         >
                             <Ionicons name="megaphone-outline" size={24} color={theme.colors.icon} />
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('notifications')}</Text>
-                            <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
+                            <View style={styles.menuRight}>
+                                {unreadCount > 0 && (
+                                    <View style={[styles.unreadBadge, { backgroundColor: theme.colors.primary ?? '#4E5F5C' }]}>
+                                        <Text style={styles.unreadBadgeText}>
+                                            {unreadCount > 99 ? '99+' : String(unreadCount)}
+                                        </Text>
+                                    </View>
+                                )}
+                                <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
+                            </View>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
@@ -164,13 +172,6 @@ const ProfileScreen = ({ navigation }) => {
                         </TouchableOpacity>
                     </View>
                 </View>
-
-                <View style={styles.logoutSection}>
-                    <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.6}>
-                        <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
-                        <Text style={styles.logoutText}>{t('logout')}</Text>
-                    </TouchableOpacity>
-                </View>
             </ScrollView>
         </SafeAreaView>
     );
@@ -182,6 +183,9 @@ const styles = StyleSheet.create({
     },
     scrollView: {
         flex: 1,
+    },
+    scrollContent: {
+        paddingBottom: 56,
     },
     section: {
         marginTop: 20,
@@ -208,21 +212,23 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginLeft: 12,
     },
-    logoutSection: {
-        marginTop: 40,
-        marginBottom: 40,
-        paddingHorizontal: 20,
-    },
-    logoutButton: {
+    menuRight: {
         flexDirection: 'row',
-        justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: 12,
+        gap: 8,
     },
-    logoutText: {
-        fontSize: 14,
-        color: '#FF3B30',
-        marginLeft: 6,
+    unreadBadge: {
+        minWidth: 22,
+        height: 22,
+        paddingHorizontal: 6,
+        borderRadius: 11,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    unreadBadgeText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '700',
     },
 });
 
