@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS public.categories (
   user_id           uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   category_name     text        NOT NULL CHECK (char_length(category_name) <= 25),
   sort_order        integer     NOT NULL DEFAULT 0,
-  invalidation_flag boolean     NOT NULL DEFAULT false,
+  invalidation_flag smallint    NOT NULL DEFAULT 0,
   deleted_at        timestamptz,
   created_at        timestamptz NOT NULL DEFAULT now(),
   updated_at        timestamptz NOT NULL DEFAULT now()
@@ -195,7 +195,7 @@ CREATE TABLE IF NOT EXISTS public.posts (
   date_logged       date        NOT NULL,
   image_url         text,
   show_in_timeline  boolean     NOT NULL DEFAULT true,
-  invalidation_flag boolean     NOT NULL DEFAULT false,
+  invalidation_flag smallint    NOT NULL DEFAULT 0,
   deleted_at        timestamptz,
   created_at        timestamptz NOT NULL DEFAULT now(),
   updated_at        timestamptz NOT NULL DEFAULT now(),
@@ -221,7 +221,7 @@ CREATE TABLE IF NOT EXISTS public.post_categories (
   id                bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   post_id           bigint      NOT NULL REFERENCES public.posts(id)      ON DELETE CASCADE,
   category_id       bigint      NOT NULL REFERENCES public.categories(id) ON DELETE CASCADE,
-  invalidation_flag boolean     NOT NULL DEFAULT false,
+  invalidation_flag smallint    NOT NULL DEFAULT 0,
   deleted_at        timestamptz,
   created_at        timestamptz NOT NULL DEFAULT now(),
   updated_at        timestamptz NOT NULL DEFAULT now(),
@@ -242,7 +242,7 @@ CREATE TABLE IF NOT EXISTS public.follows (
   id                bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   follower_id       uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   following_id      uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  invalidation_flag boolean     NOT NULL DEFAULT false,
+  invalidation_flag smallint    NOT NULL DEFAULT 0,
   deleted_at        timestamptz,
   created_at        timestamptz NOT NULL DEFAULT now(),
   updated_at        timestamptz NOT NULL DEFAULT now(),
@@ -477,7 +477,7 @@ BEGIN
   END IF;
 END $$;
 
-ALTER TABLE public.post_categories ADD COLUMN IF NOT EXISTS invalidation_flag boolean NOT NULL DEFAULT false;
+ALTER TABLE public.post_categories ADD COLUMN IF NOT EXISTS invalidation_flag smallint NOT NULL DEFAULT 0;
 ALTER TABLE public.post_categories ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
 ALTER TABLE public.post_categories ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
 
