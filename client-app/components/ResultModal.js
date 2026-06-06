@@ -139,6 +139,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         textAlign: 'center',
         lineHeight: 20,
+        alignSelf: 'stretch',
     },
     okButton: {
         paddingHorizontal: 32,

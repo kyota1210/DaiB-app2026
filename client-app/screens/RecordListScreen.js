@@ -1029,12 +1029,12 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     categoryTabsContainer: {
-        paddingVertical: 6,
+        paddingVertical: 4,
     },
     categoryTabsContent: {
         paddingHorizontal: 14,
         alignItems: 'center',
-        paddingVertical: 2,
+        paddingVertical: 1,
     },
     categoryAddTabInner: {
         flexDirection: 'row',
@@ -1045,7 +1045,7 @@ const styles = StyleSheet.create({
         marginRight: 6,
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: 32,
+        minHeight: 29,
     },
     categoryTabIcon: {
         minWidth: 42,
@@ -1053,10 +1053,10 @@ const styles = StyleSheet.create({
     categoryTabSelected: {},
     categoryTabGlass: {
         paddingHorizontal: 11,
-        paddingVertical: 6,
-        borderRadius: 16,
+        paddingVertical: 4,
+        borderRadius: 15,
         overflow: 'hidden',
-        minHeight: 32,
+        minHeight: 29,
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.45)',
     },
@@ -1068,7 +1068,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 11,
-        paddingVertical: 6,
+        paddingVertical: 4,
     },
     categoryTabContent: {
         alignItems: 'center',

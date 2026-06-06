@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import ScreenHeader from '../components/ScreenHeader';
+import { FREE_LIMITS } from '../hooks/useFeatureGate';
 
 const HelpScreen = ({ navigation }) => {
     const { theme } = useTheme();
@@ -13,7 +14,7 @@ const HelpScreen = ({ navigation }) => {
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
             <ScreenHeader title={t('help')} onBack={() => navigation.goBack()} />
 
-            <ScrollView 
+            <ScrollView
                 style={[styles.scrollView, { backgroundColor: theme.colors.background }]}
                 contentContainerStyle={styles.contentContainer}
             >
@@ -29,21 +30,21 @@ const HelpScreen = ({ navigation }) => {
                         記録の作成
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        ホーム画面右上の「+」ボタンをタップして、新しい記録を作成できます。写真を選択し、日付、タイトル、説明、カテゴリーを設定してください。
+                        ホーム画面右上の「+」ボタンをタップして、新しい記録を作成できます。写真を選択し、日付、タイトル、キャプション、カテゴリー、公開範囲を設定してください。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
                         カテゴリーの管理
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        設定画面から「カテゴリー管理」にアクセスして、カテゴリーの追加・編集・削除ができます。ホーム画面のカテゴリータブを長押しすると、直接編集できます。
+                        設定画面から「カテゴリー管理」にアクセスして、カテゴリーの追加・編集・削除・並び替えができます。並び替えは各行左のハンドルをドラッグして行います。ホーム画面のカテゴリータブを長押しすると、直接編集できます。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
                         表示モードの切り替え
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        ホーム画面右上の表示モードボタンで、グリッド表示、リスト表示、ブックリスト表示を切り替えられます。
+                        ホーム画面上部右側のボタンで、ギャラリー・カレンダー・ライフタイムラインを切り替えられます。ギャラリー表示中は、その隣のボタンでグリッド、リスト、ブックリスト、タイル表示を切り替えられます。デフォルトの表示モードは設定 → 表示設定から変更できます。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
@@ -67,14 +68,21 @@ const HelpScreen = ({ navigation }) => {
                         Q: カテゴリーはいくつまで作成できますか？
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        A: 現在、カテゴリーの作成数に制限はありません。
+                        A: フリープランではカスタムカテゴリーを{FREE_LIMITS.maxCustomCategories}個まで作成できます。Plusプランでは無制限に作成できます。
+                    </Text>
+
+                    <Text style={[styles.question, { color: theme.colors.text }]}>
+                        Q: 投稿できる件数に制限はありますか？
+                    </Text>
+                    <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
+                        A: フリープランでは月{FREE_LIMITS.monthlyPostCount}件まで投稿できます。Plusプランでは投稿数に上限はありません。
                     </Text>
 
                     <Text style={[styles.question, { color: theme.colors.text }]}>
                         Q: データはどこに保存されますか？
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        A: すべてのデータはサーバーに安全に保存され、JWT認証により保護されています。
+                        A: すべてのデータはクラウド上のサーバーに保存され、認証済みユーザーのみがアクセスできるよう保護されています。
                     </Text>
                 </View>
             </ScrollView>

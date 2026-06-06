@@ -116,9 +116,9 @@ export default {
     visibility_public: 'Public',
     visibility_public_desc: 'Shown in the thread',
     visibility_friends: 'Thread private',
-    visibility_friends_desc: 'Not shown in the thread',
+    visibility_friends_desc: 'Not shown on the thread screen',
     visibility_private: 'Completely private',
-    visibility_private_desc: 'Only visible in your own post list',
+    visibility_private_desc: 'Not shown on the thread screen\nOnly shown in the post list on the poster\'s own screen',
     
     // Login/Signup
     login: 'Login',

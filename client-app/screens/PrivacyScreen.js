@@ -19,7 +19,7 @@ const PrivacyScreen = ({ navigation }) => {
             >
                 <View style={[styles.content, { backgroundColor: theme.colors.background }]}>
                     <Text style={[styles.lastUpdated, { color: theme.colors.secondaryText }]}>
-                        最終更新日: 2026年4月26日
+                        最終更新日: 2026年6月6日
                     </Text>
 
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
@@ -34,7 +34,7 @@ const PrivacyScreen = ({ navigation }) => {
                     </Text>
                     <Text style={[styles.listItem, { color: theme.colors.secondaryText }]}>
                         ・アカウント情報：メールアドレス、ユーザー名、プロフィール画像（アバター）。パスワードは Supabase Auth により安全にハッシュ化され、当アプリ運営者は平文を取得しません。{'\n'}
-                        ・投稿情報：投稿した写真、タイトル、説明、日付、カテゴリー情報、「スレッドに表示する」設定{'\n'}
+                        ・投稿情報：投稿した写真、タイトル、キャプション、日付、カテゴリー情報、公開範囲（公開／スレッド非公開／完全非公開）{'\n'}
                         ・フォロー関係：フォロー・フォロワー・フレンド関係（誰と相互承認しているか）{'\n'}
                         ・リアクション：投稿に付与した絵文字{'\n'}
                         ・通報・ブロック：ユーザーや投稿に対して行った通報・ブロック内容{'\n'}
@@ -56,10 +56,10 @@ const PrivacyScreen = ({ navigation }) => {
                     </Text>
                     <Text style={[styles.listItem, { color: theme.colors.secondaryText }]}>
                         ・アプリサービスの提供・運営{'\n'}
-                        ・タイムライン・スレッド機能の提供（フレンドの直近 7 日分の投稿を表示）{'\n'}
+                        ・スレッド機能の提供（フレンドの直近 7 日分の投稿を表示）{'\n'}
                         ・フォロー／フレンド機能の提供{'\n'}
                         ・ユーザー認証・セキュリティの維持・不正利用の防止{'\n'}
-                        ・通報されたコンテンツの審査・モデレーション{'\n'}
+                        ・投稿画像の自動審査および通報されたコンテンツの審査・モデレーション{'\n'}
                         ・サブスクリプションプランの管理（特典の付与・解約反映等）{'\n'}
                         ・アプリのクラッシュ・エラー解析、品質改善{'\n'}
                         ・ユーザーサポート・お問い合わせ対応
@@ -74,7 +74,7 @@ const PrivacyScreen = ({ navigation }) => {
                         ・パスワードは Supabase Auth により安全にハッシュ化されます。当アプリ運営者は平文パスワードにアクセスできません{'\n'}
                         ・認証トークンは端末の SecureStore（暗号化ストレージ）に保存します{'\n'}
                         ・通信は HTTPS で暗号化します{'\n'}
-                        ・サブスクリプション情報は Apple／Google から提供される情報を当アプリのサーバーで検証して保存します
+                        ・サブスクリプション情報は RevenueCat 経由で Apple／Google から提供される情報を当アプリのサーバーで検証して保存します
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
@@ -85,8 +85,9 @@ const PrivacyScreen = ({ navigation }) => {
                     </Text>
                     <Text style={[styles.listItem, { color: theme.colors.secondaryText }]}>
                         ・Supabase（バックエンド・認証・ストレージ。米 Supabase, Inc.）{'\n'}
-                        ・Apple（iOS のアプリ内課金・通知。Apple Inc.）{'\n'}
-                        ・Google（Android 配信時の Play 課金。Google LLC）{'\n'}
+                        ・RevenueCat（サブスクリプション管理。RevenueCat, Inc.）{'\n'}
+                        ・Apple（iOS のアプリ内課金。Apple Inc.）{'\n'}
+                        ・Google（Android 配信時の Play 課金、画像審査 API。Google LLC）{'\n'}
                         ・Expo / React Native（アプリ実行基盤。Expo Application Services によるビルド配信）
                     </Text>
 
@@ -107,7 +108,7 @@ const PrivacyScreen = ({ navigation }) => {
                         ・個人情報の閲覧・訂正・削除を請求する権利{'\n'}
                         ・個人情報の利用停止を請求する権利{'\n'}
                         ・データのポータビリティを請求する権利{'\n'}
-                        ・アカウントの削除（退会）：設定 → ログイン情報 → アカウントの削除 から、ご自身でいつでも実行できます。削除すると関連するデータは速やかに削除または匿名化されます（法的保存義務がある場合を除く）。
+                        ・アカウントの削除（退会）：設定 → アカウント → アカウントを削除する から、ご自身でいつでも実行できます。削除すると関連するデータは速やかに削除または匿名化されます（法的保存義務がある場合を除く）。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import ScreenHeader from '../components/ScreenHeader';
+import { FREE_LIMITS } from '../hooks/useFeatureGate';
 
 const TermsScreen = ({ navigation }) => {
     const { theme } = useTheme();
@@ -19,7 +20,7 @@ const TermsScreen = ({ navigation }) => {
             >
                 <View style={[styles.content, { backgroundColor: theme.colors.background }]}>
                     <Text style={[styles.lastUpdated, { color: theme.colors.secondaryText }]}>
-                        最終更新日: 2026年4月26日
+                        最終更新日: 2026年6月6日
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
@@ -53,7 +54,7 @@ const TermsScreen = ({ navigation }) => {
                         第4条（Plusプランおよび課金）
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        当アプリの基本的な機能は無料で提供されます。一部の機能（Plusプラン）は、月額のサブスクリプションとして有料で提供されます。ご利用にあたっては以下の条件に同意いただく必要があります。
+                        当アプリの基本的な機能はフリープランとして無料で提供されます。一部の機能（Plusプラン）は、月額のサブスクリプションとして有料で提供されます。ご利用にあたっては以下の条件に同意いただく必要があります。
                     </Text>
                     <Text style={[styles.listItem, { color: theme.colors.secondaryText }]}>
                         （1）支払いはアプリストアの定める決済システム（Apple App Store のアプリ内課金）を通じて行われ、当アプリは決済情報を直接取得しません。{'\n'}
@@ -61,7 +62,8 @@ const TermsScreen = ({ navigation }) => {
                         （3）解約はアプリストアの設定画面（iOS：設定 → Apple ID → サブスクリプション）から実行できます。当アプリ側で解約手続きは行えません。{'\n'}
                         （4）課金後の途中解約による日割り返金は原則行いません。返金は Apple の払い戻しポリシーに従います。{'\n'}
                         （5）導入時に無料トライアル期間が設定される場合があります。トライアル期間中に解約されない場合、自動的に有料期間へ移行します。{'\n'}
-                        （6）価格・特典は予告なく変更されることがあります。変更後の継続利用をもって変更後の条件への同意とみなします。
+                        （6）価格・特典は予告なく変更されることがあります。変更後の継続利用をもって変更後の条件への同意とみなします。{'\n'}
+                        （7）フリープランには、月あたりの投稿数（{FREE_LIMITS.monthlyPostCount}件まで）およびカスタムカテゴリー数（{FREE_LIMITS.maxCustomCategories}個まで）に上限があります。Plusプランでは当該上限が解除されます。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
@@ -140,7 +142,7 @@ const TermsScreen = ({ navigation }) => {
                         第13条（退会）
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        ユーザーは、設定画面から自身のアカウントを削除（退会）することができます。退会後の関連データの取り扱いはプライバシーポリシーに従います。Plusプランをご利用中の場合は、退会前にサブスクリプションを解約してください。
+                        ユーザーは、設定 → アカウント から自身のアカウントを削除（退会）することができます。退会後の関連データの取り扱いはプライバシーポリシーに従います。Plusプランをご利用中の場合は、退会前にサブスクリプションを解約してください。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>

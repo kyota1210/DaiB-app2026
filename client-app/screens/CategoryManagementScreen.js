@@ -1,6 +1,7 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
@@ -20,11 +21,6 @@ const CategoryManagementScreen = ({ navigation }) => {
     const { canCreateMoreCategories } = useFeatureGate();
     const { categories, loadCategories, loadingCategories } = useRecordsAndCategories();
 
-    // デフォルトカテゴリー（削除不可、DBには保存しない）
-    const defaultCategories = [
-        { id: 'all', name: 'All', icon: 'apps', isDefault: true },
-    ];
-
     // ユーザーカスタムカテゴリー（Context のキャッシュから 'all' を除いた一覧）
     const customCategories = categories.filter(c => c.id !== 'all');
     const [savingCategory, setSavingCategory] = useState(false);
@@ -39,6 +35,11 @@ const CategoryManagementScreen = ({ navigation }) => {
     const [categoryToDelete, setCategoryToDelete] = useState(null);
     const [successAction, setSuccessAction] = useState(''); // 'add', 'update', 'delete'
     const [reordering, setReordering] = useState(false);
+    const [orderedCustomCategories, setOrderedCustomCategories] = useState([]);
+
+    useEffect(() => {
+        setOrderedCustomCategories(categories.filter((c) => c.id !== 'all'));
+    }, [categories]);
 
     // 画面フォーカス時にキャッシュを更新（Context の loadCategories を使用）
     useFocusEffect(
@@ -183,17 +184,20 @@ const CategoryManagementScreen = ({ navigation }) => {
         setCategoryName('');
     };
 
-    const handleMoveUp = async (index) => {
-        if (index <= 0 || reordering || customCategories.length < 2) return;
-        const newOrder = [...customCategories];
-        [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
-        const categoryIds = newOrder.map((c) => c.id);
+    const handleDragEnd = async ({ data }) => {
+        const previousOrder = orderedCustomCategories;
+        const categoryIds = data.map((c) => c.id);
+        const previousIds = previousOrder.map((c) => c.id);
+        if (categoryIds.join(',') === previousIds.join(',')) return;
+
+        setOrderedCustomCategories(data);
         setReordering(true);
         try {
             await reorderCategories(userToken, categoryIds);
             await loadCategories();
         } catch (error) {
             console.error('並び替えエラー:', error);
+            setOrderedCustomCategories(previousOrder);
             setErrorMessage(error.message || '並び替えに失敗しました');
             setShowErrorModal(true);
         } finally {
@@ -201,99 +205,89 @@ const CategoryManagementScreen = ({ navigation }) => {
         }
     };
 
-    const handleMoveDown = async (index) => {
-        if (index < 0 || index >= customCategories.length - 1 || reordering || customCategories.length < 2) return;
-        const newOrder = [...customCategories];
-        [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
-        const categoryIds = newOrder.map((c) => c.id);
-        setReordering(true);
-        try {
-            await reorderCategories(userToken, categoryIds);
-            await loadCategories();
-        } catch (error) {
-            console.error('並び替えエラー:', error);
-            setErrorMessage(error.message || '並び替えに失敗しました');
-            setShowErrorModal(true);
-        } finally {
-            setReordering(false);
-        }
-    };
+    const renderAllCategoryRow = () => (
+        <View style={[styles.categoryCard, { borderBottomColor: theme.colors.border }]}>
+            <View style={styles.categoryInfo}>
+                <View
+                    style={[
+                        styles.categoryIconCircle,
+                        { backgroundColor: theme.colors.secondaryBackground },
+                    ]}
+                >
+                    <Ionicons name="apps" size={24} color={theme.colors.text} />
+                </View>
+                <Text style={[styles.categoryNameText, { color: theme.colors.text }]}>
+                    All
+                </Text>
+            </View>
+        </View>
+    );
 
-    const allCategories = [...defaultCategories, ...customCategories];
+    const renderCategoryItem = ({ item, drag, isActive }) => (
+        <ScaleDecorator>
+            <View
+                style={[
+                    styles.categoryCard,
+                    { borderBottomColor: theme.colors.border },
+                    isActive && { backgroundColor: theme.colors.secondaryBackground },
+                ]}
+            >
+                <TouchableOpacity
+                    style={styles.dragHandle}
+                    onPressIn={drag}
+                    disabled={reordering}
+                    accessibilityRole="button"
+                    accessibilityLabel="並び替え"
+                >
+                    <Ionicons
+                        name="reorder-three-outline"
+                        size={22}
+                        color={reordering ? theme.colors.inactive : theme.colors.secondaryText}
+                    />
+                </TouchableOpacity>
+                <View style={styles.categoryInfo}>
+                    <Text style={[styles.categoryNameText, { color: theme.colors.text }]}>
+                        {item.name}
+                    </Text>
+                </View>
+                <View style={styles.categoryActions}>
+                    <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => openEditModal(item)}
+                    >
+                        <Ionicons name="pencil-sharp" size={22} color={theme.colors.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => handleDeleteCategory(item)}
+                    >
+                        <Ionicons name="trash-outline" size={22} color="#FF3B30" />
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </ScaleDecorator>
+    );
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
             <ScreenHeader title="カテゴリー管理" onBack={() => navigation.goBack()} />
 
             <ScrollView style={[styles.scrollView, { backgroundColor: theme.colors.background }]}>
-                {/* カテゴリーリスト */}
                 <View style={styles.section}>
                     <View style={[styles.categoryList, { backgroundColor: theme.colors.background }]}>
-                        {allCategories.map((category, index) => (
-                            <View key={category.id} style={[styles.categoryCard, {
-                                borderBottomColor: theme.colors.border
-                            }]}>
-                                <View style={styles.categoryInfo}>
-                                    {category.id === 'all' && (
-                                        <View 
-                                            style={[
-                                                styles.categoryIconCircle, 
-                                                { backgroundColor: theme.colors.secondaryBackground }
-                                            ]}
-                                        >
-                                            <Ionicons name={category.icon} size={24} color={theme.colors.text} />
-                                        </View>
-                                    )}
-                                    <Text style={[styles.categoryNameText, { color: theme.colors.text }]}>
-                                        {category.name}
-                                    </Text>
-                                </View>
-                                {!category.isDefault && (
-                                    <View style={styles.categoryActions}>
-                                        <TouchableOpacity
-                                            style={styles.actionButton}
-                                            onPress={() => handleMoveUp(index - defaultCategories.length)}
-                                            disabled={reordering || index <= defaultCategories.length}
-                                        >
-                                            <Ionicons
-                                                name="chevron-up"
-                                                size={22}
-                                                color={index <= defaultCategories.length ? theme.colors.inactive : theme.colors.text}
-                                            />
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={styles.actionButton}
-                                            onPress={() => handleMoveDown(index - defaultCategories.length)}
-                                            disabled={reordering || index >= allCategories.length - 1}
-                                        >
-                                            <Ionicons
-                                                name="chevron-down"
-                                                size={22}
-                                                color={index >= allCategories.length - 1 ? theme.colors.inactive : theme.colors.text}
-                                            />
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={styles.actionButton}
-                                            onPress={() => openEditModal(category)}
-                                        >
-                                            <Ionicons name="pencil-sharp" size={22} color={theme.colors.primary} />
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={styles.actionButton}
-                                            onPress={() => handleDeleteCategory(category)}
-                                        >
-                                            <Ionicons name="trash-outline" size={22} color="#FF3B30" />
-                                        </TouchableOpacity>
-                                    </View>
-                                )}
-                            </View>
-                        ))}
+                        {renderAllCategoryRow()}
+                        <DraggableFlatList
+                            data={orderedCustomCategories}
+                            keyExtractor={(item) => String(item.id)}
+                            onDragEnd={handleDragEnd}
+                            renderItem={renderCategoryItem}
+                            scrollEnabled={false}
+                        />
                     </View>
                 </View>
 
-                {/* 追加ボタン */}
                 <View style={styles.addButtonSection}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={[styles.addButton, { backgroundColor: theme.colors.primary }]}
                         onPress={openAddCategoryModal}
                     >
@@ -421,6 +415,7 @@ const CategoryManagementScreen = ({ navigation }) => {
                 cancelLabel="キャンセル"
                 confirmLabel="削除"
             />
+
         </SafeAreaView>
     );
 };
@@ -448,6 +443,11 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
         paddingHorizontal: 16,
         borderBottomWidth: 1,
+    },
+    dragHandle: {
+        paddingVertical: 4,
+        paddingRight: 8,
+        marginRight: 4,
     },
     categoryInfo: {
         flexDirection: 'row',

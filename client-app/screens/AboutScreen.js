@@ -40,19 +40,15 @@ const AboutScreen = ({ navigation }) => {
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
                         ・写真付き投稿の作成・閲覧・編集・削除{'\n'}
-                        ・カテゴリーによる投稿の分類・管理{'\n'}
+                        ・カテゴリーによる投稿の分類・管理（ドラッグで並び替え可能）{'\n'}
+                        ・投稿ごとの公開範囲設定（公開／スレッド非公開／完全非公開）{'\n'}
                         ・複数の表示モード（グリッド／リスト／ブックリスト／タイル）{'\n'}
+                        ・カレンダー表示・ライフタイムライン{'\n'}
                         ・QR コード／招待リンクによるフレンド申請{'\n'}
                         ・直近 7 日のフレンド投稿スレッド・リアクション{'\n'}
+                        ・過去の同日投稿の再表示（メモリー再浮上）{'\n'}
                         ・通報・ブロック機能{'\n'}
                         ・多言語対応（日本語・英語）
-                    </Text>
-
-                    <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        技術情報
-                    </Text>
-                    <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        本アプリは React Native と Expo を使用して開発されています。バックエンドは Supabase（PostgreSQL／Auth／Storage／Edge Functions）を利用し、クライアントは Supabase JS により直接アクセスします。投稿・プロフィール画像は Supabase Storage に保存されます。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>

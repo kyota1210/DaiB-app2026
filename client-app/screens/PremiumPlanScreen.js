@@ -7,6 +7,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import { useLanguage } from '../context/LanguageContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { FREE_LIMITS } from '../hooks/useFeatureGate';
+import { formatPlusMonthlyPriceJa } from '../config';
 import {
     purchasesConfigure,
     purchasesGetMonthlyPackage,
@@ -177,16 +178,12 @@ const PremiumPlanScreen = ({ navigation }) => {
                     <View style={styles.section}>
                         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('pricingPlan')}</Text>
                         <View style={[styles.priceCard, { backgroundColor: theme.colors.background }]}>
-                            {priceDisplay ? (
-                                <View style={styles.priceRow}>
-                                    <Text style={[styles.priceAmount, { color: theme.colors.primary }]}>{priceDisplay}</Text>
-                                    <Text style={[styles.priceUnit, { color: theme.colors.secondaryText }]}>{t('perMonth')}</Text>
-                                </View>
-                            ) : (
-                                <Text style={[styles.priceOnStoreNote, { color: theme.colors.secondaryText }]}>
-                                    {t('subscriptionPriceOnStore')}
+                            <View style={styles.priceRow}>
+                                <Text style={[styles.priceAmount, { color: theme.colors.primary }]}>
+                                    {priceDisplay || formatPlusMonthlyPriceJa()}
                                 </Text>
-                            )}
+                                <Text style={[styles.priceUnit, { color: theme.colors.secondaryText }]}>{t('perMonth')}</Text>
+                            </View>
                             <Text style={[styles.priceNote, { color: theme.colors.inactive }]}>{t('cancelAnytime')}</Text>
                         </View>
                     </View>
@@ -313,7 +310,6 @@ const styles = StyleSheet.create({
     priceRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 8 },
     priceAmount: { fontSize: 48, fontWeight: 'bold' },
     priceUnit: { fontSize: 20, marginLeft: 4 },
-    priceOnStoreNote: { fontSize: 15, lineHeight: 22, textAlign: 'center', marginBottom: 8 },
     priceNote: { fontSize: 14 },
     buttonSection: {
         paddingHorizontal: 16,

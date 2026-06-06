@@ -116,9 +116,9 @@ export default {
     visibility_public: '公開',
     visibility_public_desc: 'スレッド画面に表示されます',
     visibility_friends: 'スレッド非公開',
-    visibility_friends_desc: 'スレッド画面に表示されません',
+    visibility_friends_desc: 'スレッド画面には表示されません',
     visibility_private: '完全非公開',
-    visibility_private_desc: 'あなたの投稿一覧にのみ表示されます',
+    visibility_private_desc: 'スレッド画面に表示されません\n投稿ユーザー本人の画面でのみ一覧に表示されます',
     
     // ログイン・サインアップ
     login: 'ログイン',
@@ -241,10 +241,10 @@ export default {
     subscriptionBenefitsTitle: 'Plus の特典',
     premiumBenefitPostsTitle: '月の投稿数を気にせず',
     premiumBenefitPostsDesc:
-        '無料プランは月{{limit}}件まで。Plus では月あたりの投稿上限がなく、思い出のタイミングで追加できます。',
+        'フリープランは月{{limit}}件まで。\nPlusなら投稿数無制限。',
     premiumBenefitCategoriesTitle: 'カテゴリーを無制限に作成',
     premiumBenefitCategoriesDesc:
-        'フリープランでは自分用のカテゴリーを最大{{limit}}個まで。Plus なら上限なしで、テーマや用途ごとにいくつでも整理できます。',
+        'フリープランではカテゴリーを最大{{limit}}個まで。Plus なら上限なしで、テーマや用途ごとにいくつでも整理できます。',
     premiumBenefitMemoryTitle: 'メモリー再浮上',
     premiumBenefitMemoryDesc:
         '1ヶ月・3ヶ月・6ヶ月・1年・3年・5年前の今日に投稿した記録をスレッド画面の先頭に表示します。フリープランは1年前のみ。あなたのスレッド画面にのみ表示され、他ユーザーのスレッド画面には表示されません。',
@@ -264,10 +264,10 @@ export default {
     iapNotAvailable: '課金は実機ビルドでのみご利用いただけます。',
     iapDisclaimer: '自動更新サブスクリプションです。期間終了の24時間以上前にキャンセルしない限り、同額で自動更新されます。設定 → Apple ID → サブスクリプションからいつでもキャンセルできます。',
     monthlyPostLimitReached: '今月の投稿上限に達しました',
-    monthlyPostLimitMessage: '無料プランは月{{limit}}件まで投稿できます。Plusにアップグレードすると無制限で投稿できます。',
+    monthlyPostLimitMessage: 'フリープランは月{{limit}}件まで投稿できます。Plusにアップグレードすると無制限で投稿できます。',
     categoryLimitReachedTitle: 'カテゴリー数の上限に達しました',
     categoryLimitReachedMessage:
-        '無料プランではカスタムカテゴリーを{{limit}}個まで作成できます。Plusにアップグレードすると無制限に作成できます。',
+        'フリープランではカスタムカテゴリーを{{limit}}個まで作成できます。Plusにアップグレードすると無制限に作成できます。',
     imageBlockedByModeration: 'この画像は利用規約に違反する可能性があるため、投稿できません。別の画像を選択してください。',
     unlimitedStorage: '無制限のクラウドストレージ',
     allPhotosCloud: 'すべての写真と動画をクラウドに保存',

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import ScreenHeader from '../components/ScreenHeader';
+import { PLUS_MONTHLY_PRICE_YEN } from '../config';
 
 /**
  * 特定商取引法に基づく表記
@@ -11,8 +12,7 @@ import ScreenHeader from '../components/ScreenHeader';
  * 注: 各値は運営者情報が確定後、固定値に置換すること（docs/release-checklist.md §1.2）。
  * 個人情報の取扱いを避けたい場合は、住所・電話の項目を「請求があれば遅滞なく開示」運用も可。
  *
- * TODO: 「販売価格」の Plus 月額はプレースホルダ。App Store / Google Play の販売価格確定後、
- *       本文の金額とストア表示を同期すること。
+ * 販売価格は config.js の PLUS_MONTHLY_PRICE_YEN と App Store の価格設定で同期すること。
  */
 const SpecifiedCommercialTransactionsScreen = ({ navigation }) => {
     const { theme } = useTheme();
@@ -28,19 +28,19 @@ const SpecifiedCommercialTransactionsScreen = ({ navigation }) => {
             >
                 <View style={[styles.content, { backgroundColor: theme.colors.background }]}>
                     <Text style={[styles.lastUpdated, { color: theme.colors.secondaryText }]}>
-                        最終更新日: 2026年5月31日
+                        最終更新日: 2026年6月6日
                     </Text>
 
                     <Row label="販売事業者" value="Moriyama Kyota" theme={theme} />
                     <Row label="所在地" value="ご請求があれば遅滞なく開示します" theme={theme} />
                     <Row label="連絡先" value="ご請求があれば遅滞なく開示します" theme={theme} />
-                    <Row label="メールアドレス" value="（運営連絡先メールアドレスを記載）" theme={theme} />
+                    <Row label="メールアドレス" value="設定内のお問い合わせフォームよりご連絡ください" theme={theme} />
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
                         販売価格
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        Plusプラン（月額）：980 円（税込）
+                        Plusプラン（月額）：{PLUS_MONTHLY_PRICE_YEN} 円（税込）
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
@@ -90,7 +90,7 @@ const SpecifiedCommercialTransactionsScreen = ({ navigation }) => {
                         動作環境
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        iOS 13 以降を推奨します。{'\n'}
+                        iOS 15.1 以降を推奨します。{'\n'}
                         端末・OS バージョンによっては一部機能をご利用いただけない場合があります。
                     </Text>
                 </View>

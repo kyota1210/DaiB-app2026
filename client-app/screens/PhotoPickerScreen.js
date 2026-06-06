@@ -172,7 +172,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
             return;
         }
 
-        // 無料プラン: 月間投稿上限チェック（編集時はスキップ）
+        // フリープラン: 月間投稿上限チェック（編集時はスキップ）
         if (!isEditMode) {
             const now = new Date();
             const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -182,7 +182,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
             if (!canCreateMorePosts(currentMonthCount)) {
                 Alert.alert(
                     t('monthlyPostLimitReached') || '今月の投稿上限に達しました',
-                    (t('monthlyPostLimitMessage') || '無料プランは月{{limit}}件までです。Plusにアップグレードすると無制限で投稿できます。')
+                    (t('monthlyPostLimitMessage') || 'フリープランは月{{limit}}件までです。Plusにアップグレードすると無制限で投稿できます。')
                         .replace('{{limit}}', String(FREE_LIMITS.monthlyPostCount)),
                     [
                         { text: t('cancel'), style: 'cancel' },
@@ -422,7 +422,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                                 color: theme.colors.text,
                                                 borderColor: theme.colors.border
                                             }]}
-                                            placeholder={t('titlePlaceholder')}
+                                            placeholder={t('title')}
                                             placeholderTextColor={theme.colors.secondaryText}
                                             value={title}
                                             onChangeText={setTitle}
@@ -432,9 +432,6 @@ export default function PhotoPickerScreen({ navigation, route }) {
 
                                     {/* カテゴリー */}
                                     <View style={styles.inputGroup}>
-                                        <Text style={[styles.label, { color: theme.colors.secondaryText }]}>
-                                            {t('category')}
-                                        </Text>
                                         {loadingCategories ? (
                                             <ActivityIndicator size="small" color={theme.colors.primary} />
                                         ) : (
@@ -736,11 +733,6 @@ const styles = StyleSheet.create({
     },
     captionGroup: {
         marginTop: 8,
-    },
-    label: {
-        fontSize: 14,
-        marginBottom: 8,
-        fontWeight: '500',
     },
     simpleDateContainer: {
         flexDirection: 'row',
