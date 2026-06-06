@@ -65,21 +65,14 @@ const TermsScreen = ({ navigation }) => {
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        第5条（広告の表示）
-                    </Text>
-                    <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        当アプリは、無料プランのユーザーに対して第三者広告ネットワーク（Google AdMob 等）による広告を表示することがあります。広告の表示・非表示・配信方法は、本規約および「プライバシーポリシー」に基づきます。Plusプラン加入中は広告を表示しません。
-                    </Text>
-
-                    <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        第6条（投稿コンテンツ）
+                        第5条（投稿コンテンツ）
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
                         ユーザーは、ご自身が投稿したコンテンツ（写真・テキスト・カテゴリー等）に対する責任を負います。投稿コンテンツの著作権はユーザーに帰属しますが、ユーザーは当アプリに対し、サービスの提供・運営・改善および広報目的の範囲で必要な利用権を許諾するものとします。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        第7条（禁止事項）
+                        第6条（禁止事項）
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
                         ユーザーは、当アプリの利用にあたり、以下の行為をしてはなりません。
@@ -99,14 +92,14 @@ const TermsScreen = ({ navigation }) => {
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        第8条（通報・ブロック・モデレーション）
+                        第7条（通報・ブロック・モデレーション）
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
                         ユーザーは、不適切なコンテンツや他のユーザーを、当アプリ所定の方法で通報・ブロックできます。当アプリは通報を受けたコンテンツを審査し、必要に応じて非表示・削除、当該ユーザーへの警告、利用停止等の措置を行います。原則として通報受領から 24 時間以内の初動対応を目指しますが、内容により時間を要する場合があります。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        第9条（当アプリの提供の停止等）
+                        第8条（当アプリの提供の停止等）
                     </Text>
                     <Text style={[styles.listItem, { color: theme.colors.secondaryText }]}>
                         （1）当アプリにかかるシステムの保守点検または更新を行う場合{'\n'}
@@ -116,42 +109,42 @@ const TermsScreen = ({ navigation }) => {
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        第10条（保証の否認および免責）
+                        第9条（保証の否認および免責）
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
                         当アプリは、当アプリに事実上または法律上の瑕疵（安全性、信頼性、正確性、完全性、有効性、特定の目的への適合性、セキュリティなどに関する欠陥、エラーやバグ、権利侵害などを含みます。）がないことを明示的にも黙示的にも保証しておりません。当アプリに起因してユーザーに生じたあらゆる損害について、当アプリは一切の責任を負いません。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        第11条（サービス内容の変更等）
+                        第10条（サービス内容の変更等）
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
                         当アプリは、ユーザーへの事前の告知をもって、本サービスの内容を変更、追加または廃止することがあります。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        第12条（利用規約の変更）
+                        第11条（利用規約の変更）
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
                         当アプリは、必要と判断した場合には、ユーザーに通知の上、本規約を変更することができます。本規約の変更後、本サービスの利用を開始した場合には、当該ユーザーは変更後の規約に同意したものとみなします。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        第13条（個人情報の取扱い）
+                        第12条（個人情報の取扱い）
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
                         当アプリは、本サービスの利用によって取得する個人情報については、当アプリ「プライバシーポリシー」に従い適切に取り扱うものとします。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        第14条（退会）
+                        第13条（退会）
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
                         ユーザーは、設定画面から自身のアカウントを削除（退会）することができます。退会後の関連データの取り扱いはプライバシーポリシーに従います。Plusプランをご利用中の場合は、退会前にサブスクリプションを解約してください。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                        第15条（準拠法・裁判管轄）
+                        第14条（準拠法・裁判管轄）
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
                         本規約の解釈にあたっては、日本法を準拠法とします。本サービスに関して紛争が生じた場合には、当アプリ運営者の本店所在地を管轄する裁判所を専属的合意管轄とします。

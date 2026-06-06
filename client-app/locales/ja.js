@@ -239,8 +239,6 @@ export default {
     freeForever: '無料でご利用いただけます',
     premiumFeatures: 'Plusの機能',
     subscriptionBenefitsTitle: 'Plus の特典',
-    premiumBenefitNoAdsTitle: '広告なしで快適に',
-    premiumBenefitNoAdsDesc: '画面上下のバナー広告を表示しません。記録をひと続きで楽しめます。',
     premiumBenefitPostsTitle: '月の投稿数を気にせず',
     premiumBenefitPostsDesc:
         '無料プランは月{{limit}}件まで。Plus では月あたりの投稿上限がなく、思い出のタイミングで追加できます。',
@@ -277,8 +275,6 @@ export default {
     professionalTools: 'プロフェッショナルな編集ツール',
     detailedStats: '詳細な統計とインサイト',
     analyzeTrends: '記録の傾向を詳しく分析',
-    noAds: '広告なし',
-    comfortableViewing: '快適な閲覧体験',
     prioritySupport: '優先サポート',
     rapidSupport: '専門スタッフによる迅速なサポート',
     

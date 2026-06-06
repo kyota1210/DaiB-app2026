@@ -28,9 +28,6 @@ import { follow, approveFollow } from '../api/follows';
 import { addReaction } from '../api/reactions';
 import { getImageUrl } from '../utils/imageHelper';
 import { SERVER_URL } from '../config';
-import { useSubscription } from '../context/SubscriptionContext';
-import { INLINE_BANNER_EVERY_N_POSTS } from '../utils/ads';
-import AdBanner from '../components/AdBanner';
 
 const REACTION_EMOJIS = ['❤️', '👍', '🌸', '🎉', '✨'];
 
@@ -96,7 +93,6 @@ const ThreadScreen = ({ navigation }) => {
     const { userToken, userInfo } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
-    const { isPremium } = useSubscription();
     const [permission, requestPermission] = useCameraPermissions();
     const [counts, setCounts] = useState({ friend_count: 0 });
     const [records, setRecords] = useState([]);
@@ -264,28 +260,10 @@ const ThreadScreen = ({ navigation }) => {
 
     const listData = useMemo(() => {
         if (!records.length) return [];
-        if (isPremium) {
-            return records.map((record, recordIndex) => ({ feedKind: 'post', record, recordIndex }));
-        }
-        const out = [];
-        records.forEach((record, recordIndex) => {
-            out.push({ feedKind: 'post', record, recordIndex });
-            const isLast = recordIndex === records.length - 1;
-            if (!isLast && (recordIndex + 1) % INLINE_BANNER_EVERY_N_POSTS === 0) {
-                out.push({ feedKind: 'ad', id: `timeline-ad-${recordIndex}` });
-            }
-        });
-        return out;
-    }, [records, isPremium]);
+        return records.map((record, recordIndex) => ({ feedKind: 'post', record, recordIndex }));
+    }, [records]);
 
     const renderItem = ({ item: row }) => {
-        if (row.feedKind === 'ad') {
-            return (
-                <View style={[styles.inlineAdWrap, { backgroundColor: theme.colors.background }]}>
-                    <AdBanner />
-                </View>
-            );
-        }
         const item = row.record;
         const index = row.recordIndex;
         const imageUrl = getImageUrl(item.image_url);
@@ -586,13 +564,10 @@ const ThreadScreen = ({ navigation }) => {
                 <FlatList
                     data={listData}
                     keyExtractor={(row) =>
-                        row.feedKind === 'ad'
-                            ? row.id
-                            : row.record.is_memory_resurface
-                              ? `mem-${row.record.id}-${row.record.memory_horizon ?? ''}`
-                              : String(row.record.id)
+                        row.record.is_memory_resurface
+                            ? `mem-${row.record.id}-${row.record.memory_horizon ?? ''}`
+                            : String(row.record.id)
                     }
-                    getItemType={(row) => row.feedKind}
                     renderItem={renderItem}
                     contentContainerStyle={records.length === 0 ? styles.emptyContainer : styles.listContent}
                     ListEmptyComponent={
@@ -634,12 +609,6 @@ const styles = StyleSheet.create({
     searchButton: { padding: 8 },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     listContent: { padding: 12, paddingBottom: 80 },
-    inlineAdWrap: {
-        marginBottom: 12,
-        borderRadius: 12,
-        overflow: 'hidden',
-        alignItems: 'center',
-    },
     emptyContainer: { flex: 1, justifyContent: 'center', paddingBottom: 80 },
     emptyState: { alignItems: 'center', paddingVertical: 48 },
     emptyText: { marginTop: 12, fontSize: 14, textAlign: 'center' },

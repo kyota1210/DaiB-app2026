@@ -240,9 +240,6 @@ export default {
     freeForever: 'Free forever',
     premiumFeatures: 'Plus features',
     subscriptionBenefitsTitle: 'Included with Plus',
-    premiumBenefitNoAdsTitle: 'Ad-free viewing',
-    premiumBenefitNoAdsDesc:
-        'Skip banner ads at the top and bottom of the app. Browse your memories without interruptions.',
     premiumBenefitPostsTitle: 'No monthly post limit',
     premiumBenefitPostsDesc:
         'Free plan: up to {{limit}} posts per month. Plus removes the cap so you can add records whenever you want.',
@@ -279,8 +276,6 @@ export default {
     professionalTools: 'Professional editing tools',
     detailedStats: 'Detailed Statistics & Insights',
     analyzeTrends: 'Analyze your record trends',
-    noAds: 'No Ads',
-    comfortableViewing: 'Comfortable viewing experience',
     prioritySupport: 'Priority Support',
     rapidSupport: 'Rapid support from specialists',
     

@@ -48,8 +48,7 @@ const PrivacyScreen = ({ navigation }) => {
                     </Text>
                     <Text style={[styles.listItem, { color: theme.colors.secondaryText }]}>
                         ・カメラ：QR コードスキャンによるフレンド申請機能で使用{'\n'}
-                        ・フォトライブラリ：投稿の写真・プロフィール画像の設定で使用{'\n'}
-                        ・トラッキング許可（iOS の App Tracking Transparency）：第三者広告ネットワークによる広告最適化のため、初回起動時に同意を求めます。許可しない場合でも当アプリの基本機能はご利用いただけます。
+                        ・フォトライブラリ：投稿の写真・プロフィール画像の設定で使用
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
@@ -62,7 +61,6 @@ const PrivacyScreen = ({ navigation }) => {
                         ・ユーザー認証・セキュリティの維持・不正利用の防止{'\n'}
                         ・通報されたコンテンツの審査・モデレーション{'\n'}
                         ・サブスクリプションプランの管理（特典の付与・解約反映等）{'\n'}
-                        ・広告配信・効果測定（無料プラン利用時）{'\n'}
                         ・アプリのクラッシュ・エラー解析、品質改善{'\n'}
                         ・ユーザーサポート・お問い合わせ対応
                     </Text>
@@ -89,11 +87,7 @@ const PrivacyScreen = ({ navigation }) => {
                         ・Supabase（バックエンド・認証・ストレージ。米 Supabase, Inc.）{'\n'}
                         ・Apple（iOS のアプリ内課金・通知。Apple Inc.）{'\n'}
                         ・Google（Android 配信時の Play 課金。Google LLC）{'\n'}
-                        ・Google AdMob（広告配信。無料プラン利用時。広告 ID・端末情報・大まかな位置情報を含む場合があります）{'\n'}
                         ・Expo / React Native（アプリ実行基盤。Expo Application Services によるビルド配信）
-                    </Text>
-                    <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        広告配信は無料プランのご利用時のみ表示され、Plusプラン加入中は表示しません。広告にはターゲティング広告（パーソナライズ広告）が含まれる場合がありますが、iOS の App Tracking Transparency でトラッキングを許可しない選択をされた場合は、トラッキングを伴わない広告のみ表示されます。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
@@ -127,7 +121,7 @@ const PrivacyScreen = ({ navigation }) => {
                         8. クッキー・トラッキング技術
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        モバイルアプリのためブラウザクッキーは使用しませんが、広告配信およびクラッシュレポートのために、端末識別子（広告 ID 等）を利用する場合があります。iOS では App Tracking Transparency による同意取得を行います。トラッキングを許可しない選択をされた場合、当アプリはトラッキング目的で広告 ID を取得しません。
+                        モバイルアプリのためブラウザクッキーは使用しません。クラッシュレポート・品質改善のために、端末識別子を利用する場合があります。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>

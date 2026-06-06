@@ -18,7 +18,6 @@ export const useFeatureGate = () => {
         isPremium,
 
         canSeeDetailedStats: isPremium,
-        adsHidden: isPremium,
 
         getMonthlyPostLimit: () => (isPremium ? Infinity : FREE_LIMITS.monthlyPostCount),
         getStorageBytesLimit: () => (isPremium ? Infinity : FREE_LIMITS.storageBytes),

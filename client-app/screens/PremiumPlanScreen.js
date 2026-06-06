@@ -152,12 +152,6 @@ const PremiumPlanScreen = ({ navigation }) => {
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('subscriptionBenefitsTitle')}</Text>
                     <View style={[styles.featureCard, { backgroundColor: theme.colors.background }]}>
                         <FeatureItem
-                            icon="notifications-off"
-                            title={t('premiumBenefitNoAdsTitle')}
-                            description={t('premiumBenefitNoAdsDesc')}
-                            theme={theme}
-                        />
-                        <FeatureItem
                             icon="folder-open-outline"
                             title={t('premiumBenefitCategoriesTitle')}
                             description={categoriesBenefitDescription}

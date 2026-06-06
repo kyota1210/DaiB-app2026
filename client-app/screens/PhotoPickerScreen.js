@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions, ScrollView as RNScrollView, TextInput, Platform, Modal, KeyboardAvoidingView, ActivityIndicator, Keyboard, TouchableWithoutFeedback, InteractionManager } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions, ScrollView as RNScrollView, TextInput, Platform, Modal, KeyboardAvoidingView, ActivityIndicator, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,8 +12,6 @@ import { useRecordsApi } from '../api/records';
 import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getImageUrl } from '../utils/imageHelper';
-import { useSubscription } from '../context/SubscriptionContext';
-import { showInterstitialIfReady } from '../utils/interstitialAd';
 import { useFeatureGate, FREE_LIMITS } from '../hooks/useFeatureGate';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -23,8 +21,6 @@ export default function PhotoPickerScreen({ navigation, route }) {
     const { userToken, userInfo } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
-    const { isPremium } = useSubscription();
-    
     // 編集モードの判定
     const editRecord = route.params?.record;
     const isEditMode = !!editRecord;
@@ -231,37 +227,11 @@ export default function PhotoPickerScreen({ navigation, route }) {
                 await createRecord(recordData);
                 await loadRecords(); // キャッシュを更新
                 setShowSuccessModal(true);
-                // インタースティシャルと goBack を同時に走らせない（広告表示中/直後の goBack で
-                // 下の画面のタッチが死ぬことがある）。成功表示 → 広告終了待ち → 遷移の順にする。
-                (async () => {
-                    try {
-                        await new Promise((r) => setTimeout(r, 1200));
-                        if (!screenMountedRef.current) return;
-                        Keyboard.dismiss();
-                        await new Promise((r) => InteractionManager.runAfterInteractions(() => r()));
-                        if (!screenMountedRef.current) return;
-                        try {
-                            await showInterstitialIfReady({
-                                isPremium,
-                                userId: userInfo?.id,
-                            });
-                        } catch (_) {
-                            /* noop */
-                        }
-                        if (!screenMountedRef.current) return;
-                        setShowSuccessModal(false);
-                        await new Promise((r) => InteractionManager.runAfterInteractions(() => r()));
-                        if (!screenMountedRef.current) return;
-                        if (navigation.canGoBack()) {
-                            navigation.goBack();
-                        }
-                    } catch (_) {
-                        if (screenMountedRef.current) {
-                            setShowSuccessModal(false);
-                            if (navigation.canGoBack()) navigation.goBack();
-                        }
-                    }
-                })();
+                setTimeout(() => {
+                    if (!screenMountedRef.current) return;
+                    setShowSuccessModal(false);
+                    if (navigation.canGoBack()) navigation.goBack();
+                }, 1500);
             }
         } catch (error) {
             const isBlocked =
