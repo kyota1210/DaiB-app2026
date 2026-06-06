@@ -6,8 +6,7 @@ import { FREE_LIMITS } from '../hooks/useFeatureGate';
 
 const ALLOWED_EMOJIS = ['❤️', '👍', '🌸', '🎉', '✨'];
 
-/** 実DB: category_entities（リポジトリ標準の post_categories ではない） */
-const POST_CATEGORY_LINK_TABLE = 'category_entities';
+const POST_CATEGORY_LINK_TABLE = 'post_categories';
 
 /** invalidation_flag が smallint の行向け（0=有効、1=無効） */
 const FLAG_ACTIVE = 0;
@@ -458,8 +457,10 @@ const replaceRecordCategories = async (recordId, categoryIds) => {
     invalidation_flag: FLAG_ACTIVE,
     deleted_at: null,
   }));
-  const { error: insertErr } = await supabase.from(POST_CATEGORY_LINK_TABLE).insert(rows);
-  if (insertErr) throw mapSupabaseError(insertErr);
+  const { error: upsertErr } = await supabase
+    .from(POST_CATEGORY_LINK_TABLE)
+    .upsert(rows, { onConflict: 'post_id,category_id' });
+  if (upsertErr) throw mapSupabaseError(upsertErr);
 };
 
 export const createRecord = async (recordData) => {
@@ -561,7 +562,7 @@ export const updateRecord = async (id, recordData) => {
 export const deleteRecord = async (id) => {
   const { error } = await supabase
     .from('posts')
-    .update({ invalidation_flag: FLAG_INACTIVE, delete_at: new Date().toISOString() })
+    .update({ invalidation_flag: FLAG_INACTIVE, deleted_at: new Date().toISOString() })
     .eq('id', id);
   if (error) throw mapSupabaseError(error);
   return { message: '記録が削除されました。' };
@@ -813,7 +814,7 @@ export const addReaction = async (recordId, emoji) => {
   const user = await requireUser();
   const { error } = await supabase
     .from('reactions')
-    .upsert({ post_id: recordId, user_id: user.id, emoji });
+    .upsert({ post_id: recordId, user_id: user.id, emoji }, { onConflict: 'post_id,user_id' });
   if (error) throw mapSupabaseError(error);
   return { success: true };
 };

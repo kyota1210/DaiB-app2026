@@ -133,7 +133,6 @@ Deno.serve(async (req) => {
       admin.from('user_blocks').delete().eq('blocked_user_id', userId),
       admin.from('follows').delete().eq('follower_id', userId),
       admin.from('follows').delete().eq('following_id', userId),
-      admin.from('category_entities').delete().eq('user_id', userId),
       admin.from('categories').delete().eq('user_id', userId),
       admin.from('posts').delete().eq('user_id', userId),
       admin.from('subscriptions').delete().eq('user_id', userId),
