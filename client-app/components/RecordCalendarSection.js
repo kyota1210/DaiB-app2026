@@ -231,6 +231,7 @@ export default function RecordCalendarSection({
     language,
     /** 親から渡す表示領域の高さ（横 ScrollView 内では必須に近い） */
     containerHeight,
+    onPrefetchReactions,
 }) {
     useEffect(() => {
         LocaleConfig.defaultLocale = language === 'en' ? '' : 'ja';
@@ -371,13 +372,14 @@ export default function RecordCalendarSection({
         (day) => {
             const entry = postsByDay[day.dateString];
             if (entry?.records?.length) {
+                void onPrefetchReactions?.(entry.records.map((r) => r.id), { prefetchAvatars: true });
                 navigation.navigate('RecordDetail', {
                     records: entry.records,
                     initialIndex: 0,
                 });
             }
         },
-        [postsByDay, navigation]
+        [postsByDay, navigation, onPrefetchReactions]
     );
 
     const renderCalendarHeader = useCallback(

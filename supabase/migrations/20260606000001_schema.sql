@@ -269,15 +269,20 @@ CREATE TRIGGER follows_set_updated_at
 CREATE TABLE IF NOT EXISTS public.reactions (
   id         bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   post_id    bigint      NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
-  user_id    uuid        NOT NULL REFERENCES auth.users(id)   ON DELETE CASCADE,
+  user_id    uuid        NOT NULL,
   emoji      text        NOT NULL CHECK (emoji IN ('❤️', '👍', '🌸', '🎉', '✨')),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT reactions_user_id_profiles_fkey
+    FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
   UNIQUE (post_id, user_id)
 );
 
 ALTER TABLE public.reactions ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.reactions TO authenticated;
+
+CREATE INDEX IF NOT EXISTS idx_reactions_post_id
+  ON public.reactions(post_id);
 
 DROP TRIGGER IF EXISTS reactions_set_updated_at ON public.reactions;
 CREATE TRIGGER reactions_set_updated_at

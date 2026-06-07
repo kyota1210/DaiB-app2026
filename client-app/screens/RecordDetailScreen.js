@@ -1,16 +1,15 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, Modal, Dimensions, Animated, Easing, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, Modal, Dimensions, Animated, Easing, LayoutAnimation, Platform, UIManager, InteractionManager } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ResultModal from '../components/ResultModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRecordsApi } from '../api/records';
-import { addReaction, getReactionDetails } from '../api/reactions';
+import { addReaction } from '../api/reactions';
 import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { getImageUrl } from '../utils/imageHelper';
-import { useFocusEffect } from '@react-navigation/native';
+import { getImageUrl, prefetchReactionAvatarUris } from '../utils/imageHelper';
 import { blockUser } from '../api/moderation';
 import ReportSheet from '../components/ReportSheet';
 
@@ -34,6 +33,35 @@ function resolveCategoryLabelNames(record, categories) {
         .filter(Boolean)
         .map((c) => c.name);
 }
+
+const ReactionUserAvatar = React.memo(function ReactionUserAvatar({ user, theme }) {
+    const [uri, setUri] = useState(user.avatar_uri || user.avatar_fallback_uri || null);
+
+    useEffect(() => {
+        setUri(user.avatar_uri || user.avatar_fallback_uri || null);
+    }, [user.avatar_uri, user.avatar_fallback_uri]);
+
+    if (!uri) {
+        return (
+            <View style={[styles.imageReactionUserAvatar, styles.imageReactionUserAvatarPlaceholder, { backgroundColor: theme.colors.secondaryBackground, borderColor: theme.colors.border }]}>
+                <Ionicons name="person" size={18} color={theme.colors.inactive} />
+            </View>
+        );
+    }
+
+    return (
+        <Image
+            source={{ uri, ...(Platform.OS === 'ios' ? { cache: 'force-cache' } : null) }}
+            style={styles.imageReactionUserAvatar}
+            fadeDuration={0}
+            onError={() => {
+                if (user.avatar_fallback_uri && uri !== user.avatar_fallback_uri) {
+                    setUri(user.avatar_fallback_uri);
+                }
+            }}
+        />
+    );
+});
 
 const AnimatedReactionBar = React.memo(({ emojis, onSelect, isClosing, onCloseComplete }) => {
     const anim = useRef(new Animated.Value(0)).current;
@@ -89,6 +117,7 @@ const RecordItem = React.memo(function RecordItem({
     burstAnim,
     isReactionBarClosing,
     onReactionBarCloseComplete,
+    showFriendReactions,
     reactionUsers,
     onPressReactionUser,
     showCategoryLabels,
@@ -173,6 +202,36 @@ const RecordItem = React.memo(function RecordItem({
                             </Animated.Text>
                         </Animated.View>
                     ) : null}
+                    {showFriendReactions && reactionUsers?.length > 0 ? (
+                        <View style={styles.imageReactionOverlay} pointerEvents="box-none">
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.imageReactionOverlayContent}
+                            >
+                                {reactionUsers.map((r, i) => (
+                                    <TouchableOpacity
+                                        key={`${r.user_id}-${i}`}
+                                        style={styles.imageReactionUserItem}
+                                        activeOpacity={0.75}
+                                        onPress={() => onPressReactionUser?.(r)}
+                                    >
+                                        <ReactionUserAvatar user={r} theme={theme} />
+                                        <View style={styles.imageReactionUserBadge}>
+                                            <Text
+                                                style={[
+                                                    styles.imageReactionUserBadgeEmoji,
+                                                    Platform.OS === 'android' && { includeFontPadding: false },
+                                                ]}
+                                            >
+                                                {r.emoji}
+                                            </Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    ) : null}
                 </View>
             ) : (
                 <View style={[styles.placeholderImageContainer, { backgroundColor: theme.colors.border }]}>
@@ -219,46 +278,13 @@ const RecordItem = React.memo(function RecordItem({
                     ))}
                 </View>
             ) : null}
-
-            {reactionUsers?.length > 0 ? (
-                <View style={styles.reactionUsersSection}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.reactionUsersRow}>
-                        {reactionUsers.map((r, i) => (
-                            <TouchableOpacity
-                                key={`${r.user_id}-${i}`}
-                                style={styles.reactionUserItem}
-                                activeOpacity={0.75}
-                                onPress={() => onPressReactionUser?.(r)}
-                            >
-                                {r.avatar_url ? (
-                                    <Image source={{ uri: getImageUrl(r.avatar_url, r.avatar_updated_at) }} style={[styles.reactionUserAvatar, { borderColor: theme.colors.border }]} />
-                                ) : (
-                                    <View style={[styles.reactionUserAvatar, styles.reactionUserAvatarPlaceholder, { borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}>
-                                        <Ionicons name="person" size={27} color={theme.colors.inactive} />
-                                    </View>
-                                )}
-                                <View style={styles.reactionUserBadge}>
-                                    <Text
-                                        style={[
-                                            styles.reactionUserBadgeEmoji,
-                                            Platform.OS === 'android' && { includeFontPadding: false },
-                                        ]}
-                                    >
-                                        {r.emoji}
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-            ) : null}
         </ScrollView>
     );
 });
 
 export default function RecordDetailScreen({ route, navigation }) {
     const { records: paramsRecords, initialIndex } = route.params;
-    const { records: contextRecords, categories } = useRecordsAndCategories();
+    const { records: contextRecords, categories, reactionCacheByPostId, loadReactionsForPosts } = useRecordsAndCategories();
     // タイムラインから開いた場合（author_id あり）は params をそのまま使用
     const paramsHaveAuthorInfo = paramsRecords?.some?.((r) => r.author_id != null);
     // 一覧の並び順（paramsRecords）を維持しつつ、Context の最新データで各レコードを更新
@@ -286,7 +312,6 @@ export default function RecordDetailScreen({ route, navigation }) {
     const { t } = useLanguage();
 
     const [myReaction, setMyReaction] = useState(() => paramsRecords?.[initialIndex]?.my_reaction ?? null);
-    const [reactionData, setReactionData] = useState({ recordId: null, users: [] });
     const [selectedReactionUser, setSelectedReactionUser] = useState(null);
     const [isReactionBarExpanded, setIsReactionBarExpanded] = useState(false);
     const [isReactionBarClosing, setIsReactionBarClosing] = useState(false);
@@ -316,22 +341,39 @@ export default function RecordDetailScreen({ route, navigation }) {
         }
     }, [currentRecord?.id]);
 
-    useEffect(() => {
-        if (!isOwnPost || !currentRecord?.id || !userToken) return;
-        const fetchingId = currentRecord.id;
-        let cancelled = false;
-        getReactionDetails(userToken, fetchingId)
-            .then((res) => {
-                if (!cancelled) setReactionData({ recordId: fetchingId, users: res.details || [] });
-            })
-            .catch(() => {
-                if (!cancelled) setReactionData({ recordId: fetchingId, users: [] });
-            });
-        return () => { cancelled = true; };
-    }, [currentRecord?.id, isOwnPost, userToken]);
+    const ownRecordIds = useMemo(
+        () => records.filter((r) => viewerOwnsRecord(r, userInfo?.id)).map((r) => r.id),
+        [records, userInfo?.id],
+    );
+    const ownRecordIdsKey = useMemo(() => ownRecordIds.join(','), [ownRecordIds]);
 
-    // レンダー時点で現在のレコードに対応するデータのみ使う（IDが一致しなければ空）
-    const reactionUsers = reactionData.recordId === currentRecord?.id ? reactionData.users : [];
+    useEffect(() => {
+        if (!userToken || ownRecordIds.length === 0) return;
+        const missing = ownRecordIds.filter((id) => reactionCacheByPostId[id] === undefined);
+        if (missing.length > 0) {
+            void loadReactionsForPosts(missing);
+        }
+    }, [ownRecordIdsKey, userToken, ownRecordIds, reactionCacheByPostId, loadReactionsForPosts]);
+
+    // 表示中投稿のリアクションアバターのみ、本体画像の後に低優先度でプリフェッチ
+    useEffect(() => {
+        if (!currentRecord?.id || !viewerOwnsRecord(currentRecord, userInfo?.id)) return;
+        const users = reactionCacheByPostId[currentRecord.id];
+        if (!users?.length) return;
+
+        let cancelled = false;
+        const task = InteractionManager.runAfterInteractions(() => {
+            setTimeout(() => {
+                if (!cancelled) {
+                    void prefetchReactionAvatarUris({ [currentRecord.id]: users }, [currentRecord.id]);
+                }
+            }, 500);
+        });
+        return () => {
+            cancelled = true;
+            task.cancel();
+        };
+    }, [currentRecord?.id, userInfo?.id, reactionCacheByPostId]);
 
     const handlePressReactionUser = useCallback((user) => {
         setSelectedReactionUser(user);
@@ -414,7 +456,7 @@ export default function RecordDetailScreen({ route, navigation }) {
         setShowDeleteConfirmModal(false);
         try {
             await deleteRecord(currentRecord.id);
-            await loadRecords(); // キャッシュを更新
+            await loadRecords('all', { reset: true });
             navigation.goBack();
         } catch (error) {
             setErrorMessage(error.message || t('deleteFailed'));
@@ -556,7 +598,12 @@ export default function RecordDetailScreen({ route, navigation }) {
                                 item={record}
                                 theme={theme}
                                 t={t}
-                                reactionUsers={record.id === currentRecord?.id ? reactionUsers : undefined}
+                                showFriendReactions={viewerOwnsRecord(record, userInfo?.id)}
+                                reactionUsers={
+                                    viewerOwnsRecord(record, userInfo?.id)
+                                        ? reactionCacheByPostId[record.id]
+                                        : undefined
+                                }
                                 onPressReactionUser={handlePressReactionUser}
                                 showCategoryLabels={viewerOwnsRecord(record, userInfo?.id)}
                                 categoryLabelNames={resolveCategoryLabelNames(record, categories)}
@@ -885,43 +932,50 @@ const styles = StyleSheet.create({
     burstEmoji: {
         fontSize: 64,
     },
-    reactionUsersSection: {
-        paddingHorizontal: 16,
-        paddingTop: 4,
-        paddingBottom: 12,
+    imageReactionOverlay: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 8,
+        paddingHorizontal: 12,
     },
-    reactionUsersRow: {
+    imageReactionOverlayContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
-        paddingVertical: 4,
+        gap: 10,
     },
-    reactionUserItem: {
+    imageReactionUserItem: {
         position: 'relative',
-        width: 66,
-        height: 66,
+        width: 44,
+        height: 44,
         overflow: 'visible',
     },
-    reactionUserAvatar: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
+    imageReactionUserAvatar: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         borderWidth: 1.5,
+        borderColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.25,
+        shadowRadius: 2,
+        elevation: 2,
     },
-    reactionUserAvatarPlaceholder: {
+    imageReactionUserAvatarPlaceholder: {
         justifyContent: 'center',
         alignItems: 'center',
     },
-    reactionUserBadge: {
+    imageReactionUserBadge: {
         position: 'absolute',
-        bottom: 6,
-        right: 2,
+        bottom: -2,
+        right: -4,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    reactionUserBadgeEmoji: {
-        fontSize: 15,
-        lineHeight: 20,
+    imageReactionUserBadgeEmoji: {
+        fontSize: 14,
+        lineHeight: 18,
         textAlign: 'center',
     },
     reactionUserPopupOverlay: {

@@ -51,7 +51,7 @@ const formatDate = (dateString) => {
 };
 
 // ギャラリーアイテム（一覧はセルに合わせた cover 表示）
-const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid', theme }) => {
+const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid', theme, onPrefetchReactions }) => {
     const imageUrl = getImageUrl(item.image_url);
 
     const getItemStyle = () => {
@@ -84,6 +84,9 @@ const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid
     return (
         <TouchableOpacity
             style={getItemStyle()}
+            onPressIn={() => {
+                if (item?.id) onPrefetchReactions?.([item.id], { prefetchAvatars: true });
+            }}
             onPress={() => navigation.navigate('RecordDetail', {
                 records: allRecords,
                 initialIndex: itemIndex
@@ -126,7 +129,20 @@ export default function RecordListScreen({ navigation }) {
     const [horizontalPagerHeight, setHorizontalPagerHeight] = useState(0);
 
     const insets = useSafeAreaInsets();
-    const { categories, recordsByCategory, records, loadCategories, loadRecords, loadingCategories, loadingRecords } = useRecordsAndCategories();
+    const {
+        categories,
+        recordsByCategory,
+        records,
+        totalPostCount,
+        hasMoreByCategory,
+        loadingMoreByCategory,
+        loadCategories,
+        loadRecords,
+        loadMoreRecords,
+        loadReactionsForPosts,
+        loadingCategories,
+        loadingRecords,
+    } = useRecordsAndCategories();
     const { userInfo, userToken } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t, activeLanguage } = useLanguage();
@@ -203,6 +219,7 @@ export default function RecordListScreen({ navigation }) {
                             itemIndex={i + index}
                             viewMode="grid"
                             theme={theme}
+                            onPrefetchReactions={loadReactionsForPosts}
                         />
                     ))}
                 </View>
@@ -228,6 +245,7 @@ export default function RecordListScreen({ navigation }) {
                         itemIndex={index}
                         viewMode="list"
                         theme={theme}
+                        onPrefetchReactions={loadReactionsForPosts}
                     />
                 ))}
             </View>
@@ -254,6 +272,7 @@ export default function RecordListScreen({ navigation }) {
                             itemIndex={i + index}
                             viewMode="booklist"
                             theme={theme}
+                            onPrefetchReactions={loadReactionsForPosts}
                         />
                     ))}
                 </View>
@@ -282,6 +301,7 @@ export default function RecordListScreen({ navigation }) {
                             itemIndex={i + index}
                             viewMode="tile"
                             theme={theme}
+                            onPrefetchReactions={loadReactionsForPosts}
                         />
                     ))}
                 </View>
@@ -471,12 +491,36 @@ export default function RecordListScreen({ navigation }) {
         scrollRef.scrollTo({ x: scrollX, animated: true });
     }, [selectedCategory, categories.length]);
 
-    // プルダウンで一覧を更新
+    const handleCategoryScrollEnd = useCallback((event, categoryId) => {
+        const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+        const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+        if (distanceFromBottom < 160) {
+            void loadMoreRecords(categoryId);
+        }
+    }, [loadMoreRecords]);
+
+    const renderLoadMoreFooter = useCallback((categoryId) => {
+        const key = categoryId === 'all' ? 'all' : String(categoryId);
+        if (loadingMoreByCategory[key]) {
+            return (
+                <View style={styles.loadMoreFooter}>
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
+                </View>
+            );
+        }
+        return <View style={styles.loadMoreFooterSpacer} />;
+    }, [loadingMoreByCategory, theme.colors.primary]);
+
+    // プルダウンで一覧を更新（既存の投稿は表示したまま、一覧エリアの RefreshControl のみ）
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
         const start = Date.now();
         try {
-            await Promise.all([loadCategories(), loadRecords()]);
+            await loadCategories();
+            await loadRecords('all', { reset: true });
+            if (selectedCategory !== 'all') {
+                await loadRecords(selectedCategory, { reset: true });
+            }
         } finally {
             const elapsed = Date.now() - start;
             const remaining = Math.max(0, 1000 - elapsed);
@@ -485,15 +529,24 @@ export default function RecordListScreen({ navigation }) {
             }
             setRefreshing(false);
         }
-    }, [loadCategories, loadRecords]);
+    }, [loadCategories, loadRecords, selectedCategory]);
 
     // 画面フォーカス時にキャッシュを更新（キャッシュがあれば即表示し、バックグラウンドで再取得）
     useFocusEffect(
         useCallback(() => {
             loadCategories();
-            loadRecords();
+            loadRecords('all', { reset: true });
         }, [loadCategories, loadRecords])
     );
+
+    // カテゴリ切替時: 未読み込みなら先頭ページを取得
+    React.useEffect(() => {
+        if (!categories.length || selectedCategory === 'all') return;
+        const key = String(selectedCategory);
+        if ((recordsByCategory[key]?.length ?? 0) > 0) return;
+        if (hasMoreByCategory[key] === false) return;
+        void loadRecords(selectedCategory, { reset: true });
+    }, [selectedCategory, categories.length, loadRecords]);
 
     // フォーカス時にデフォルト表示形式を反映（表示設定で変更した場合など）
     useFocusEffect(
@@ -533,7 +586,8 @@ export default function RecordListScreen({ navigation }) {
         }
     }, [categories.length]);
 
-    const showInitialLoading = (loadingCategories && categories.length === 0) || (loadingRecords && records.length === 0);
+    const showInitialLoading = (loadingCategories && categories.length === 0)
+        || (loadingRecords && (recordsByCategory.all?.length ?? 0) === 0);
     if (showInitialLoading) {
         return (
             <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
@@ -649,11 +703,11 @@ export default function RecordListScreen({ navigation }) {
                         </Text>
                         <View style={styles.userPostCountBlock}>
                             <Text style={[styles.userPostCountNumber, { color: theme.colors.text }]}>
-                                {String(records?.length ?? 0)}
+                                {String(totalPostCount || records?.length || 0)}
                             </Text>
                             <Text style={[styles.userPostCountCaption, { color: theme.colors.secondaryText }]}>
                                 {activeLanguage === 'en'
-                                    ? (records?.length ?? 0) === 1
+                                    ? (totalPostCount || records?.length || 0) === 1
                                         ? 'Post'
                                         : t('posts')
                                     : t('posts')}
@@ -718,6 +772,7 @@ export default function RecordListScreen({ navigation }) {
                                         navigation={navigation}
                                         language={activeLanguage}
                                         containerHeight={calendarPagerViewportHeight}
+                                        onPrefetchReactions={loadReactionsForPosts}
                                     />
                                 ) : listAreaMode === 'lifeTimeline' ? (
                                     <RecordLifeTimelineSection
@@ -726,9 +781,13 @@ export default function RecordListScreen({ navigation }) {
                                         navigation={navigation}
                                         language={activeLanguage}
                                         t={t}
+                                        onPrefetchReactions={loadReactionsForPosts}
                                     />
                                 ) : (
-                                    renderRecords(sortedCategoryRecords)
+                                    <>
+                                        {renderRecords(sortedCategoryRecords)}
+                                        {renderLoadMoreFooter(category.id)}
+                                    </>
                                 )}
                             </View>
                         );
@@ -759,8 +818,8 @@ export default function RecordListScreen({ navigation }) {
                                     }
                                 }}
                                 nestedScrollEnabled
-                                onScroll={() => {}}
-                                scrollEventThrottle={16}
+                                onScroll={(e) => handleCategoryScrollEnd(e, category.id)}
+                                scrollEventThrottle={400}
                                 contentContainerStyle={styles.scrollContent}
                                 style={styles.categoryPage}
                                 refreshControl={
@@ -1093,6 +1152,13 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         padding: IMAGE_PADDING,
+    },
+    loadMoreFooter: {
+        paddingVertical: 20,
+        alignItems: 'center',
+    },
+    loadMoreFooterSpacer: {
+        height: 24,
     },
     gridContainer: {
         width: '100%',

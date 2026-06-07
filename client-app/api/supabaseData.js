@@ -1,8 +1,10 @@
 import { supabase } from '../utils/supabase';
+import { resolveReactionUserAvatar } from '../utils/avatarCache';
 import { POST_IMAGES_BUCKET, AVATARS_BUCKET } from '../config';
 import { imageUriToJpegArrayBuffer } from '../utils/normalizeImageForUpload';
 import { moderateImage } from './moderation_image';
 import { FREE_LIMITS } from '../hooks/useFeatureGate';
+import { RECORDS_PAGE_SIZE } from '../constants/pagination';
 
 const ALLOWED_EMOJIS = ['❤️', '👍', '🌸', '🎉', '✨'];
 
@@ -11,6 +13,13 @@ const POST_CATEGORY_LINK_TABLE = 'post_categories';
 /** invalidation_flag が smallint の行向け（0=有効、1=無効） */
 const FLAG_ACTIVE = 0;
 const FLAG_INACTIVE = 1;
+
+/** bigint 系 ID を数値に正規化（PostgREST が文字列で返す場合の対策） */
+const toIntId = (id) => {
+  if (id == null || id === '') return id;
+  const n = Number(id);
+  return Number.isFinite(n) ? n : id;
+};
 
 const requireUser = async () => {
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -298,7 +307,7 @@ export const fetchCategories = async () => {
     .order('id', { ascending: true });
   if (error) throw mapSupabaseError(error);
   return (data || []).map((row) => ({
-    id: row.id,
+    id: toIntId(row.id),
     name: categoryDisplayName(row) || String(row.id),
   }));
 };
@@ -369,14 +378,14 @@ export const reorderCategories = async (categoryIds) => {
 const POST_LIST_COLS = 'id,title,description,date_logged,image_url,show_in_timeline,visibility';
 
 const mapRecordRow = (row) => ({
-  id: row.id,
+  id: toIntId(row.id),
   title: row.title || '',
   description: row.description || '',
   date_logged: row.date_logged,
   image_url: row.image_url || null,
   show_in_timeline: !!row.show_in_timeline,
   visibility: row.visibility || 'public',
-  category_ids: row.post_categories?.map((x) => x.category_id) || [],
+  category_ids: row.post_categories?.map((x) => toIntId(x.category_id)) || [],
 });
 
 const categoryIdsMapForPosts = async (postIds) => {
@@ -403,7 +412,46 @@ const attachCategoriesToPostRows = (rows, idToCategoryIds) =>
     })
   );
 
-export const fetchRecords = async (categoryId = null) => {
+const normalizeRecordCategoryIds = (r) => ({
+  ...r,
+  category_ids: r.category_ids
+    ? String(r.category_ids).split(',').map(Number).filter((n) => !isNaN(n) && n > 0)
+    : (r.category_id ? [r.category_id] : []),
+});
+
+export const fetchUserPostCount = async () => {
+  const user = await requireUser();
+  const { count, error } = await supabase
+    .from('posts')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('invalidation_flag', FLAG_ACTIVE);
+  if (error) throw mapSupabaseError(error);
+  return count ?? 0;
+};
+
+export const fetchCurrentMonthPostCount = async () => {
+  const user = await requireUser();
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const nextYm = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-01`;
+  const { count, error } = await supabase
+    .from('posts')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('invalidation_flag', FLAG_ACTIVE)
+    .gte('date_logged', `${ym}-01`)
+    .lt('date_logged', nextYm);
+  if (error) throw mapSupabaseError(error);
+  return count ?? 0;
+};
+
+export const fetchRecords = async ({
+  categoryId = null,
+  limit = RECORDS_PAGE_SIZE,
+  offset = 0,
+} = {}) => {
   const user = await requireUser();
   let query = supabase
     .from('posts')
@@ -421,14 +469,18 @@ export const fetchRecords = async (categoryId = null) => {
       .eq('invalidation_flag', FLAG_ACTIVE);
     if (pcErr) throw mapSupabaseError(pcErr);
     const inCategory = [...new Set((pcRows || []).map((r) => r.post_id))];
-    if (inCategory.length === 0) return [];
+    if (inCategory.length === 0) {
+      return { records: [], hasMore: false };
+    }
     query = query.in('id', inCategory);
   }
 
-  const { data, error } = await query;
+  const { data, error } = await query.range(offset, offset + limit - 1);
   if (error) throw mapSupabaseError(error);
-  const catMap = await categoryIdsMapForPosts((data || []).map((p) => p.id));
-  return attachCategoriesToPostRows(data, catMap);
+  const rows = data || [];
+  const catMap = await categoryIdsMapForPosts(rows.map((p) => p.id));
+  const records = attachCategoriesToPostRows(rows, catMap).map(normalizeRecordCategoryIds);
+  return { records, hasMore: rows.length === limit };
 };
 
 export const fetchRecordById = async (id) => {
@@ -793,10 +845,12 @@ export const getTimeline = async (clientTz) => {
   // RPC は r.user_id as author_id のみ返す（user_id 列は無い）。undefined で上書きしない。
   const records = (timelineResult.data || []).map((r) => ({
     ...r,
+    id: toIntId(r.id),
     author_id: r.author_id ?? r.user_id,
   }));
   const memoryItems = (memoryResult.data || []).map((r) => ({
     ...r,
+    id: toIntId(r.id),
     author_id: r.author_id ?? r.user_id,
     is_memory_resurface: true,
     memory_horizon: r.horizon,
@@ -814,13 +868,13 @@ export const addReaction = async (recordId, emoji) => {
   const user = await requireUser();
   const { error } = await supabase
     .from('reactions')
-    .upsert({ post_id: recordId, user_id: user.id, emoji }, { onConflict: 'post_id,user_id' });
+    .upsert({ post_id: toIntId(recordId), user_id: user.id, emoji }, { onConflict: 'post_id,user_id' });
   if (error) throw mapSupabaseError(error);
   return { success: true };
 };
 
 export const getReactionSummary = async (recordId) => {
-  const { data, error } = await supabase.from('reactions').select('emoji').eq('post_id', recordId);
+  const { data, error } = await supabase.from('reactions').select('emoji').eq('post_id', toIntId(recordId));
   if (error) throw mapSupabaseError(error);
   const summaryMap = {};
   (data || []).forEach((r) => {
@@ -829,18 +883,55 @@ export const getReactionSummary = async (recordId) => {
   return { summary: Object.entries(summaryMap).map(([emoji, count]) => ({ emoji, count })) };
 };
 
-export const getReactionDetails = async (recordId) => {
-  const { data, error } = await supabase
-    .from('reactions')
-    .select('emoji,user_id,profiles:user_id(id,user_name,avatar_url,updated_at)')
-    .eq('post_id', recordId);
-  if (error) throw mapSupabaseError(error);
-  const details = (data || []).map((row) => ({
+const mapReactionDetailRow = (row) => {
+  const avatar_url = row.profiles?.avatar_url || null;
+  const avatar_updated_at = row.profiles?.updated_at ?? null;
+  const avatar = resolveReactionUserAvatar(row.user_id, avatar_url, avatar_updated_at);
+  return {
     emoji: row.emoji,
     user_id: row.user_id,
     user_name: row.profiles?.user_name || '',
-    avatar_url: row.profiles?.avatar_url || null,
-    avatar_updated_at: row.profiles?.updated_at ?? null,
-  }));
-  return { details };
+    avatar_url,
+    avatar_updated_at,
+    avatar_uri: avatar?.avatar_uri ?? null,
+    avatar_fallback_uri: avatar?.avatar_uri ?? null,
+  };
+};
+
+const REACTION_DETAIL_SELECT =
+  'post_id,emoji,user_id,profiles!reactions_user_id_profiles_fkey(user_name,avatar_url,updated_at)';
+
+const REACTION_DETAIL_SELECT_SINGLE =
+  'emoji,user_id,profiles!reactions_user_id_profiles_fkey(user_name,avatar_url,updated_at)';
+
+export const getReactionDetails = async (recordId) => {
+  const postId = toIntId(recordId);
+  const { data, error } = await supabase
+    .from('reactions')
+    .select(REACTION_DETAIL_SELECT_SINGLE)
+    .eq('post_id', postId);
+  if (error) throw mapSupabaseError(error);
+  return { details: (data || []).map(mapReactionDetailRow) };
+};
+
+/** 複数投稿のフレンドリアクションを1リクエストで取得（投稿詳細の横スワイプ向け） */
+export const getReactionDetailsBatch = async (recordIds) => {
+  const user = await requireUser();
+  const postIds = [...new Set(recordIds.map(toIntId).filter((id) => id != null))];
+  if (!postIds.length) return {};
+
+  const { data, error } = await supabase
+    .from('reactions')
+    .select(REACTION_DETAIL_SELECT)
+    .in('post_id', postIds)
+    .neq('user_id', user.id);
+  if (error) throw mapSupabaseError(error);
+
+  const byPost = Object.fromEntries(postIds.map((id) => [id, []]));
+  for (const row of data || []) {
+    const postId = toIntId(row.post_id);
+    if (!byPost[postId]) byPost[postId] = [];
+    byPost[postId].push(mapReactionDetailRow(row));
+  }
+  return byPost;
 };

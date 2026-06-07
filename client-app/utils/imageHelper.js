@@ -1,3 +1,4 @@
+import { Image } from 'react-native';
 import { SERVER_URL, SUPABASE_URL, POST_IMAGES_BUCKET, AVATARS_BUCKET } from '../config';
 import { supabase } from './supabase';
 
@@ -161,3 +162,63 @@ export const getImageUrl = (path, avatarCacheBust) => {
     }
     return `${SERVER_URL}/${cleanPath}`;
 };
+
+/**
+ * 小さなアバター表示用 URL（Supabase の画像変換 API を利用。未対応時は getImageUrl にフォールバック）
+ */
+export const getAvatarThumbnailUrl = (path, avatarCacheBust, size = 80) => {
+    if (path == null || path === '') return null;
+
+    const str = typeof path === 'string' ? path.trim() : String(path).trim();
+    const avatarKey = normalizeAvatarObjectKey(str);
+    if (!isAvatarStorageKey(avatarKey)) {
+        return getImageUrl(path, avatarCacheBust);
+    }
+
+    const base = (SUPABASE_URL || '').replace(/\/$/, '');
+    if (!base) {
+        return getImageUrl(path, avatarCacheBust);
+    }
+
+    const encodedKey = avatarKey
+        .split('/')
+        .filter(Boolean)
+        .map((seg) => encodeURIComponent(seg))
+        .join('/');
+    let url = `${base}/storage/v1/render/image/public/${AVATARS_BUCKET}/${encodedKey}?width=${size}&height=${size}&resize=cover&quality=70`;
+    if (avatarCacheBust != null && String(avatarCacheBust).trim() !== '') {
+        url += `&v=${encodeURIComponent(String(avatarCacheBust).trim())}`;
+    }
+    return url;
+};
+
+const PREFETCH_CONCURRENCY = 3;
+
+/** 画像 URL を低優先度でプリフェッチ（同時接続数を制限して投稿画像との帯域競合を避ける） */
+export const prefetchImageUris = (uris) => {
+    const unique = [...new Set((uris || []).filter(Boolean))];
+    if (!unique.length) return Promise.resolve();
+
+    const run = async () => {
+        for (let i = 0; i < unique.length; i += PREFETCH_CONCURRENCY) {
+            const chunk = unique.slice(i, i + PREFETCH_CONCURRENCY);
+            await Promise.all(chunk.map((uri) => Image.prefetch(uri).catch(() => false)));
+        }
+    };
+    void run();
+    return Promise.resolve();
+};
+
+/** リアクション一括取得結果のアバターをプリフェッチ（postIds 指定時はその投稿分のみ） */
+export const prefetchReactionAvatarUris = (byPost, postIds) => {
+    const idSet = postIds?.length
+        ? new Set(postIds.map((id) => Number(id)).filter((id) => Number.isFinite(id)))
+        : null;
+    const uris = [];
+    for (const [postId, users] of Object.entries(byPost || {})) {
+        if (idSet && !idSet.has(Number(postId))) continue;
+        for (const user of users) {
+            if (user.avatar_uri) uris.push(user.avatar_uri);
+        }
+    }
+    return prefetchImageUris(uris);

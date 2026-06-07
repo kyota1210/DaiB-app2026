@@ -90,7 +90,7 @@ function buildChronomapTree(records) {
     return { tree, flatList, indexById };
 }
 
-export default function RecordLifeTimelineSection({ records, theme, navigation, language = 'ja', t }) {
+export default function RecordLifeTimelineSection({ records, theme, navigation, language = 'ja', t, onPrefetchReactions }) {
     const { tree, flatList, indexById } = useMemo(() => buildChronomapTree(records), [records]);
 
     if (flatList.length === 0) {
@@ -111,6 +111,9 @@ export default function RecordLifeTimelineSection({ records, theme, navigation, 
             <TouchableOpacity
                 key={item.id}
                 style={styles.thumbWrap}
+                onPressIn={() => {
+                    if (item?.id) onPrefetchReactions?.([item.id], { prefetchAvatars: true });
+                }}
                 onPress={() =>
                     navigation.navigate('RecordDetail', {
                         records: flatList,

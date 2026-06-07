@@ -75,8 +75,8 @@ export default function PhotoPickerScreen({ navigation, route }) {
 
     const closeVisibilitySheet = useCallback(() => setVisibilitySheetOpen(false), []);
     
-    const { createRecord, updateRecord } = useRecordsApi();
-    const { categories, loadCategories, loadingCategories, loadRecords, records } = useRecordsAndCategories();
+    const { createRecord, updateRecord, fetchCurrentMonthPostCount } = useRecordsApi();
+    const { categories, loadCategories, loadingCategories, loadRecords } = useRecordsAndCategories();
     const { canCreateMorePosts } = useFeatureGate();
     
     // カテゴリーを取得（キャッシュになければ読み込む）
@@ -174,11 +174,12 @@ export default function PhotoPickerScreen({ navigation, route }) {
 
         // フリープラン: 月間投稿上限チェック（編集時はスキップ）
         if (!isEditMode) {
-            const now = new Date();
-            const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-            const currentMonthCount = (records || []).filter((r) =>
-                typeof r?.date_logged === 'string' && r.date_logged.startsWith(ym),
-            ).length;
+            let currentMonthCount = 0;
+            try {
+                currentMonthCount = await fetchCurrentMonthPostCount();
+            } catch (_) {
+                currentMonthCount = 0;
+            }
             if (!canCreateMorePosts(currentMonthCount)) {
                 Alert.alert(
                     t('monthlyPostLimitReached') || '今月の投稿上限に達しました',
@@ -217,7 +218,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
 
             if (isEditMode) {
                 await updateRecord(editRecord.id, recordData);
-                await loadRecords(); // キャッシュを更新
+                await loadRecords('all', { reset: true });
                 setShowSuccessModal(true);
                 setTimeout(() => {
                     setShowSuccessModal(false);
@@ -225,7 +226,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
                 }, 2000);
             } else {
                 await createRecord(recordData);
-                await loadRecords(); // キャッシュを更新
+                await loadRecords('all', { reset: true });
                 setShowSuccessModal(true);
                 setTimeout(() => {
                     if (!screenMountedRef.current) return;
