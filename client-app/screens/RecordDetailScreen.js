@@ -9,7 +9,8 @@ import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext'
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { getImageUrl, prefetchReactionAvatarUris } from '../utils/imageHelper';
+import { getImageUrl, getAvatarThumbnailUrl, prefetchReactionAvatarUris } from '../utils/imageHelper';
+import { THUMB_AVATAR_XS, THUMB_AVATAR_HEADER } from '../constants/imageThumbs';
 import { blockUser } from '../api/moderation';
 import ReportSheet from '../components/ReportSheet';
 
@@ -133,22 +134,19 @@ const RecordItem = React.memo(function RecordItem({
     const showImage = !!imageUrl;
 
     useEffect(() => {
-        if (imageUrl) {
-            Image.getSize(
-                imageUrl,
-                (w, h) => {
-                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                    setOriginalAspect(w / h);
-                },
-                () => {
-                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                    setOriginalAspect(1);
-                }
-            );
-        } else {
-            setOriginalAspect(null);
-        }
+        setOriginalAspect(null);
     }, [imageUrl]);
+
+    const handleImageLoad = useCallback((event) => {
+        const { width, height } = event.nativeEvent.source;
+        if (width > 0 && height > 0) {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setOriginalAspect(width / height);
+        } else {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setOriginalAspect(1);
+        }
+    }, []);
 
     const containerHeight = originalAspect != null ? SCREEN_WIDTH / originalAspect : SCREEN_WIDTH;
 
@@ -169,6 +167,7 @@ const RecordItem = React.memo(function RecordItem({
                                 source={{ uri: imageUrl }}
                                 style={styles.image}
                                 resizeMode="contain"
+                                onLoad={handleImageLoad}
                             />
                         </View>
                     </TouchableOpacity>
@@ -525,7 +524,16 @@ export default function RecordDetailScreen({ route, navigation }) {
                         disabled={currentRecord.author_id == null}
                     >
                         {currentRecord.author_avatar_url ? (
-                            <Image source={{ uri: getImageUrl(currentRecord.author_avatar_url, currentRecord.author_profile_updated_at) }} style={styles.headerAuthorAvatar} />
+                            <Image
+                                source={{
+                                    uri: getAvatarThumbnailUrl(
+                                        currentRecord.author_avatar_url,
+                                        currentRecord.author_profile_updated_at,
+                                        THUMB_AVATAR_XS
+                                    ),
+                                }}
+                                style={styles.headerAuthorAvatar}
+                            />
                         ) : (
                             <View style={[styles.headerAuthorAvatarPlaceholder, { backgroundColor: theme.colors.border }]}>
                                 <Ionicons name="person" size={18} color={theme.colors.inactive} />
@@ -637,7 +645,13 @@ export default function RecordDetailScreen({ route, navigation }) {
                         >
                             {selectedReactionUser?.avatar_url ? (
                                 <Image
-                                    source={{ uri: getImageUrl(selectedReactionUser.avatar_url, selectedReactionUser.avatar_updated_at) }}
+                                    source={{
+                                        uri: getAvatarThumbnailUrl(
+                                            selectedReactionUser.avatar_url,
+                                            selectedReactionUser.avatar_updated_at,
+                                            THUMB_AVATAR_HEADER
+                                        ),
+                                    }}
                                     style={[styles.reactionUserPopupAvatar, { borderColor: theme.colors.border }]}
                                 />
                             ) : (

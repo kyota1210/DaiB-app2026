@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getImageUrl } from '../utils/imageHelper';
+import { getImageUrl, getPostImageThumbnailUrl, prefetchImageUris } from '../utils/imageHelper';
+import { THUMB_LIFE_TIMELINE } from '../constants/imageThumbs';
 import { recordDateKey } from '../utils/recordDateKey';
 
 const THUMB = 72;
@@ -105,7 +106,10 @@ export default function RecordLifeTimelineSection({ records, theme, navigation, 
     }
 
     const renderThumb = (item) => {
-        const imageUrl = getImageUrl(item.image_url);
+        const imageUrl = getPostImageThumbnailUrl(item.image_url, {
+            width: THUMB_LIFE_TIMELINE,
+            height: THUMB_LIFE_TIMELINE,
+        });
         const initialIndex = indexById.get(item.id) ?? 0;
         return (
             <TouchableOpacity
@@ -113,6 +117,8 @@ export default function RecordLifeTimelineSection({ records, theme, navigation, 
                 style={styles.thumbWrap}
                 onPressIn={() => {
                     if (item?.id) onPrefetchReactions?.([item.id], { prefetchAvatars: true });
+                    const fullUrl = getImageUrl(item.image_url);
+                    if (fullUrl) prefetchImageUris([fullUrl]);
                 }}
                 onPress={() =>
                     navigation.navigate('RecordDetail', {

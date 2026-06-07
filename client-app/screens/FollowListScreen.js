@@ -19,7 +19,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getFollowing, getFollowers, getFriends } from '../api/user';
 import { approveFollow } from '../api/follows';
-import { getImageUrl } from '../utils/imageHelper';
+import { getAvatarThumbnailUrl } from '../utils/imageHelper';
+import { THUMB_AVATAR_LG } from '../constants/imageThumbs';
 
 /**
  * 単独スタック画面としては未登録（`AppNavigator` に無し）。一覧・申請は `FriendHubScreen` が正。
@@ -91,7 +92,7 @@ const FollowListScreen = ({ navigation, route }) => {
     };
 
     const renderUser = ({ item }) => {
-        const avatarUrl = getImageUrl(item.avatar_url, item.updated_at);
+        const avatarUrl = getAvatarThumbnailUrl(item.avatar_url, item.updated_at, THUMB_AVATAR_LG);
         const isFollowing = !!item.is_following;
         const isBusy = busyId === item.id;
         const showFollowButton = mode === 'followers' && !isFollowing;

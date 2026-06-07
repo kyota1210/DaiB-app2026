@@ -18,7 +18,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getOtherUserProfile, getOtherUserRecords } from '../api/user';
 import { follow, unfollow, approveFollow } from '../api/follows';
-import { getImageUrl } from '../utils/imageHelper';
+import { getAvatarThumbnailUrl, getPostImageThumbnailUrl } from '../utils/imageHelper';
+import { THUMB_PROFILE_GRID, THUMB_AVATAR_PROFILE } from '../constants/imageThumbs';
 import { blockUser, unblockUser, isUserBlocked } from '../api/moderation';
 import ReportSheet from '../components/ReportSheet';
 
@@ -204,7 +205,9 @@ const UserProfileScreen = ({ navigation, route }) => {
         }
     };
 
-    const avatarUrl = user ? getImageUrl(user.avatar_url, user.updated_at) : null;
+    const avatarUrl = user
+        ? getAvatarThumbnailUrl(user.avatar_url, user.updated_at, THUMB_AVATAR_PROFILE)
+        : null;
     const headerTitle = loading ? '' : (user?.user_name || t('profile'));
 
     const openRecordDetail = (index) => {
@@ -220,7 +223,10 @@ const UserProfileScreen = ({ navigation, route }) => {
     };
 
     const renderRecordItem = ({ item, index }) => {
-        const imageUrl = getImageUrl(item.image_url);
+        const imageUrl = getPostImageThumbnailUrl(item.image_url, {
+            width: THUMB_PROFILE_GRID,
+            height: THUMB_PROFILE_GRID,
+        });
         return (
             <TouchableOpacity
                 style={[styles.recordCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}

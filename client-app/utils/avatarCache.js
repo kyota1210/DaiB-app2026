@@ -1,4 +1,5 @@
-import { getImageUrl } from './imageHelper';
+import { getAvatarThumbnailUrl } from './imageHelper';
+import { THUMB_AVATAR_MD } from '../constants/imageThumbs';
 
 /** user_id → { avatar_url, avatar_updated_at, avatar_uri } */
 const store = new Map();
@@ -13,7 +14,7 @@ export function putAvatarInCache(userId, avatarUrl, updatedAt) {
     const entry = {
         avatar_url: avatarUrl,
         avatar_updated_at: updatedAt ?? null,
-        avatar_uri: getImageUrl(avatarUrl, updatedAt),
+        avatar_uri: getAvatarThumbnailUrl(avatarUrl, updatedAt, THUMB_AVATAR_MD),
     };
     store.set(userId, entry);
     return entry;

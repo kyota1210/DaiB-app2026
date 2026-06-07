@@ -4,7 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { updateCategory } from '../api/categories';
 import { useFocusEffect } from '@react-navigation/native';
-import { getImageUrl } from '../utils/imageHelper';
+import { getImageUrl, getPostImageThumbnailUrl, getAvatarThumbnailUrl, prefetchImageUris } from '../utils/imageHelper';
+import {
+    THUMB_GALLERY_GRID,
+    THUMB_GALLERY_LIST,
+    THUMB_GALLERY_BOOKLIST,
+    THUMB_GALLERY_TILE,
+    THUMB_AVATAR_HEADER,
+} from '../constants/imageThumbs';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '../context/AuthContext';
 import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext';
@@ -50,9 +57,32 @@ const formatDate = (dateString) => {
     return `${year}/${month}/${day}`;
 };
 
+function getGalleryThumbUrl(imagePath, mode) {
+    if (!imagePath) return null;
+    switch (mode) {
+        case 'list':
+            return getPostImageThumbnailUrl(imagePath, { width: THUMB_GALLERY_LIST });
+        case 'booklist':
+            return getPostImageThumbnailUrl(imagePath, {
+                width: THUMB_GALLERY_GRID,
+                height: THUMB_GALLERY_BOOKLIST,
+            });
+        case 'tile':
+            return getPostImageThumbnailUrl(imagePath, {
+                width: THUMB_GALLERY_TILE,
+                height: THUMB_GALLERY_TILE,
+            });
+        default:
+            return getPostImageThumbnailUrl(imagePath, {
+                width: THUMB_GALLERY_GRID,
+                height: THUMB_GALLERY_GRID,
+            });
+    }
+}
+
 // ギャラリーアイテム（一覧はセルに合わせた cover 表示）
 const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid', theme, onPrefetchReactions }) => {
-    const imageUrl = getImageUrl(item.image_url);
+    const imageUrl = getGalleryThumbUrl(item.image_url, viewMode);
 
     const getItemStyle = () => {
         if (viewMode === 'list') {
@@ -86,6 +116,8 @@ const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid
             style={getItemStyle()}
             onPressIn={() => {
                 if (item?.id) onPrefetchReactions?.([item.id], { prefetchAvatars: true });
+                const fullUrl = getImageUrl(item.image_url);
+                if (fullUrl) prefetchImageUris([fullUrl]);
             }}
             onPress={() => navigation.navigate('RecordDetail', {
                 records: allRecords,
@@ -683,7 +715,11 @@ export default function RecordListScreen({ navigation }) {
                                 <Image 
                                     key={`avatar-${userInfo.updated_at || ''}`}
                                     source={{ 
-                                        uri: getImageUrl(userInfo.avatar_url, userInfo.updated_at),
+                                        uri: getAvatarThumbnailUrl(
+                                            userInfo.avatar_url,
+                                            userInfo.updated_at,
+                                            THUMB_AVATAR_HEADER
+                                        ),
                                         cache: 'reload',
                                     }} 
                                     style={styles.userAvatar}

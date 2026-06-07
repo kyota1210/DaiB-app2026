@@ -108,16 +108,21 @@ export default function PhotoPickerScreen({ navigation, route }) {
         };
     }, []);
     
+    useEffect(() => {
+        setOriginalImageSize({ width: 0, height: 0 });
+    }, [selectedImage]);
+
+    const handleImageLoad = useCallback((event) => {
+        const { width, height } = event.nativeEvent.source;
+        if (width > 0 && height > 0) {
+            setOriginalImageSize({ width, height });
+        }
+    }, []);
+
     // 初回マウント時に画像選択を開く（新規作成モードのみ）
     useEffect(() => {
         if (!isEditMode) {
             pickImage();
-        } else if (selectedImage) {
-            Image.getSize(
-                selectedImage,
-                (width, height) => setOriginalImageSize({ width, height }),
-                () => setOriginalImageSize({ width: SCREEN_WIDTH, height: SCREEN_WIDTH })
-            );
         }
     }, []);
 
@@ -154,7 +159,6 @@ export default function PhotoPickerScreen({ navigation, route }) {
             const uri = result.assets[0].uri;
             setSelectedImage(uri);
             setIsNewImageSelected(true);
-            Image.getSize(uri, (width, height) => setOriginalImageSize({ width, height }), () => {});
         }
     };
 
@@ -350,6 +354,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                             source={{ uri: selectedImage }}
                                             style={isEditMode && (originalImageSize.width === 0 || originalImageSize.height === 0) ? styles.editModeImage : StyleSheet.absoluteFill}
                                             resizeMode={isEditMode && (originalImageSize.width === 0 || originalImageSize.height === 0) ? 'contain' : 'cover'}
+                                            onLoad={handleImageLoad}
                                         />
                                     ) : (
                                         <ActivityIndicator size="large" color="#fff" />

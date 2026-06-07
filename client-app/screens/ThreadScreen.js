@@ -26,7 +26,8 @@ import { getUserProfile, getOtherUserProfile } from '../api/user';
 import { getTimeline } from '../api/threads';
 import { follow, approveFollow } from '../api/follows';
 import { addReaction } from '../api/reactions';
-import { getImageUrl } from '../utils/imageHelper';
+import { getPostImageThumbnailUrl, getAvatarThumbnailUrl } from '../utils/imageHelper';
+import { THUMB_THREAD_FEED, THUMB_AVATAR_SM, THUMB_AVATAR_XL } from '../constants/imageThumbs';
 import { SERVER_URL } from '../config';
 
 const REACTION_EMOJIS = ['❤️', '👍', '🌸', '🎉', '✨'];
@@ -266,8 +267,15 @@ const ThreadScreen = ({ navigation }) => {
     const renderItem = ({ item: row }) => {
         const item = row.record;
         const index = row.recordIndex;
-        const imageUrl = getImageUrl(item.image_url);
-        const authorAvatarUrl = getImageUrl(item.author_avatar_url, item.author_profile_updated_at);
+        const imageUrl = getPostImageThumbnailUrl(item.image_url, {
+            width: THUMB_THREAD_FEED,
+            height: THUMB_THREAD_FEED,
+        });
+        const authorAvatarUrl = getAvatarThumbnailUrl(
+            item.author_avatar_url,
+            item.author_profile_updated_at,
+            THUMB_AVATAR_SM
+        );
         const dateStr = item.date_logged
             ? new Date(item.date_logged).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })
             : '';
@@ -492,7 +500,16 @@ const ThreadScreen = ({ navigation }) => {
                                     ) : scannedUser ? (
                                         <View style={[styles.scannedUserCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
                                             {scannedUser.avatar_url ? (
-                                                <Image source={{ uri: getImageUrl(scannedUser.avatar_url, scannedUser.updated_at) }} style={styles.scannedUserAvatar} />
+                                                <Image
+                                                    source={{
+                                                        uri: getAvatarThumbnailUrl(
+                                                            scannedUser.avatar_url,
+                                                            scannedUser.updated_at,
+                                                            THUMB_AVATAR_XL
+                                                        ),
+                                                    }}
+                                                    style={styles.scannedUserAvatar}
+                                                />
                                             ) : (
                                                 <View style={[styles.avatarPlaceholder, styles.scannedUserAvatar, { backgroundColor: theme.colors.border }]}>
                                                     <Ionicons name="person" size={32} color={theme.colors.inactive} />

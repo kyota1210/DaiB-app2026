@@ -21,7 +21,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getFriends, getFollowing, getFollowers } from '../api/user';
 import { approveFollow, rejectIncomingFollow, follow } from '../api/follows';
-import { getImageUrl } from '../utils/imageHelper';
+import { getAvatarThumbnailUrl } from '../utils/imageHelper';
+import { THUMB_AVATAR_LG } from '../constants/imageThumbs';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -184,7 +185,7 @@ const FriendHubScreen = ({ navigation }) => {
     };
 
     const renderUserRow = (item, tabKey) => {
-        const avatarUrl = getImageUrl(item.avatar_url, item.updated_at);
+        const avatarUrl = getAvatarThumbnailUrl(item.avatar_url, item.updated_at, THUMB_AVATAR_LG);
         const rowBusy = busy?.userId === item.id;
         const approveLoading = rowBusy && busy.action === 'approve';
         const rejectLoading = rowBusy && busy.action === 'reject';

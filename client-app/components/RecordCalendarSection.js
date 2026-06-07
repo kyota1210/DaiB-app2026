@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, FlatList }
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import XDate from 'xdate';
 import { Ionicons } from '@expo/vector-icons';
-import { getImageUrl } from '../utils/imageHelper';
+import { getPostImageThumbnailUrl } from '../utils/imageHelper';
+import { THUMB_CALENDAR_DAY } from '../constants/imageThumbs';
 import { recordDateKey } from '../utils/recordDateKey';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -194,8 +195,13 @@ function buildPostsByDay(records) {
             const tb = b.date_logged ? new Date(b.date_logged).getTime() : 0;
             return tb - ta;
         });
-        const coverRecord = list.find((rec) => getImageUrl(rec.image_url)) || list[0];
-        const coverUri = coverRecord ? getImageUrl(coverRecord.image_url) : null;
+        const coverRecord = list.find((rec) => rec.image_url) || list[0];
+        const coverUri = coverRecord
+            ? getPostImageThumbnailUrl(coverRecord.image_url, {
+                width: THUMB_CALENDAR_DAY,
+                height: THUMB_CALENDAR_DAY,
+            })
+            : null;
         map[key] = {
             records: list,
             coverUri,

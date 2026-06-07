@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import { getImageUrl } from '../utils/imageHelper';
+import { getAvatarThumbnailUrl } from '../utils/imageHelper';
+import { THUMB_AVATAR_LG } from '../constants/imageThumbs';
 
 const UserRow = ({
     user,
@@ -15,7 +16,7 @@ const UserRow = ({
     unfollowLabel,
 }) => {
     const { theme } = useTheme();
-    const avatarUrl = getImageUrl(user.avatar_url, user.updated_at);
+    const avatarUrl = getAvatarThumbnailUrl(user.avatar_url, user.updated_at, THUMB_AVATAR_LG);
 
     const avatar = avatarUrl ? (
         <Image source={{ uri: avatarUrl }} style={styles.avatar} />
