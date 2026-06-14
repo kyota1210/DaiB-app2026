@@ -109,7 +109,7 @@ prod 環境の Supabase Studio → `Authentication → Providers / Settings` で
 - [ ] **Secure email change** を ON（メール変更時に旧アドレスへ確認メール）
 - [ ] **Secure password change** を ON 推奨（パスワード変更時に再認証要求）
 - [ ] **Disable signups** はデフォルト OFF のまま（招待制にする場合は別ポリシー）
-- [ ] SMTP 設定: 独自 SMTP（SendGrid 等）を構成。Supabase デフォルト SMTP は本番不可
+- [ ] SMTP 設定: 独自 SMTP（Resend）を構成。Supabase デフォルト SMTP は本番不可
 - [ ] テンプレート（Confirm signup / Reset password / Magic Link / Change Email）を日本語に整備し、`site_url` と `additional_redirect_urls` を本番ドメイン基準に更新
 
 ---
