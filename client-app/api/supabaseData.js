@@ -5,6 +5,7 @@ import { imageUriToJpegArrayBuffer } from '../utils/normalizeImageForUpload';
 import { moderateImage } from './moderation_image';
 import { FREE_LIMITS } from '../hooks/useFeatureGate';
 import { RECORDS_PAGE_SIZE } from '../constants/pagination';
+import { getAuthEmailRedirectTo } from '../utils/supabaseAuthRedirect';
 
 const ALLOWED_EMOJIS = ['❤️', '👍', '🌸', '🎉', '✨'];
 
@@ -274,7 +275,10 @@ const getFriendsList = async (userId) => {
 };
 
 export const requestPasswordReset = async (email) => {
-  const { error } = await supabase.auth.resetPasswordForEmail(String(email).trim());
+  const { error } = await supabase.auth.resetPasswordForEmail(
+    String(email).trim(),
+    { redirectTo: getAuthEmailRedirectTo() }
+  );
   if (error) throw mapSupabaseError(error);
   return { message: 'ご登録のメールアドレスに再設定メールを送信しました。' };
 };

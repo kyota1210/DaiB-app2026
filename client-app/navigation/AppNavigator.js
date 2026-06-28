@@ -146,7 +146,7 @@ const AuthStack = () => {
 };
 
 const AppNavigator = () => {
-  const { isLoading, userToken, userInfo } = React.useContext(AuthContext);
+  const { isLoading, userToken, userInfo, isPasswordRecovery } = React.useContext(AuthContext);
   const { theme } = useTheme();
   const { t } = useLanguage();
   const isAdmin = userInfo?.is_admin === true;
@@ -157,6 +157,24 @@ const AppNavigator = () => {
         <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={[styles.loadingText, { color: theme.colors.secondaryText }]}>{t('checkingAuth')}</Text>
       </View>
+    );
+  }
+
+  if (isPasswordRecovery) {
+    return (
+      <Stack.Navigator>
+        <Stack.Screen
+          name="ResetPassword"
+          component={ResetPasswordScreen}
+          options={{
+            title: t('appName'),
+            headerStyle: { backgroundColor: '#E8E6E1' },
+            headerTintColor: '#1c1c1e',
+            headerBackVisible: false,
+            headerLeft: () => null,
+          }}
+        />
+      </Stack.Navigator>
     );
   }
 

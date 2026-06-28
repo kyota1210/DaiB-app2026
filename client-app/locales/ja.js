@@ -166,6 +166,7 @@ export default {
     resetRequestSent: 'ご登録のメールアドレスにパスワード再設定のご案内を送信しました。',
     resetTokenMissing: 'トークンがありません。パスワード再発行からやり直してください。',
     passwordMismatch: '新しいパスワードと確認が一致しません。',
+    passwordSameAsOld: '現在のパスワードと同じパスワードは設定できません。別のパスワードを入力してください。',
     
     // プロフィール編集
     userName: 'ユーザー名',
