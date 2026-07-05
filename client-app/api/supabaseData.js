@@ -96,6 +96,14 @@ const mapSupabaseError = (error) => {
       `Storage（avatars 等）の RLS でアップロードが拒否されています。バケット作成と 20260407_storage_policies.sql（または daib-dev-post-images 用の 20260430）を適用し、パス先頭が auth.uid() と一致するか確認してください。 詳細: ${diag}`
     );
   }
+  if (
+    msg.includes('row-level security') &&
+    (msg.toLowerCase().includes('posts') || diagLower.includes('posts'))
+  ) {
+    return new Error(
+      `posts テーブルの RLS で操作が拒否されました。Supabase Dashboard → Authentication → Policies で posts テーブルの UPDATE ポリシー（posts_owner_update_delete）が存在するか確認してください。 詳細: ${diag}`
+    );
+  }
   if (msg.includes('row-level security')) {
     return new Error(
       `行レベルセキュリティ（RLS）により拒否されました。プロフィールは profiles のポリシーと ensure_my_profile RPC、アバターは avatars バケットのポリシーを確認してください。 詳細: ${diag}`
@@ -616,10 +624,7 @@ export const updateRecord = async (id, recordData) => {
 };
 
 export const deleteRecord = async (id) => {
-  const { error } = await supabase
-    .from('posts')
-    .update({ invalidation_flag: FLAG_INACTIVE, deleted_at: new Date().toISOString() })
-    .eq('id', id);
+  const { error } = await supabase.rpc('soft_delete_post', { p_post_id: id });
   if (error) throw mapSupabaseError(error);
   return { message: '記録が削除されました。' };
 };

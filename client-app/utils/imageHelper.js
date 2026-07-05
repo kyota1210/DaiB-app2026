@@ -1,5 +1,5 @@
 import { Image } from 'react-native';
-import { SERVER_URL, SUPABASE_URL, POST_IMAGES_BUCKET, AVATARS_BUCKET } from '../config';
+import { SERVER_URL, SUPABASE_URL, POST_IMAGES_BUCKET, AVATARS_BUCKET, USE_SUPABASE_IMAGE_TRANSFORM } from '../config';
 import { supabase } from './supabase';
 
 const UUID_SEGMENT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -178,7 +178,7 @@ export const getPostImageThumbnailUrl = (path, opts = {}) => {
     }
 
     const base = (SUPABASE_URL || '').replace(/\/$/, '');
-    if (!base) {
+    if (!base || !USE_SUPABASE_IMAGE_TRANSFORM) {
         return getImageUrl(path);
     }
 
@@ -214,7 +214,7 @@ export const getAvatarThumbnailUrl = (path, avatarCacheBust, size = 80) => {
     }
 
     const base = (SUPABASE_URL || '').replace(/\/$/, '');
-    if (!base) {
+    if (!base || !USE_SUPABASE_IMAGE_TRANSFORM) {
         return getImageUrl(path, avatarCacheBust);
     }
 
