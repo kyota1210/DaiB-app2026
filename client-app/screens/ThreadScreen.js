@@ -172,7 +172,11 @@ const ThreadScreen = ({ navigation }) => {
             if (scanBusy || !userToken) return;
             const raw = (typeof data === 'string' ? data : String(data || '')).trim();
             if (!raw) return;
-            const userId = raw;
+            let userId = raw;
+            const inviteMatch = raw.match(/\/invite\/([^/?#]+)/);
+            if (inviteMatch) {
+                userId = decodeURIComponent(inviteMatch[1]);
+            }
             setScanBusy(true);
             setScannedUser(null);
             setScanNoUserFound(false);
@@ -445,7 +449,7 @@ const ThreadScreen = ({ navigation }) => {
                                         {userInfo?.id ? (
                                             <View style={[styles.qrCodeWrap, { backgroundColor: '#fff', padding: 16, borderRadius: 12, width: QR_SIZE + 32, height: QR_SIZE + 32, justifyContent: 'center' }]}>
                                                 <QRCode
-                                                    value={String(userInfo.id)}
+                                                    value={`daibapp://invite/${userInfo.id}`}
                                                     size={QR_SIZE}
                                                     color="#000"
                                                     backgroundColor="#fff"
