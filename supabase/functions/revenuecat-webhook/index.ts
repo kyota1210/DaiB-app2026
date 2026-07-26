@@ -62,6 +62,10 @@ const mapStore = (store?: string): 'apple' | 'google' | null => {
     return null;
 };
 
+const mapEnvironment = (env?: string): 'sandbox' | 'production' => {
+    return env === 'PRODUCTION' ? 'production' : 'sandbox';
+};
+
 /** subscriptions.status 用。テーブル CHECK 制約に合わせる。 */
 const mapEventToStatus = (event: RcEvent): string => {
     const t = event.type;
@@ -200,6 +204,7 @@ Deno.serve(async (req) => {
         ? new Date(event.expiration_at_ms).toISOString()
         : null;
     const autoRenew = deriveAutoRenew(event, status);
+    const environment = mapEnvironment(event.environment);
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
         auth: { persistSession: false, autoRefreshToken: false },
@@ -236,11 +241,20 @@ Deno.serve(async (req) => {
                 status,
                 auto_renew: autoRenew,
                 expires_at: expiresAt,
+                environment,
                 last_verified_at: new Date().toISOString(),
             },
             { onConflict: 'user_id' },
         );
         if (upsertErr) {
+            // FK 違反（user_id が auth.users に存在しない）や一意制約エラーは、
+            // ユーザー削除済み等の正常な状況でも起きうるため 200 を返して RC の
+            // リトライを防ぐ。その他の予期しないエラーは 500 を返して RC に再送させる。
+            const code = (upsertErr as { code?: string }).code ?? '';
+            if (code === '23503' || code === '23505') {
+                console.warn('revenuecat-webhook upsert skipped', userId, code, upsertErr.message);
+                continue;
+            }
             console.error('revenuecat-webhook upsert failed', userId, upsertErr.message);
             return json(500, { error: 'upsert_failed', detail: upsertErr.message });
         }

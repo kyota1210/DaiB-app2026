@@ -9,7 +9,7 @@ import { PLUS_MONTHLY_PRICE_YEN } from '../config';
 /**
  * 特定商取引法に基づく表記
  *
- * 注: 各値は運営者情報が確定後、固定値に置換すること（docs/release-checklist.md §1.2）。
+ * 注: 各値は運営者情報が確定後、固定値に置換すること（Doc/docs/release-checklist.md §1.2）。
  * 個人情報の取扱いを避けたい場合は、住所・電話の項目を「請求があれば遅滞なく開示」運用も可。
  *
  * 販売価格は config.js の PLUS_MONTHLY_PRICE_YEN と App Store の価格設定で同期すること。
@@ -28,7 +28,7 @@ const SpecifiedCommercialTransactionsScreen = ({ navigation }) => {
             >
                 <View style={[styles.content, { backgroundColor: theme.colors.background }]}>
                     <Text style={[styles.lastUpdated, { color: theme.colors.secondaryText }]}>
-                        最終更新日: 2026年6月6日
+                        最終更新日: 2026年7月26日
                     </Text>
 
                     <Row label="販売事業者" value="Moriyama Kyota" theme={theme} />

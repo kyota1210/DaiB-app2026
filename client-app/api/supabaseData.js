@@ -3,7 +3,7 @@ import { resolveReactionUserAvatar } from '../utils/avatarCache';
 import { POST_IMAGES_BUCKET, AVATARS_BUCKET } from '../config';
 import { imageUriToJpegArrayBuffer } from '../utils/normalizeImageForUpload';
 import { moderateImage } from './moderation_image';
-import { FREE_LIMITS } from '../hooks/useFeatureGate';
+import { FREE_LIMITS } from '../constants/subscription';
 import { RECORDS_PAGE_SIZE } from '../constants/pagination';
 import { getAuthEmailRedirectTo } from '../utils/supabaseAuthRedirect';
 

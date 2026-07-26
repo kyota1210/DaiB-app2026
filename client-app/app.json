@@ -49,13 +49,13 @@
           "cameraPermission": "このアプリはQRコードを読み取るためにカメラを使用します。"
         }
       ],
-      "expo-font",
+      "expo-font"
     ],
     "extra": {
       "eas": {
-        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+        "projectId": "d02412c1-43d6-4f60-a872-6340172d44c1"
       }
     },
-    "owner": "REPLACE_WITH_EAS_OWNER"
+    "owner": "kyotamoriyama"
   }
 }

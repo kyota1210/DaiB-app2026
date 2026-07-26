@@ -20,9 +20,10 @@ import {
 const PremiumPlanScreen = ({ navigation }) => {
     const { theme } = useTheme();
     const { t } = useLanguage();
-    const { isPremium, expiresAt, refresh } = useSubscription();
+    const { isPremium, expiresAt, refresh, refreshWithRetry } = useSubscription();
 
     const [loading, setLoading] = useState(false);
+    const [activating, setActivating] = useState(false);
     const [restoring, setRestoring] = useState(false);
     const [priceDisplay, setPriceDisplay] = useState(null);
 
@@ -63,13 +64,26 @@ const PremiumPlanScreen = ({ navigation }) => {
                 }
                 throw e;
             }
-            await refresh();
+
+            // 購入成功 → Webhook が DB を更新するまで最大20秒ポーリング
+            setLoading(false);
+            setActivating(true);
+            const activated = await refreshWithRetry(10, 2000);
+            if (!activated) {
+                // タイムアウト時も購入自体は完了しているので再読込を促す
+                Alert.alert(
+                    t('completed') || '完了',
+                    t('upgradedToPremium') ||
+                        'Plusプランにアップグレードしました。反映まで少し時間がかかる場合があります。',
+                );
+            }
         } catch (e) {
             Alert.alert(t('error') || 'エラー', e?.message || (t('subscribeFailed') || '購読処理に失敗しました'));
         } finally {
             setLoading(false);
+            setActivating(false);
         }
-    }, [t, refresh]);
+    }, [t, refreshWithRetry]);
 
     const handleRestore = useCallback(async () => {
         if (!isPurchasesAvailable()) {
@@ -192,12 +206,19 @@ const PremiumPlanScreen = ({ navigation }) => {
                 <View style={styles.buttonSection}>
                     {!isPremium ? (
                         <TouchableOpacity
-                            style={[styles.subscribeButton, { backgroundColor: theme.colors.primary, opacity: loading ? 0.6 : 1 }]}
+                            style={[styles.subscribeButton, { backgroundColor: theme.colors.primary, opacity: (loading || activating) ? 0.6 : 1 }]}
                             onPress={handleSubscribe}
-                            disabled={loading}
+                            disabled={loading || activating}
                         >
-                            {loading ? (
-                                <ActivityIndicator color="#fff" />
+                            {loading || activating ? (
+                                <View style={styles.loadingRow}>
+                                    <ActivityIndicator color="#fff" />
+                                    {activating && (
+                                        <Text style={styles.activatingText}>
+                                            {t('activating') || 'アクティベーション中...'}
+                                        </Text>
+                                    )}
+                                </View>
                             ) : (
                                 <>
                                     <Ionicons name="diamond" size={20} color="#fff" />
@@ -333,6 +354,16 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#fff',
         marginLeft: 8,
+    },
+    loadingRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    activatingText: {
+        fontSize: 15,
+        color: '#fff',
+        fontWeight: '600',
     },
     cancelButton: {
         borderRadius: 12,

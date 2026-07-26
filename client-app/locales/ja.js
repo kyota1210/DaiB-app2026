@@ -346,6 +346,7 @@ export default {
     categoryDeleted: 'カテゴリーを削除しました',
     upgradedToPremium: 'Plusプランにアップグレードしました',
     planCanceled: 'Plusプランを解約しました',
+    activating: 'アクティベーション中...',
     
     // リアクション
     reactions: 'リアクション',

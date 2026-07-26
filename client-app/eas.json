@@ -24,7 +24,10 @@
       "distribution": "internal",
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_APP_ENV": "preview"
+        "EXPO_PUBLIC_APP_ENV": "preview",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "$REVENUECAT_IOS_API_KEY_PROD",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "$REVENUECAT_ANDROID_API_KEY_PROD",
+        "EXPO_PUBLIC_IAP_PRODUCT_ID_PREMIUM_MONTHLY": "daib_plus_monthly"
       },
       "ios": {
         "simulator": false,
@@ -40,7 +43,10 @@
       "channel": "production",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_APP_ENV": "production"
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "$REVENUECAT_IOS_API_KEY_PROD",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "$REVENUECAT_ANDROID_API_KEY_PROD",
+        "EXPO_PUBLIC_IAP_PRODUCT_ID_PREMIUM_MONTHLY": "daib_plus_monthly"
       },
       "ios": {
         "resourceClass": "m-medium"

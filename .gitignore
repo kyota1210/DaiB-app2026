@@ -6,10 +6,6 @@
 node_modules
 npm-debug.log
 .env
-# 環境ファイル（公開テンプレ *.env.example は追跡する）
-.env.*
-!.env.example
-!client-app/.env.example
 !server-api/.env.example
 
 .DS_Store
@@ -26,8 +22,5 @@ client-app/.expo/
 client-app/build/
 client-app/dist/
 
-# server-app のビルド結果
-server-app/dist/
-
-ios/
-android/
+# server-api のビルド結果
+server-api/dist/

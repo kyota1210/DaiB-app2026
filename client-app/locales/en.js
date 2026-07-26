@@ -350,6 +350,7 @@ export default {
     categoryDeleted: 'Category has been deleted',
     upgradedToPremium: 'Upgraded to Plus plan',
     planCanceled: 'Plus plan has been canceled',
+    activating: 'Activating...',
     
     // Reactions
     reactions: 'Reactions',
