@@ -9,7 +9,14 @@
       "distribution": "internal",
       "channel": "development",
       "env": {
-        "EXPO_PUBLIC_APP_ENV": "development"
+        "EXPO_PUBLIC_APP_ENV": "development",
+        "EXPO_PUBLIC_SUPABASE_URL": "$SUPABASE_URL_DEV",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "$SUPABASE_PUBLISHABLE_KEY_DEV",
+        "EXPO_PUBLIC_POST_IMAGES_BUCKET": "daib-dev-post-images",
+        "EXPO_PUBLIC_AUTH_EMAIL_REDIRECT_TO": "daibapp://auth/callback",
+        "EXPO_PUBLIC_AVATARS_BUCKET": "avatars",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "$REVENUECAT_IOS_API_KEY",
+        "EXPO_PUBLIC_IAP_PRODUCT_ID_PLUS_MONTHLY": "daib_plus_monthly"
       },
       "ios": {
         "simulator": true,
@@ -25,9 +32,14 @@
       "channel": "preview",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "preview",
+        "EXPO_PUBLIC_SUPABASE_URL": "$SUPABASE_URL_PROD",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "$SUPABASE_PUBLISHABLE_KEY_PROD",
+        "EXPO_PUBLIC_POST_IMAGES_BUCKET": "daib-prodpost-images",
+        "EXPO_PUBLIC_AUTH_EMAIL_REDIRECT_TO": "daibapp://auth/callback",
+        "EXPO_PUBLIC_AVATARS_BUCKET": "avatars",
         "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "$REVENUECAT_IOS_API_KEY_PROD",
         "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "$REVENUECAT_ANDROID_API_KEY_PROD",
-        "EXPO_PUBLIC_IAP_PRODUCT_ID_PREMIUM_MONTHLY": "daib_plus_monthly"
+        "EXPO_PUBLIC_IAP_PRODUCT_ID_PLUS_MONTHLY": "daib_plus_monthly"
       },
       "ios": {
         "simulator": false,
@@ -44,9 +56,14 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production",
+        "EXPO_PUBLIC_SUPABASE_URL": "$SUPABASE_URL_PROD",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "$SUPABASE_PUBLISHABLE_KEY_PROD",
+        "EXPO_PUBLIC_POST_IMAGES_BUCKET": "daib-prodpost-images",
+        "EXPO_PUBLIC_AUTH_EMAIL_REDIRECT_TO": "daibapp://auth/callback",
+        "EXPO_PUBLIC_AVATARS_BUCKET": "avatars",
         "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "$REVENUECAT_IOS_API_KEY_PROD",
         "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "$REVENUECAT_ANDROID_API_KEY_PROD",
-        "EXPO_PUBLIC_IAP_PRODUCT_ID_PREMIUM_MONTHLY": "daib_plus_monthly"
+        "EXPO_PUBLIC_IAP_PRODUCT_ID_PLUS_MONTHLY": "daib_plus_monthly"
       },
       "ios": {
         "resourceClass": "m-medium"

@@ -20,7 +20,7 @@ try {
 }
 
 export const PREMIUM_MONTHLY_PRODUCT_ID =
-    process.env.EXPO_PUBLIC_IAP_PRODUCT_ID_PREMIUM_MONTHLY ||
+    process.env.EXPO_PUBLIC_IAP_PRODUCT_ID_PLUS_MONTHLY ||
     'daib_plus_monthly';
 
 let configured = false;
