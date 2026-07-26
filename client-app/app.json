@@ -35,6 +35,8 @@
       "package": "com.kytm1210.daibapp2026",
       "permissions": [
         "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ]
     },
@@ -56,6 +58,12 @@
         "projectId": "d02412c1-43d6-4f60-a872-6340172d44c1"
       }
     },
-    "owner": "kyotamoriyama"
+    "owner": "kyotamoriyama",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d02412c1-43d6-4f60-a872-6340172d44c1"
+    }
   }
 }

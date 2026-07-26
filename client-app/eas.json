@@ -26,29 +26,6 @@
         "buildType": "apk"
       }
     },
-    "preview": {
-      "developmentClient": false,
-      "distribution": "internal",
-      "channel": "preview",
-      "env": {
-        "EXPO_PUBLIC_APP_ENV": "preview",
-        "EXPO_PUBLIC_SUPABASE_URL": "$SUPABASE_URL_PROD",
-        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "$SUPABASE_PUBLISHABLE_KEY_PROD",
-        "EXPO_PUBLIC_POST_IMAGES_BUCKET": "daib-prodpost-images",
-        "EXPO_PUBLIC_AUTH_EMAIL_REDIRECT_TO": "daibapp://auth/callback",
-        "EXPO_PUBLIC_AVATARS_BUCKET": "avatars",
-        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "$REVENUECAT_IOS_API_KEY_PROD",
-        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "$REVENUECAT_ANDROID_API_KEY_PROD",
-        "EXPO_PUBLIC_IAP_PRODUCT_ID_PLUS_MONTHLY": "daib_plus_monthly"
-      },
-      "ios": {
-        "simulator": false,
-        "resourceClass": "m-medium"
-      },
-      "android": {
-        "buildType": "apk"
-      }
-    },
     "production": {
       "developmentClient": false,
       "distribution": "store",
@@ -76,20 +53,13 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "REPLACE_WITH_APPLE_ID@example.com",
-        "ascAppId": "REPLACE_WITH_APP_STORE_CONNECT_APP_ID",
-        "appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID"
+        "appleId": "kyt1210dev26@gmail.com",
+        "ascAppId": "6793158649",
+        "appleTeamId": "SR48L252D5"
       },
       "android": {
         "serviceAccountKeyPath": "./secrets/google-play-service-account.json",
         "track": "internal"
-      }
-    },
-    "preview": {
-      "ios": {
-        "appleId": "REPLACE_WITH_APPLE_ID@example.com",
-        "ascAppId": "REPLACE_WITH_APP_STORE_CONNECT_APP_ID",
-        "appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID"
       }
     }
   }
