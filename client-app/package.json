@@ -54,6 +54,7 @@
   },
   "private": true,
   "devDependencies": {
+    "babel-preset-expo": "~54.0.0",
     "baseline-browser-mapping": "^2.10.19",
     "eslint": "^9.18.0",
     "eslint-config-expo": "~10.0.0"
