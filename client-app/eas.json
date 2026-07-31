@@ -10,8 +10,8 @@
       "channel": "development",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "development",
-        "EXPO_PUBLIC_SUPABASE_URL": "$SUPABASE_URL_DEV",
-        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "$SUPABASE_PUBLISHABLE_KEY_DEV",
+        "EXPO_PUBLIC_SUPABASE_URL": "$SUPABASE_URL",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "$SUPABASE_PUBLISHABLE_KEY",
         "EXPO_PUBLIC_POST_IMAGES_BUCKET": "daib-dev-post-images",
         "EXPO_PUBLIC_AUTH_EMAIL_REDIRECT_TO": "daibapp://auth/callback",
         "EXPO_PUBLIC_AVATARS_BUCKET": "avatars",
@@ -33,8 +33,8 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production",
-        "EXPO_PUBLIC_SUPABASE_URL": "$SUPABASE_URL_PROD",
-        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "$SUPABASE_PUBLISHABLE_KEY_PROD",
+        "EXPO_PUBLIC_SUPABASE_URL": "$SUPABASE_URL",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "$SUPABASE_PUBLISHABLE_KEY",
         "EXPO_PUBLIC_POST_IMAGES_BUCKET": "daib-prodpost-images",
         "EXPO_PUBLIC_AUTH_EMAIL_REDIRECT_TO": "daibapp://auth/callback",
         "EXPO_PUBLIC_AVATARS_BUCKET": "avatars",
