@@ -39,7 +39,6 @@
         "EXPO_PUBLIC_AUTH_EMAIL_REDIRECT_TO": "daibapp://auth/callback",
         "EXPO_PUBLIC_AVATARS_BUCKET": "avatars",
         "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "$REVENUECAT_IOS_API_KEY_PROD",
-        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "$REVENUECAT_ANDROID_API_KEY_PROD",
         "EXPO_PUBLIC_IAP_PRODUCT_ID_PLUS_MONTHLY": "daib_plus_monthly"
       },
       "ios": {
