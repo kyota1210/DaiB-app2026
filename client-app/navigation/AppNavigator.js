@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Text, View, ActivityIndicator, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
@@ -146,19 +146,9 @@ const AuthStack = () => {
 };
 
 const AppNavigator = () => {
-  const { isLoading, userToken, userInfo, isPasswordRecovery } = React.useContext(AuthContext);
-  const { theme } = useTheme();
+  const { userToken, userInfo, isPasswordRecovery } = React.useContext(AuthContext);
   const { t } = useLanguage();
   const isAdmin = userInfo?.is_admin === true;
-
-  if (isLoading) {
-    return (
-      <View style={[styles.loadingScreen, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={[styles.loadingText, { color: theme.colors.secondaryText }]}>{t('checkingAuth')}</Text>
-      </View>
-    );
-  }
 
   if (isPasswordRecovery) {
     return (
@@ -219,15 +209,6 @@ const AppNavigator = () => {
 };
 
 const styles = StyleSheet.create({
-  loadingScreen: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-  },
   switchButtonWrapper: {
     position: 'absolute',
     bottom: Platform.OS === 'ios' ? 34 : 24,
