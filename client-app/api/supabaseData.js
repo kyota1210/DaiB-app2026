@@ -93,7 +93,7 @@ const mapSupabaseError = (error) => {
       diagLower.includes('storage'))
   ) {
     return new Error(
-      `Storage（avatars 等）の RLS でアップロードが拒否されています。バケット作成と 20260407_storage_policies.sql（または daib-dev-post-images 用の 20260430）を適用し、パス先頭が auth.uid() と一致するか確認してください。 詳細: ${diag}`
+      `Storage の RLS でアップロードが拒否されています。バケット作成と supabase/migrations の storage 系マイグレーションを適用し、パス先頭が auth.uid() と一致するか確認してください。upload は INSERT ... RETURNING を使うため、対象バケットの SELECT ポリシーも必要です。 詳細: ${diag}`
     );
   }
   if (
