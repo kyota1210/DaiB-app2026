@@ -8,26 +8,16 @@
       "developmentClient": true,
       "distribution": "internal",
       "channel": "development",
+      "environment": "development",
       "env": {
-        "EXPO_PUBLIC_APP_ENV": "development"
+        "EXPO_PUBLIC_APP_ENV": "development",
+        "EXPO_PUBLIC_POST_IMAGES_BUCKET": "daib-dev-post-images",
+        "EXPO_PUBLIC_AUTH_EMAIL_REDIRECT_TO": "daibapp://auth/callback",
+        "EXPO_PUBLIC_AVATARS_BUCKET": "avatars",
+        "EXPO_PUBLIC_IAP_PRODUCT_ID_PLUS_MONTHLY": "daib_plus_monthly"
       },
       "ios": {
         "simulator": true,
-        "resourceClass": "m-medium"
-      },
-      "android": {
-        "buildType": "apk"
-      }
-    },
-    "preview": {
-      "developmentClient": false,
-      "distribution": "internal",
-      "channel": "preview",
-      "env": {
-        "EXPO_PUBLIC_APP_ENV": "preview"
-      },
-      "ios": {
-        "simulator": false,
         "resourceClass": "m-medium"
       },
       "android": {
@@ -39,8 +29,13 @@
       "distribution": "store",
       "channel": "production",
       "autoIncrement": true,
+      "environment": "production",
       "env": {
-        "EXPO_PUBLIC_APP_ENV": "production"
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "EXPO_PUBLIC_POST_IMAGES_BUCKET": "daib-prod-post-images",
+        "EXPO_PUBLIC_AUTH_EMAIL_REDIRECT_TO": "daibapp://auth/callback",
+        "EXPO_PUBLIC_AVATARS_BUCKET": "avatars",
+        "EXPO_PUBLIC_IAP_PRODUCT_ID_PLUS_MONTHLY": "daib_plus_monthly"
       },
       "ios": {
         "resourceClass": "m-medium"
@@ -53,20 +48,13 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "REPLACE_WITH_APPLE_ID@example.com",
-        "ascAppId": "REPLACE_WITH_APP_STORE_CONNECT_APP_ID",
-        "appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID"
+        "appleId": "kyt1210dev26@gmail.com",
+        "ascAppId": "6793158649",
+        "appleTeamId": "SR48L252D5"
       },
       "android": {
         "serviceAccountKeyPath": "./secrets/google-play-service-account.json",
         "track": "internal"
-      }
-    },
-    "preview": {
-      "ios": {
-        "appleId": "REPLACE_WITH_APPLE_ID@example.com",
-        "ascAppId": "REPLACE_WITH_APP_STORE_CONNECT_APP_ID",
-        "appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID"
       }
     }
   }

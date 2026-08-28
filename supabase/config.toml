@@ -67,3 +67,7 @@ verify_jwt = true
 # Edge Function: 画像モデレーション（Vision SafeSearch）
 [functions.moderate-image]
 verify_jwt = true
+
+# Edge Function: 管理者向けシステム通知一括送信
+[functions.send-system-notification]
+verify_jwt = true

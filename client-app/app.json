@@ -2,7 +2,7 @@
   "expo": {
     "name": "DaiB",
     "slug": "DaiB",
-    "scheme": "daib",
+    "scheme": "daibapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -50,12 +50,19 @@
         }
       ],
       "expo-font",
+      "expo-updates"
     ],
     "extra": {
       "eas": {
-        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+        "projectId": "d02412c1-43d6-4f60-a872-6340172d44c1"
       }
     },
-    "owner": "REPLACE_WITH_EAS_OWNER"
+    "owner": "kyotamoriyama",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d02412c1-43d6-4f60-a872-6340172d44c1"
+    }
   }
 }

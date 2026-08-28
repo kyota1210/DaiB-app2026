@@ -92,13 +92,26 @@ supabase db push
 
 ### 4.1 Edge Functions の環境変数
 
-各 Edge Function で必要な Secret を環境ごとに設定：
+各 Edge Function で必要な Secret を環境ごとに設定。**`--project-ref` を省略すると現在リンク中のプロジェクトに適用される。** 複数環境を切り替える際は必ず ref を明示する。
 
 ```bash
 # RevenueCat Webhook（revenuecat-webhook → subscriptions 更新）
-# RevenueCat ダッシュボードの Webhook「Authorization」に設定する値と必ず一致させる
+# dev と prod でトークンを別々に生成・設定すること（漏洩時の影響範囲を分離するため）
+# トークン生成例: openssl rand -hex 32
+#
+# 対応関係:
+#   RevenueCat dev プロジェクト の Webhook Authorization  ←→  dev Supabase の REVENUECAT_WEBHOOK_AUTHORIZATION
+#   RevenueCat prod プロジェクト の Webhook Authorization ←→  prod Supabase の REVENUECAT_WEBHOOK_AUTHORIZATION
+
+# dev 環境（project-ref: ejiydxdijwyoglbatzge）
 supabase secrets set \
-  REVENUECAT_WEBHOOK_AUTHORIZATION=<RevenueCat Webhook authorization token>
+  REVENUECAT_WEBHOOK_AUTHORIZATION=<dev用トークン> \
+  --project-ref ejiydxdijwyoglbatzge
+
+# prod 環境（project-ref: giknxvsaovkahsonqyqd）
+supabase secrets set \
+  REVENUECAT_WEBHOOK_AUTHORIZATION=<prod用トークン> \
+  --project-ref giknxvsaovkahsonqyqd
 
 # お問い合わせ転送用（任意）
 supabase secrets set \
@@ -122,6 +135,75 @@ supabase functions deploy moderate-image
 ### 4.2 Service Role Key
 
 `SUPABASE_SERVICE_ROLE_KEY` は Edge Functions に自動で渡されるため、Function 内では `Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')` で参照可能。**クライアントアプリには絶対に同梱しない**。
+
+---
+
+---
+
+## 4.x RevenueCat ダッシュボード設定
+
+RevenueCat アカウント（無料）は Apple Developer 登録前でも作成可能。[app.revenuecat.com](https://app.revenuecat.com) でアカウントを作成後、以下を環境ごとに設定する。
+
+### 4.x.1 プロジェクト・App の作成
+
+| 環境 | RevenueCat プロジェクト名（例） | 用途 |
+|---|---|---|
+| dev/sandbox | `DaiB-dev` | 開発・Sandbox テスト用 |
+| prod | `DaiB-prod` | App Store 本番用 |
+
+各プロジェクトで **Add App** → iOS アプリ：
+
+- Bundle ID: `com.kytm1210.daibapp2026`
+- App Store Connect 連携（Apple Developer 登録後）: Shared Secret を RevenueCat に登録
+
+### 4.x.2 API キーの取得と設定
+
+RevenueCat ダッシュボード → **Project Settings → API Keys** → Public SDK Key をコピー。
+
+**dev プロジェクト:**
+- `client-app/.env` の `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY` / `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY` に設定
+
+**prod プロジェクト:**
+```bash
+eas secret:create --scope project --name REVENUECAT_IOS_API_KEY_PROD --value appl_xxx
+eas secret:create --scope project --name REVENUECAT_ANDROID_API_KEY_PROD --value goog_xxx
+```
+
+### 4.x.3 Entitlement の作成
+
+**Entitlements → New Entitlement**
+
+- Identifier: `premium`（`client-app/hooks/useFeatureGate.js` が参照）
+
+### 4.x.4 Product の追加
+
+**Products → New Product**
+
+- Product identifier: `com.kytm1210.daibapp2026.premium.monthly`
+- Store: App Store（Apple Developer 登録後に App Store Connect で商品を先に作成する）
+
+Entitlement `premium` にこの Product をアタッチする。
+
+### 4.x.5 Offering の作成
+
+**Offerings → New Offering**
+
+- Identifier: `default`
+- Package: `$rc_monthly` に上記 Product をアタッチ
+
+### 4.x.6 Webhook の設定
+
+**Integrations → Webhooks → New Webhook**
+
+| 環境 | Webhook URL |
+|---|---|
+| dev | `https://ejiydxdijwyoglbatzge.supabase.co/functions/v1/revenuecat-webhook` |
+| prod | `https://giknxvsaovkahsonqyqd.supabase.co/functions/v1/revenuecat-webhook` |
+
+- Authorization header: **dev/prod で別々のランダム文字列**を生成して設定（`openssl rand -hex 32` 等）
+  - dev RevenueCat プロジェクト → dev 用トークン → dev Supabase の `REVENUECAT_WEBHOOK_AUTHORIZATION`
+  - prod RevenueCat プロジェクト → prod 用トークン → prod Supabase の `REVENUECAT_WEBHOOK_AUTHORIZATION`
+- 生成したトークンを **4.1 の手順** で各 Supabase プロジェクトに設定する
 
 ---
 

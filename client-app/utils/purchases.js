@@ -10,15 +10,18 @@
 import { Platform } from 'react-native';
 
 let Purchases = null;
+let LOG_LEVEL = null;
 try {
-    Purchases = require('react-native-purchases').default;
+    const mod = require('react-native-purchases');
+    Purchases = mod.default;
+    LOG_LEVEL = mod.LOG_LEVEL;
 } catch {
     /* Expo Go */
 }
 
 export const PREMIUM_MONTHLY_PRODUCT_ID =
-    process.env.EXPO_PUBLIC_IAP_PRODUCT_ID_PREMIUM_MONTHLY ||
-    'com.kytm1210.daibapp2026.premium.monthly';
+    process.env.EXPO_PUBLIC_IAP_PRODUCT_ID_PLUS_MONTHLY ||
+    'daib_plus_monthly';
 
 let configured = false;
 
@@ -39,10 +42,25 @@ export const purchasesConfigure = async () => {
         return false;
     }
     try {
+        if (LOG_LEVEL) {
+            const level = process.env.EXPO_PUBLIC_APP_ENV === 'production'
+                ? LOG_LEVEL.INFO
+                : LOG_LEVEL.VERBOSE;
+            Purchases.setLogLevel(level);
+        }
         Purchases.configure({ apiKey });
         configured = true;
         return true;
     } catch (e) {
+        // JS リロード後などにネイティブ SDK が既に構成済みの場合も例外が来ることがある。
+        // その場合は isConfigured() で実際の状態を確認してフラグを合わせる。
+        try {
+            const alreadyConfigured = await Purchases.isConfigured();
+            if (alreadyConfigured) {
+                configured = true;
+                return true;
+            }
+        } catch (_) { /* noop */ }
         console.warn('RevenueCat configure failed', e?.message);
         return false;
     }

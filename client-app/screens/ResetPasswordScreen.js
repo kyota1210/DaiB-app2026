@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
     StyleSheet,
     Text,
@@ -12,14 +12,16 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { AuthContext } from '../context/AuthContext';
 import { resetPassword } from '../api/auth';
 
-export default function ResetPasswordScreen({ navigation }) {
+export default function ResetPasswordScreen() {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const { theme } = useTheme();
     const { tDevice } = useLanguage();
+    const { authContext } = useContext(AuthContext);
 
     const handleSubmit = async () => {
         if (!newPassword || !confirmPassword) {
@@ -42,10 +44,18 @@ export default function ResetPasswordScreen({ navigation }) {
         try {
             await resetPassword({ token: '', new_password: newPassword });
             Alert.alert(tDevice('completed'), tDevice('passwordChanged'), [
-                { text: tDevice('ok'), onPress: () => navigation.replace('Login') },
+                { text: tDevice('ok'), onPress: () => authContext.clearPasswordRecovery() },
             ]);
         } catch (err) {
-            Alert.alert(tDevice('error'), err.message || 'パスワードの変更に失敗しました');
+            const msg = err.message || '';
+            const isSamePassword =
+                msg.toLowerCase().includes('same') ||
+                msg.toLowerCase().includes('different from the old') ||
+                msg.includes('same_password');
+            Alert.alert(
+                tDevice('error'),
+                isSamePassword ? tDevice('passwordSameAsOld') : (msg || 'パスワードの変更に失敗しました')
+            );
         } finally {
             setLoading(false);
         }
@@ -110,7 +120,7 @@ export default function ResetPasswordScreen({ navigation }) {
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.secondaryButton, { borderColor: theme.colors.primary }]}
-                        onPress={() => navigation.goBack()}
+                        onPress={() => authContext.clearPasswordRecovery()}
                         disabled={loading}
                         activeOpacity={0.8}
                     >

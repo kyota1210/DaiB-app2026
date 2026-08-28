@@ -1,7 +1,7 @@
 // Supabase Edge Function: submit-contact
 //
 // 問い合わせフォームから受け取った内容を contacts テーブルに保存し、
-// 任意で運営宛にメール送信する（SendGrid API key が設定されている場合のみ）。
+// 任意で運営宛にメール送信する（Resend API key が設定されている場合のみ）。
 //
 // クライアントは Authorization: Bearer <user JWT> 付きで POST する。
 // 認証必須なのは、なりすまし投稿・スパム抑制・user_id 紐付けのため。
@@ -14,8 +14,8 @@ const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 
 // 任意: 設定されている場合のみ運用宛にメール通知
-const SENDGRID_API_KEY = Deno.env.get('SENDGRID_API_KEY') ?? '';
-const CONTACT_TO_EMAIL = Deno.env.get('CONTACT_TO_EMAIL') ?? '';
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
+const CONTACT_NOTIFY_EMAIL = Deno.env.get('CONTACT_NOTIFY_EMAIL') ?? '';
 const CONTACT_FROM_EMAIL = Deno.env.get('CONTACT_FROM_EMAIL') ?? '';
 
 const json = (status: number, body: Record<string, unknown>) =>
@@ -29,28 +29,30 @@ const looksLikeEmail = (s: string) => /.+@.+\..+/.test(s);
 
 const sanitize = (s: string, max: number) => s.replace(/\s+/g, ' ').trim().slice(0, max);
 
-const sendMailViaSendGrid = async (params: {
+const sendMailViaResend = async (params: {
     to: string;
     from: string;
     subject: string;
     text: string;
+    replyTo?: string;
 }) => {
-    const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
+    const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
-            Authorization: `Bearer ${SENDGRID_API_KEY}`,
+            Authorization: `Bearer ${RESEND_API_KEY}`,
             'content-type': 'application/json',
         },
         body: JSON.stringify({
-            personalizations: [{ to: [{ email: params.to }] }],
-            from: { email: params.from },
+            to: params.to,
+            from: params.from,
             subject: params.subject,
-            content: [{ type: 'text/plain', value: params.text }],
+            text: params.text,
+            ...(params.replyTo ? { reply_to: params.replyTo } : {}),
         }),
     });
     if (!res.ok) {
         const body = await res.text();
-        throw new Error(`sendgrid_${res.status}: ${body.slice(0, 200)}`);
+        throw new Error(`resend_${res.status}: ${body.slice(0, 200)}`);
     }
 };
 
@@ -120,12 +122,13 @@ Deno.serve(async (req) => {
     }
 
     // 任意: 運用宛メール送信（失敗してもクライアントには成功扱い）
-    if (SENDGRID_API_KEY && CONTACT_TO_EMAIL && CONTACT_FROM_EMAIL) {
+    if (RESEND_API_KEY && CONTACT_NOTIFY_EMAIL && CONTACT_FROM_EMAIL) {
         try {
-            await sendMailViaSendGrid({
-                to: CONTACT_TO_EMAIL,
+            await sendMailViaResend({
+                to: CONTACT_NOTIFY_EMAIL,
                 from: CONTACT_FROM_EMAIL,
-                subject: `[DaiB お問い合わせ] ${subject}`,
+                replyTo: email,
+                subject: `[お問い合わせ] ${subject}`,
                 text: [
                     `From: ${name} <${email}>`,
                     `User ID: ${userId}`,

@@ -166,6 +166,7 @@ export default {
     resetRequestSent: 'If that email is registered, we have sent password reset instructions.',
     resetTokenMissing: 'Token is missing. Please start the password reset process again.',
     passwordMismatch: 'New password and confirmation do not match.',
+    passwordSameAsOld: 'Your new password must be different from your current password.',
 
     // Profile edit
     userName: 'User Name',
@@ -349,6 +350,7 @@ export default {
     categoryDeleted: 'Category has been deleted',
     upgradedToPremium: 'Upgraded to Plus plan',
     planCanceled: 'Plus plan has been canceled',
+    activating: 'Activating...',
     
     // Reactions
     reactions: 'Reactions',

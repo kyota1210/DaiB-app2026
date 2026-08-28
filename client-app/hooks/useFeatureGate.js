@@ -1,15 +1,11 @@
 // 機能ゲート（Plus プラン特典）の判定をまとめるフック。
-// Plus プラン未契約時の上限値はここで一元管理する。
+// Plus プラン未契約時の上限値は constants/subscription.js で一元管理する。
+// （supabaseData.js からも参照するため、循環依存を避けるために独立ファイルに分離）
 
 import { useSubscription } from '../context/SubscriptionContext';
+import { FREE_LIMITS } from '../constants/subscription';
 
-/** フリープランの上限（表示・ゲートで共有） */
-export const FREE_LIMITS = {
-    monthlyPostCount: 30,
-    storageBytes: 200 * 1024 * 1024, // 200MB（参考値、バックエンド側でも別途制限予定）
-    /** フリープランで作成できるカスタムカテゴリー数（「すべて」相当の仮想カテゴリーは含まない） */
-    maxCustomCategories: 3,
-};
+export { FREE_LIMITS };
 
 export const useFeatureGate = () => {
     const { isPremium } = useSubscription();

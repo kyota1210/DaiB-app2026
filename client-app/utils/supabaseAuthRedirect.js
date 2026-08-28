@@ -35,6 +35,26 @@ function parseAuthParamsFromUrl(url) {
 }
 
 /**
+ * URL がパスワードリカバリー用かどうかを判定する。
+ * fragment (#type=recovery) / query (?type=recovery) の両方を確認する。
+ */
+export function isPasswordRecoveryUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    try {
+        const parsed = new URL(url);
+        const fragmentParams = new URLSearchParams(
+            parsed.hash?.startsWith('#') ? parsed.hash.slice(1) : ''
+        );
+        return (
+            fragmentParams.get('type') === 'recovery' ||
+            parsed.searchParams.get('type') === 'recovery'
+        );
+    } catch {
+        return false;
+    }
+}
+
+/**
  * メール確認などのリダイレクト URL（fragment / query のトークン）からセッションを復元する。
  * React Native ではブラウザの自動検出が使えないため手動で呼ぶ。
  */

@@ -49,6 +49,40 @@ export const SubscriptionProvider = ({ children }) => {
         await fetchSubscription();
     }, [fetchSubscription]);
 
+    /**
+     * 購入直後に呼ぶ。Webhook が DB を更新するまで最大 maxAttempts × intervalMs (ms) 待つ。
+     * @returns {Promise<boolean>} true = isPremium を確認できた / false = タイムアウト
+     */
+    const refreshWithRetry = useCallback(
+        async (maxAttempts = 10, intervalMs = 2000) => {
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                let data = null;
+                try {
+                    const result = await supabase
+                        .from('subscriptions')
+                        .select('store, product_id, status, auto_renew, expires_at, last_verified_at')
+                        .maybeSingle();
+                    data = result.data;
+                } catch (_) { /* noop */ }
+
+                setSubscription(data || null);
+
+                if (data && isActiveStatus(data.status)) {
+                    const exp = data.expires_at;
+                    if (!exp || new Date(exp).getTime() > Date.now()) {
+                        return true;
+                    }
+                }
+
+                if (attempt < maxAttempts - 1) {
+                    await new Promise((r) => setTimeout(r, intervalMs));
+                }
+            }
+            return false;
+        },
+        [],
+    );
+
     const isPremium = useMemo(() => {
         if (!subscription) return false;
         if (!isActiveStatus(subscription.status)) return false;
@@ -65,8 +99,9 @@ export const SubscriptionProvider = ({ children }) => {
             autoRenew: subscription?.auto_renew ?? null,
             expiresAt: subscription?.expires_at ?? null,
             refresh,
+            refreshWithRetry,
         }),
-        [isPremium, loading, subscription, refresh],
+        [isPremium, loading, subscription, refresh, refreshWithRetry],
     );
 
     return <SubscriptionContext.Provider value={value}>{children}</SubscriptionContext.Provider>;
@@ -83,6 +118,7 @@ export const useSubscription = () => {
             autoRenew: null,
             expiresAt: null,
             refresh: async () => {},
+            refreshWithRetry: async () => false,
         };
     }
     return ctx;

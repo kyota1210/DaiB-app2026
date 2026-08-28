@@ -3,8 +3,9 @@ import { resolveReactionUserAvatar } from '../utils/avatarCache';
 import { POST_IMAGES_BUCKET, AVATARS_BUCKET } from '../config';
 import { imageUriToJpegArrayBuffer } from '../utils/normalizeImageForUpload';
 import { moderateImage } from './moderation_image';
-import { FREE_LIMITS } from '../hooks/useFeatureGate';
+import { FREE_LIMITS } from '../constants/subscription';
 import { RECORDS_PAGE_SIZE } from '../constants/pagination';
+import { getAuthEmailRedirectTo } from '../utils/supabaseAuthRedirect';
 
 const ALLOWED_EMOJIS = ['❤️', '👍', '🌸', '🎉', '✨'];
 
@@ -92,7 +93,15 @@ const mapSupabaseError = (error) => {
       diagLower.includes('storage'))
   ) {
     return new Error(
-      `Storage（avatars 等）の RLS でアップロードが拒否されています。バケット作成と 20260407_storage_policies.sql（または daib-dev-post-images 用の 20260430）を適用し、パス先頭が auth.uid() と一致するか確認してください。 詳細: ${diag}`
+      `Storage の RLS でアップロードが拒否されています。バケット作成と supabase/migrations の storage 系マイグレーションを適用し、パス先頭が auth.uid() と一致するか確認してください。upload は INSERT ... RETURNING を使うため、対象バケットの SELECT ポリシーも必要です。 詳細: ${diag}`
+    );
+  }
+  if (
+    msg.includes('row-level security') &&
+    (msg.toLowerCase().includes('posts') || diagLower.includes('posts'))
+  ) {
+    return new Error(
+      `posts テーブルの RLS で操作が拒否されました。Supabase Dashboard → Authentication → Policies で posts テーブルの UPDATE ポリシー（posts_owner_update_delete）が存在するか確認してください。 詳細: ${diag}`
     );
   }
   if (msg.includes('row-level security')) {
@@ -274,7 +283,10 @@ const getFriendsList = async (userId) => {
 };
 
 export const requestPasswordReset = async (email) => {
-  const { error } = await supabase.auth.resetPasswordForEmail(String(email).trim());
+  const { error } = await supabase.auth.resetPasswordForEmail(
+    String(email).trim(),
+    { redirectTo: getAuthEmailRedirectTo() }
+  );
   if (error) throw mapSupabaseError(error);
   return { message: 'ご登録のメールアドレスに再設定メールを送信しました。' };
 };
@@ -612,10 +624,7 @@ export const updateRecord = async (id, recordData) => {
 };
 
 export const deleteRecord = async (id) => {
-  const { error } = await supabase
-    .from('posts')
-    .update({ invalidation_flag: FLAG_INACTIVE, deleted_at: new Date().toISOString() })
-    .eq('id', id);
+  const { error } = await supabase.rpc('soft_delete_post', { p_post_id: id });
   if (error) throw mapSupabaseError(error);
   return { message: '記録が削除されました。' };
 };

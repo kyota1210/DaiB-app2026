@@ -38,56 +38,6 @@ END;
 $$;
 
 -- ------------------------------------------------------------
--- ヘルパー: フレンド判定（双方向 approved フォロー）
--- ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.is_friend(user_a uuid, user_b uuid)
-RETURNS boolean LANGUAGE sql STABLE AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.follows f1
-    JOIN public.follows f2
-      ON f1.follower_id = f2.following_id
-     AND f1.following_id = f2.follower_id
-    WHERE f1.follower_id  = user_a
-      AND f1.following_id = user_b
-      AND public.invalidation_flag_is_active(f1.invalidation_flag)
-      AND public.invalidation_flag_is_active(f2.invalidation_flag)
-      AND f1.approved = true
-      AND f2.approved = true
-  );
-$$;
-
--- ------------------------------------------------------------
--- ヘルパー: 投稿所有者確認（post_categories RLS 用）
--- ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.user_owns_post(p_post_id bigint)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.posts p
-    WHERE p.id = p_post_id AND p.user_id = auth.uid()
-  );
-$$;
-REVOKE ALL ON FUNCTION public.user_owns_post(bigint) FROM public;
-GRANT EXECUTE ON FUNCTION public.user_owns_post(bigint) TO authenticated;
-
--- ------------------------------------------------------------
--- ヘルパー: 投稿閲覧権限確認（post_categories SELECT RLS 用）
--- ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.can_view_post_for_post_categories(p_post_id bigint)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.posts r
-    WHERE r.id = p_post_id
-      AND public.invalidation_flag_is_active(r.invalidation_flag)
-      AND (
-        r.user_id = auth.uid()
-        OR public.is_friend(auth.uid(), r.user_id)
-      )
-  );
-$$;
-REVOKE ALL ON FUNCTION public.can_view_post_for_post_categories(bigint) FROM public;
-GRANT EXECUTE ON FUNCTION public.can_view_post_for_post_categories(bigint) TO authenticated;
-
--- ------------------------------------------------------------
 -- ヘルパー: subscriptions updated_at トリガ関数
 -- ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.subscriptions_set_updated_at()
@@ -262,6 +212,56 @@ DROP TRIGGER IF EXISTS follows_set_updated_at ON public.follows;
 CREATE TRIGGER follows_set_updated_at
   BEFORE UPDATE ON public.follows
   FOR EACH ROW EXECUTE PROCEDURE public.update_updated_at_column();
+
+-- ------------------------------------------------------------
+-- ヘルパー: フレンド判定（双方向 approved フォロー）
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.is_friend(user_a uuid, user_b uuid)
+RETURNS boolean LANGUAGE sql STABLE AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.follows f1
+    JOIN public.follows f2
+      ON f1.follower_id = f2.following_id
+     AND f1.following_id = f2.follower_id
+    WHERE f1.follower_id  = user_a
+      AND f1.following_id = user_b
+      AND public.invalidation_flag_is_active(f1.invalidation_flag)
+      AND public.invalidation_flag_is_active(f2.invalidation_flag)
+      AND f1.approved = true
+      AND f2.approved = true
+  );
+$$;
+
+-- ------------------------------------------------------------
+-- ヘルパー: 投稿所有者確認（post_categories RLS 用）
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.user_owns_post(p_post_id bigint)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.posts p
+    WHERE p.id = p_post_id AND p.user_id = auth.uid()
+  );
+$$;
+REVOKE ALL ON FUNCTION public.user_owns_post(bigint) FROM public;
+GRANT EXECUTE ON FUNCTION public.user_owns_post(bigint) TO authenticated;
+
+-- ------------------------------------------------------------
+-- ヘルパー: 投稿閲覧権限確認（post_categories SELECT RLS 用）
+-- ------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.can_view_post_for_post_categories(p_post_id bigint)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.posts r
+    WHERE r.id = p_post_id
+      AND public.invalidation_flag_is_active(r.invalidation_flag)
+      AND (
+        r.user_id = auth.uid()
+        OR public.is_friend(auth.uid(), r.user_id)
+      )
+  );
+$$;
+REVOKE ALL ON FUNCTION public.can_view_post_for_post_categories(bigint) FROM public;
+GRANT EXECUTE ON FUNCTION public.can_view_post_for_post_categories(bigint) TO authenticated;
 
 -- ------------------------------------------------------------
 -- reactions

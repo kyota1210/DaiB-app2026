@@ -52,16 +52,16 @@
 
 ### 2.2 サブスクリプション商品の登録（F2-2 で利用）
 
-- [ ] サブスクリプション グループを作成（例: `daib_plus`。既存が `daib_premium` の場合は ASC でリネームまたは新規グループへ移行）
+- [ ] サブスクリプション グループを作成（例: `daib_plus`）
 - [ ] サブスクリプション商品を登録
-  - 商品ID: `com.kytm1210.daibapp2026.premium.monthly`
+  - 商品ID: `daib_plus_monthly`
   - 期間: 1 ヶ月
-  - 価格: 980 円（または App Store の価格ティア）
+  - 価格: 250 円（または App Store の価格ティア）
   - 紹介オファー（任意）: 7 日間無料トライアル など
-- [ ] **App Store Server Notifications V2** の Webhook URL を設定
-  - URL: RevenueCat → Supabase Edge Function `https://<supabase-project>.supabase.co/functions/v1/revenuecat-webhook`
-  - Sandbox / Production の両環境で設定
-- [ ] **App Store Connect API Key** を発行（Issuer ID, Key ID, p8 ファイルを Supabase Edge Function の Secret に登録）
+- [ ] **RevenueCat ダッシュボード**に上記商品を登録し、Entitlement `premium` / Offering `default` にアタッチ（詳細は [supabase-environments.md §4.x](supabase-environments.md) 参照）
+- [ ] **App Store Connect Shared Secret** を RevenueCat ダッシュボード → Project Settings → iOS に登録（RevenueCat がレシート検証に使用）
+  - App Store Connect → `Apps → [アプリ] → App Information → App-Specific Shared Secret` で生成
+- [ ] RevenueCat Webhook を prod Supabase に設定（`supabase-environments.md §4.x.6` 参照）
 
 ### 2.3 App Privacy 質問票
 
@@ -109,7 +109,7 @@ prod 環境の Supabase Studio → `Authentication → Providers / Settings` で
 - [ ] **Secure email change** を ON（メール変更時に旧アドレスへ確認メール）
 - [ ] **Secure password change** を ON 推奨（パスワード変更時に再認証要求）
 - [ ] **Disable signups** はデフォルト OFF のまま（招待制にする場合は別ポリシー）
-- [ ] SMTP 設定: 独自 SMTP（SendGrid 等）を構成。Supabase デフォルト SMTP は本番不可
+- [ ] SMTP 設定: 独自 SMTP（Resend）を構成。Supabase デフォルト SMTP は本番不可
 - [ ] テンプレート（Confirm signup / Reset password / Magic Link / Change Email）を日本語に整備し、`site_url` と `additional_redirect_urls` を本番ドメイン基準に更新
 
 ---

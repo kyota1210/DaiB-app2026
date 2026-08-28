@@ -146,7 +146,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: 'images',
             allowsEditing: false,
-            quality: 1.0,
+            quality: 0.85,
         });
 
         // 新規作成で最初の写真選択を×で閉じた場合はホームに戻る
@@ -156,9 +156,13 @@ export default function PhotoPickerScreen({ navigation, route }) {
         }
 
         if (!result.canceled && result.assets && result.assets[0]) {
-            const uri = result.assets[0].uri;
-            setSelectedImage(uri);
+            const asset = result.assets[0];
+            setSelectedImage(asset.uri);
             setIsNewImageSelected(true);
+            // ピッカー結果から直接サイズを取得して onLoad を待たずに即表示
+            if (asset.width > 0 && asset.height > 0) {
+                setOriginalImageSize({ width: asset.width, height: asset.height });
+            }
         }
     };
 
@@ -349,16 +353,20 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                         return { width: c.width, height: c.height };
                                     })()
                                 ]}>
-                                    {(originalImageSize.width > 0 && originalImageSize.height > 0) || isEditMode ? (
-                                        <Image
-                                            source={{ uri: selectedImage }}
-                                            style={isEditMode && (originalImageSize.width === 0 || originalImageSize.height === 0) ? styles.editModeImage : StyleSheet.absoluteFill}
-                                            resizeMode={isEditMode && (originalImageSize.width === 0 || originalImageSize.height === 0) ? 'contain' : 'cover'}
-                                            onLoad={handleImageLoad}
-                                        />
-                                    ) : (
-                                        <ActivityIndicator size="large" color="#fff" />
-                                    )}
+                                    <Image
+                                        source={{ uri: selectedImage }}
+                                        style={
+                                            (originalImageSize.width === 0 || originalImageSize.height === 0)
+                                                ? styles.editModeImage
+                                                : StyleSheet.absoluteFill
+                                        }
+                                        resizeMode={
+                                            (originalImageSize.width === 0 || originalImageSize.height === 0)
+                                                ? 'contain'
+                                                : 'cover'
+                                        }
+                                        onLoad={handleImageLoad}
+                                    />
                                     <View style={styles.overlayControls}>
                                         <TouchableOpacity
                                             style={[styles.overlayButton, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}

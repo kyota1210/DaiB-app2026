@@ -1,5 +1,5 @@
 import { Image } from 'react-native';
-import { SERVER_URL, SUPABASE_URL, POST_IMAGES_BUCKET, AVATARS_BUCKET } from '../config';
+import { SERVER_URL, SUPABASE_URL, POST_IMAGES_BUCKET, AVATARS_BUCKET, USE_SUPABASE_IMAGE_TRANSFORM } from '../config';
 import { supabase } from './supabase';
 
 const UUID_SEGMENT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -164,6 +164,44 @@ export const getImageUrl = (path, avatarCacheBust) => {
 };
 
 /**
+ * 投稿画像のサムネイル URL（Supabase の画像変換 API。未対応時は getImageUrl にフォールバック）
+ * @param {string} path
+ * @param {{ width?: number, height?: number }} [opts]
+ */
+export const getPostImageThumbnailUrl = (path, opts = {}) => {
+    if (path == null || path === '') return null;
+
+    const str = typeof path === 'string' ? path.trim() : String(path).trim();
+    const postKey = normalizePostImageObjectKey(str);
+    if (!POST_IMAGES_BUCKET || !isPostImageStorageKey(postKey)) {
+        return getImageUrl(path);
+    }
+
+    const base = (SUPABASE_URL || '').replace(/\/$/, '');
+    if (!base || !USE_SUPABASE_IMAGE_TRANSFORM) {
+        return getImageUrl(path);
+    }
+
+    const width = opts.width ?? 240;
+    const height = opts.height;
+
+    const encodedKey = postKey
+        .split('/')
+        .filter(Boolean)
+        .map((seg) => encodeURIComponent(seg))
+        .join('/');
+
+    let url = `${base}/storage/v1/render/image/public/${POST_IMAGES_BUCKET}/${encodedKey}?width=${width}`;
+    if (height != null) {
+        url += `&height=${height}&resize=cover`;
+    } else {
+        url += '&resize=contain';
+    }
+    url += '&quality=70';
+    return url;
+};
+
+/**
  * 小さなアバター表示用 URL（Supabase の画像変換 API を利用。未対応時は getImageUrl にフォールバック）
  */
 export const getAvatarThumbnailUrl = (path, avatarCacheBust, size = 80) => {
@@ -176,7 +214,7 @@ export const getAvatarThumbnailUrl = (path, avatarCacheBust, size = 80) => {
     }
 
     const base = (SUPABASE_URL || '').replace(/\/$/, '');
-    if (!base) {
+    if (!base || !USE_SUPABASE_IMAGE_TRANSFORM) {
         return getImageUrl(path, avatarCacheBust);
     }
 
