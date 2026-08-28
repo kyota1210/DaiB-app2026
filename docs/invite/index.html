@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex,nofollow"/>
+<title>DaiB - 招待リンク</title>
+<style>
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Sans","Noto Sans JP",sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#E8E6E1;color:#1c1c1e;text-align:center;padding:24px;box-sizing:border-box}
+  .card{background:#fff;border-radius:16px;padding:40px 32px;max-width:360px;width:100%;box-shadow:0 2px 16px rgba(0,0,0,.08)}
+  h1{font-size:24px;margin:0 0 8px;letter-spacing:.02em}
+  p{font-size:15px;color:#666;margin:8px 0 24px;line-height:1.6}
+  .btn{display:block;padding:14px 24px;background:#4E5F5C;color:#fff;border-radius:12px;text-decoration:none;font-size:16px;font-weight:600}
+  .btn.sub{margin-top:12px;background:transparent;color:#4E5F5C;border:1px solid #4E5F5C}
+  .note{margin:20px 0 0;font-size:12px;color:#999}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>DaiB</h1>
+  <p id="lead">アプリで招待を受け取りましょう</p>
+  <a class="btn" id="openApp" href="#" hidden>アプリで開く</a>
+  <a class="btn" id="store" href="https://apps.apple.com/jp/app/id6793158649">App Store でダウンロード</a>
+  <p class="note" id="note" hidden>すでにアプリをお持ちの方は「アプリで開く」を選んでください</p>
+</div>
+<script>
+(function () {
+  var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  var userId = new URLSearchParams(window.location.search).get('u') || '';
+
+  if (!UUID.test(userId)) {
+    document.getElementById('lead').textContent = 'アプリをダウンロードしてください';
+    return;
+  }
+
+  var openApp = document.getElementById('openApp');
+  openApp.setAttribute('href', 'daibapp://invite/' + encodeURIComponent(userId));
+  openApp.hidden = false;
+  document.getElementById('store').classList.add('sub');
+  document.getElementById('note').hidden = false;
+})();
+</script>
+</body>
+</html>

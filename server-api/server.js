@@ -30,8 +30,7 @@ app.get('/invite/:userId', (req, res) => {
     const scheme = `daibapp://invite/${encodeURIComponent(userId)}`;
     const ua = (req.headers['user-agent'] || '').toLowerCase();
     const isIOS = /iphone|ipad|ipod/.test(ua);
-    // TODO: ストア公開後に実際のURLへ差し替え
-    const iosStoreUrl = 'https://apps.apple.com/app/daib-app/id000000000';
+    const iosStoreUrl = 'https://apps.apple.com/jp/app/id6793158649';
     const androidStoreUrl = 'https://play.google.com/store/apps/details?id=com.anonymous.daibapp';
     const fallbackUrl = isIOS ? iosStoreUrl : androidStoreUrl;
 
