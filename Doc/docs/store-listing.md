@@ -51,7 +51,7 @@ DaiB は、毎日の出来事や気持ちをシンプルに残せる日記アプ
 ■ サブスクリプションについて
 - 商品名: DaiB Plus（月額）
 - 期間: 1 ヶ月（自動更新）
-- 価格: 980 円 / 月
+- 価格: 250 円 / 月
 - 自動更新は期間終了の 24 時間以上前にキャンセルしない限り、同額で更新されます
 - 設定 → Apple ID → サブスクリプションからいつでもキャンセル可能
 - 利用規約: https://<host>/terms.html
@@ -103,7 +103,7 @@ DaiB is a simple journaling app that lets you capture daily moments — text, ph
 ■ Subscription Details
 - Title: DaiB Plus (Monthly)
 - Length: 1 month, auto-renewing
-- Price: 980 JPY / month
+- Price: 250 JPY / month
 - Auto-renew unless cancelled at least 24 hours before the period ends
 - Manage / cancel anytime: Settings → Apple ID → Subscriptions
 - Terms of Use: https://<host>/terms.html
@@ -197,7 +197,7 @@ App Store Connect → My Apps → 該当アプリ → **Monetization → Subscri
 | Product ID | `com.kytm1210.daibapp2026.premium.monthly` |
 | Subscription Duration | 1 Month |
 | Cleared for Sale | Yes（提出前まではテスター限定） |
-| Price | 980 JPY（または T9 価格ティア相当） |
+| Price | 250 JPY（または T9 価格ティア相当） |
 | Family Sharing | OFF（推奨） |
 
 #### Localization（日本語）
