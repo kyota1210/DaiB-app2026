@@ -6,6 +6,13 @@ export const PLUS_MONTHLY_PRICE_YEN = 250;
 
 export const formatPlusMonthlyPriceJa = () => `¥${PLUS_MONTHLY_PRICE_YEN}`;
 
+/** 法務文書の公開 URL（GitHub Pages） */
+export const LEGAL_URLS = {
+    privacyPolicy: 'https://kyota1210.github.io/daib-legal/privacy-policy.html',
+    terms: 'https://kyota1210.github.io/daib-legal/terms.html',
+    specifiedCommercial: 'https://kyota1210.github.io/daib-legal/specified-commercial.html',
+};
+
 export const SUPABASE_URL = trimEndSlash(process.env.EXPO_PUBLIC_SUPABASE_URL || '');
 const _serverUrlEnv = trimEndSlash(process.env.EXPO_PUBLIC_SERVER_URL || '');
 export const SERVER_URL = _serverUrlEnv || (SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/invite-redirect` : '');

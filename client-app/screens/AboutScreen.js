@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import ScreenHeader from '../components/ScreenHeader';
+import { openLegalUrl } from '../utils/openLegalUrl';
 
 const AboutScreen = ({ navigation }) => {
     const { theme } = useTheme();
@@ -55,7 +56,14 @@ const AboutScreen = ({ navigation }) => {
                         運営者情報
                     </Text>
                     <Text style={[styles.text, { color: theme.colors.secondaryText }]}>
-                        運営者の所在地・連絡先などの詳細は「特定商取引法に基づく表記」をご覧ください。お問い合わせは設定 → お問い合わせ よりお願いします。
+                        運営者の所在地・連絡先などの詳細は
+                        <Text
+                            style={{ color: theme.colors.primary }}
+                            onPress={() => openLegalUrl('specifiedCommercial')}
+                        >
+                            「特定商取引法に基づく表記」
+                        </Text>
+                        をご覧ください。お問い合わせは設定 → お問い合わせ よりお願いします。
                     </Text>
 
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
