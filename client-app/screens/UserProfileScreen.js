@@ -4,7 +4,6 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    Image,
     ActivityIndicator,
     Alert,
     FlatList,
@@ -18,8 +17,10 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getOtherUserProfile, getOtherUserRecords } from '../api/user';
 import { follow, unfollow, approveFollow } from '../api/follows';
-import { getAvatarThumbnailUrl, getPostImageThumbnailUrl } from '../utils/imageHelper';
+import AppImage from '../components/AppImage';
+import { getImageUrl, getAvatarThumbnailUrl, getPostImageThumbnailUrl } from '../utils/imageHelper';
 import { THUMB_PROFILE_GRID, THUMB_AVATAR_PROFILE } from '../constants/imageThumbs';
+import { PROFILE_GRID_PAGE_SIZE } from '../constants/pagination';
 import { blockUser, unblockUser, isUserBlocked } from '../api/moderation';
 import ReportSheet from '../components/ReportSheet';
 
@@ -39,6 +40,9 @@ const UserProfileScreen = ({ navigation, route }) => {
     const [records, setRecords] = useState([]);
     const [loading, setLoading] = useState(true);
     const [recordsLoading, setRecordsLoading] = useState(false);
+    const [hasMoreRecords, setHasMoreRecords] = useState(false);
+    const [loadingMoreRecords, setLoadingMoreRecords] = useState(false);
+    const loadingMoreRef = useRef(false);
     const [followBusy, setFollowBusy] = useState(false);
     const [blocked, setBlocked] = useState(false);
     const [reportVisible, setReportVisible] = useState(false);
@@ -59,11 +63,14 @@ const UserProfileScreen = ({ navigation, route }) => {
                     console.error('UserProfile fetch error', err);
                     setUser(null);
                 }),
-                getOtherUserRecords(userToken, userId).then((res) => {
-                    setRecords(res.records ?? []);
+                getOtherUserRecords(userToken, userId, { limit: PROFILE_GRID_PAGE_SIZE, offset: 0 }).then((res) => {
+                    const rows = res.records ?? [];
+                    setRecords(rows);
+                    setHasMoreRecords(!!res.hasMore);
                 }).catch((err) => {
                     console.error('User records fetch error', err);
                     setRecords([]);
+                    setHasMoreRecords(false);
                 }),
                 !isMe ? isUserBlocked(userId).then(setBlocked).catch(() => setBlocked(false)) : Promise.resolve(),
             ]);
@@ -72,6 +79,32 @@ const UserProfileScreen = ({ navigation, route }) => {
             setRecordsLoading(false);
         }
     }, [userToken, userId, isMe]);
+
+    /** グリッド末尾に到達したら次ページを追加取得する */
+    const loadMoreRecords = useCallback(async () => {
+        if (userId == null || !hasMoreRecords || loadingMoreRef.current) return;
+        loadingMoreRef.current = true;
+        setLoadingMoreRecords(true);
+        try {
+            const res = await getOtherUserRecords(userToken, userId, {
+                limit: PROFILE_GRID_PAGE_SIZE,
+                offset: records.length,
+            });
+            const next = res.records ?? [];
+            setHasMoreRecords(!!res.hasMore);
+            if (next.length > 0) {
+                setRecords((prev) => {
+                    const seen = new Set(prev.map((r) => String(r.id)));
+                    return [...prev, ...next.filter((r) => !seen.has(String(r.id)))];
+                });
+            }
+        } catch (err) {
+            console.error('User records loadMore error', err);
+        } finally {
+            loadingMoreRef.current = false;
+            setLoadingMoreRecords(false);
+        }
+    }, [userToken, userId, hasMoreRecords, records.length]);
 
     const handleBlock = () => {
         if (!user) return;
@@ -227,6 +260,8 @@ const UserProfileScreen = ({ navigation, route }) => {
             width: THUMB_PROFILE_GRID,
             height: THUMB_PROFILE_GRID,
         });
+        // サムネイル未生成の古い投稿は原画像で表示する
+        const fullImageUrl = getImageUrl(item.image_url);
         return (
             <TouchableOpacity
                 style={[styles.recordCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
@@ -234,7 +269,12 @@ const UserProfileScreen = ({ navigation, route }) => {
                 activeOpacity={0.9}
             >
                 {imageUrl ? (
-                    <Image source={{ uri: imageUrl }} style={styles.recordCardImage} resizeMode="cover" />
+                    <AppImage
+                        uri={imageUrl}
+                        fallbackUri={fullImageUrl}
+                        style={styles.recordCardImage}
+                        contentFit="cover"
+                    />
                 ) : (
                     <View style={[styles.recordCardPlaceholder, { backgroundColor: theme.colors.secondaryBackground }]}>
                         <Ionicons name="image-outline" size={32} color={theme.colors.inactive} />
@@ -263,7 +303,7 @@ const UserProfileScreen = ({ navigation, route }) => {
             <View style={styles.profileHeaderWrap}>
                 <View style={styles.profileBlock}>
                     {avatarUrl ? (
-                        <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                        <AppImage uri={avatarUrl} style={styles.avatar} />
                     ) : (
                         <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.border }]}>
                             <Ionicons name="person" size={48} color={theme.colors.inactive} />
@@ -310,6 +350,9 @@ const UserProfileScreen = ({ navigation, route }) => {
                         )}
                     </TouchableOpacity>
                 ) : null}
+                {loadingMoreRecords ? (
+                    <ActivityIndicator size="small" color={theme.colors.primary} style={styles.recordsLoader} />
+                ) : null}
             </View>
         );
 
@@ -344,6 +387,13 @@ const UserProfileScreen = ({ navigation, route }) => {
                             </View>
                         ) : null
                     }
+                    onEndReached={loadMoreRecords}
+                    onEndReachedThreshold={0.6}
+                    // 3列グリッドなので 1 バッチ = 4 行分。画面外の画像は取得しない
+                    initialNumToRender={12}
+                    maxToRenderPerBatch={12}
+                    windowSize={5}
+                    removeClippedSubviews
                 />
             </>
         );

@@ -19,5 +19,9 @@ export const SERVER_URL = _serverUrlEnv || (SUPABASE_URL ? `${SUPABASE_URL}/func
 export const POST_IMAGES_BUCKET = trim(process.env.EXPO_PUBLIC_POST_IMAGES_BUCKET) || 'posts';
 export const AVATARS_BUCKET = trim(process.env.EXPO_PUBLIC_AVATARS_BUCKET) || 'avatars';
 
-/** Supabase Image Transformation は使用しない（Free プランのため常に無効）。 */
-export const USE_SUPABASE_IMAGE_TRANSFORM = false;
+/**
+ * 公開画像の配信元。Cloudflare の CDN（Worker / R2 カスタムドメイン）を指す。
+ * パス構造は Supabase Storage と同じ /storage/v1/object/public/<bucket>/<key> を前提とする。
+ * 未設定なら SUPABASE_URL に直接アクセスする。
+ */
+export const IMAGE_CDN_URL = trimEndSlash(process.env.EXPO_PUBLIC_IMAGE_CDN_URL || '');

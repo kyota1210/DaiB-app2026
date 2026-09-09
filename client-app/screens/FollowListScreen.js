@@ -5,7 +5,6 @@ import {
     StyleSheet,
     FlatList,
     TouchableOpacity,
-    Image,
     ActivityIndicator,
     RefreshControl,
     Alert,
@@ -19,6 +18,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getFollowing, getFollowers, getFriends } from '../api/user';
 import { approveFollow } from '../api/follows';
+import AppImage from '../components/AppImage';
 import { getAvatarThumbnailUrl } from '../utils/imageHelper';
 import { THUMB_AVATAR_LG } from '../constants/imageThumbs';
 
@@ -105,7 +105,7 @@ const FollowListScreen = ({ navigation, route }) => {
                     activeOpacity={0.7}
                 >
                     {avatarUrl ? (
-                        <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                        <AppImage uri={avatarUrl} style={styles.avatar} />
                     ) : (
                         <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.border }]}>
                             <Ionicons name="person" size={24} color={theme.colors.inactive} />
@@ -142,6 +142,10 @@ const FollowListScreen = ({ navigation, route }) => {
                     data={users}
                     keyExtractor={(item) => String(item.id)}
                     renderItem={renderUser}
+                    initialNumToRender={12}
+                    maxToRenderPerBatch={12}
+                    windowSize={5}
+                    removeClippedSubviews
                     contentContainerStyle={users.length === 0 ? styles.emptyList : undefined}
                     ListEmptyComponent={
                         <View style={styles.emptyState}>

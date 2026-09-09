@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AppImage from './AppImage';
 import { useTheme } from '../context/ThemeContext';
 import { getAvatarThumbnailUrl } from '../utils/imageHelper';
 import { THUMB_AVATAR_LG } from '../constants/imageThumbs';
@@ -19,7 +20,7 @@ const UserRow = ({
     const avatarUrl = getAvatarThumbnailUrl(user.avatar_url, user.updated_at, THUMB_AVATAR_LG);
 
     const avatar = avatarUrl ? (
-        <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+        <AppImage uri={avatarUrl} style={styles.avatar} />
     ) : (
         <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.border }]}>
             <Ionicons name="person" size={24} color={theme.colors.inactive} />

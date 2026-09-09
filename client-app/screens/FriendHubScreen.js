@@ -5,7 +5,6 @@ import {
     StyleSheet,
     FlatList,
     TouchableOpacity,
-    Image,
     ActivityIndicator,
     RefreshControl,
     Alert,
@@ -21,6 +20,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getFriends, getFollowing, getFollowers } from '../api/user';
 import { approveFollow, rejectIncomingFollow, follow } from '../api/follows';
+import AppImage from '../components/AppImage';
 import { getAvatarThumbnailUrl } from '../utils/imageHelper';
 import { THUMB_AVATAR_LG } from '../constants/imageThumbs';
 
@@ -204,7 +204,7 @@ const FriendHubScreen = ({ navigation }) => {
                     activeOpacity={0.7}
                 >
                     {avatarUrl ? (
-                        <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                        <AppImage uri={avatarUrl} style={styles.avatar} />
                     ) : (
                         <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.border }]}>
                             <Ionicons name="person" size={24} color={theme.colors.inactive} />
@@ -261,6 +261,10 @@ const FriendHubScreen = ({ navigation }) => {
                     data={list}
                     keyExtractor={(item) => String(item.id)}
                     renderItem={({ item }) => renderUserRow(item, tabKey)}
+                    initialNumToRender={12}
+                    maxToRenderPerBatch={12}
+                    windowSize={5}
+                    removeClippedSubviews
                     contentContainerStyle={list.length === 0 ? styles.emptyList : undefined}
                     ListEmptyComponent={
                         <View style={styles.emptyState}>

@@ -1,10 +1,15 @@
 import { supabase } from '../utils/supabase';
 import { resolveReactionUserAvatar } from '../utils/avatarCache';
 import { POST_IMAGES_BUCKET, AVATARS_BUCKET } from '../config';
-import { imageUriToJpegArrayBuffer } from '../utils/normalizeImageForUpload';
+import {
+  imageUriToJpegArrayBuffer,
+  imageUriToPostJpegVariants,
+  AVATAR_LONG_EDGE,
+} from '../utils/normalizeImageForUpload';
+import { getPostImageThumbnailObjectKey } from '../utils/imageHelper';
 import { moderateImage } from './moderation_image';
 import { FREE_LIMITS } from '../constants/subscription';
-import { RECORDS_PAGE_SIZE } from '../constants/pagination';
+import { RECORDS_PAGE_SIZE, TIMELINE_PAGE_SIZE } from '../constants/pagination';
 import { getAuthEmailRedirectTo } from '../utils/supabaseAuthRedirect';
 
 const ALLOWED_EMOJIS = ['❤️', '👍', '🌸', '🎉', '✨'];
@@ -163,16 +168,28 @@ const insertProfileRow = async (userId, fallbackName) => {
   throw mapSupabaseError(lastErr);
 };
 
+/**
+ * 公開オブジェクトのキャッシュ TTL（秒）。1 年。
+ * 投稿画像のパスは timestamp 込みで実質 immutable、アバターは URL に ?v={updated_at} を付けて
+ * キャッシュバストするため、いずれも長期キャッシュで問題ない。
+ */
+const PUBLIC_OBJECT_CACHE_CONTROL = '31536000';
+
 /** プロフィール画像: AVATARS_BUCKET に {userId}/avatar.jpg。戻り値は DB 保存用のバケット内キーのみ（投稿画像と同様） */
 const uploadImageToBucket = async (bucket, userId, file) => {
   if (!file?.uri) return null;
   const path =
     bucket === AVATARS_BUCKET ? `${userId}/avatar.jpg` : `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
-  const { arrayBuffer, contentType } = await imageUriToJpegArrayBuffer(file.uri);
+  const { arrayBuffer, contentType } = await imageUriToJpegArrayBuffer(file.uri, {
+    longEdge: AVATAR_LONG_EDGE,
+    width: file.width || 0,
+    height: file.height || 0,
+  });
   const { error } = await supabase.storage
     .from(bucket)
     .upload(path, arrayBuffer, {
       contentType,
+      cacheControl: PUBLIC_OBJECT_CACHE_CONTROL,
       upsert: bucket === AVATARS_BUCKET,
     });
   if (error) throw mapSupabaseError(error);
@@ -181,17 +198,45 @@ const uploadImageToBucket = async (bucket, userId, file) => {
   return data.publicUrl;
 };
 
-/** 投稿画像: バケット内パス {userId}/{postId}/{timestamp}.jpg のみ返す（DB保存用） */
+/**
+ * 投稿画像: 表示用（長辺 1440）とサムネイル（長辺 480）を並列アップロードし、
+ * 表示用のバケット内パス {userId}/{postId}/{timestamp}.jpg のみ返す（DB 保存用）。
+ * サムネイルは同じキーの拡張子前に _thumb を挟んだパスなので、DB のカラムは増やさない。
+ */
 const uploadPostImagePath = async (userId, postId, file) => {
   if (!file?.uri) return null;
   const path = `${userId}/${postId}/${Date.now()}.jpg`;
-  const { arrayBuffer, contentType } = await imageUriToJpegArrayBuffer(file.uri);
-  const { error } = await supabase.storage.from(POST_IMAGES_BUCKET).upload(path, arrayBuffer, {
-    contentType,
-    upsert: false,
+  const thumbPath = getPostImageThumbnailObjectKey(path);
+  const { main, thumb } = await imageUriToPostJpegVariants(file.uri, {
+    width: file.width || 0,
+    height: file.height || 0,
   });
-  if (error) throw mapSupabaseError(error);
+
+  const uploadOne = (objectPath, variant) =>
+    supabase.storage.from(POST_IMAGES_BUCKET).upload(objectPath, variant.arrayBuffer, {
+      contentType: variant.contentType,
+      cacheControl: PUBLIC_OBJECT_CACHE_CONTROL,
+      upsert: false,
+    });
+
+  const [mainRes, thumbRes] = await Promise.all([
+    uploadOne(path, main),
+    thumbPath ? uploadOne(thumbPath, thumb) : Promise.resolve({ error: null }),
+  ]);
+  // 表示用の失敗は投稿の失敗。サムネイルだけの失敗は表示側が原画像へフォールバックするので続行する。
+  if (mainRes.error) throw mapSupabaseError(mainRes.error);
+  if (thumbRes.error) {
+    console.warn('[uploadPostImagePath] サムネイルのアップロードに失敗（原画像で表示されます）', thumbPath, thumbRes.error.message);
+  }
   return path;
+};
+
+/** 投稿画像とそのサムネイル派生をまとめて削除する */
+const removePostImageObjects = async (path) => {
+  if (!path) return;
+  const thumbPath = getPostImageThumbnailObjectKey(path);
+  const paths = thumbPath ? [path, thumbPath] : [path];
+  await supabase.storage.from(POST_IMAGES_BUCKET).remove(paths);
 };
 
 const getMyProfile = async (authUser) => {
@@ -550,6 +595,8 @@ export const createRecord = async (recordData) => {
       uri: recordData.imageUri,
       name: recordData.imageUri.split('/').pop() || 'record.jpg',
       type: 'image/jpeg',
+      width: recordData.imageWidth || 0,
+      height: recordData.imageHeight || 0,
     });
 
     // 画像モデレーション（NSFW / 暴力検出）。block 判定なら、アップロード済みオブジェクトと
@@ -557,7 +604,7 @@ export const createRecord = async (recordData) => {
     try {
       const mod = await moderateImage({ bucket: POST_IMAGES_BUCKET, path: imagePath });
       if (mod?.decision === 'block') {
-        await supabase.storage.from(POST_IMAGES_BUCKET).remove([imagePath]);
+        await removePostImageObjects(imagePath);
         await supabase.from('posts').delete().eq('id', recordId);
         const err = new Error('image_blocked_by_moderation');
         err.code = 'IMAGE_BLOCKED';
@@ -603,11 +650,13 @@ export const updateRecord = async (id, recordData) => {
       uri: recordData.imageUri,
       name: recordData.imageUri.split('/').pop() || 'record.jpg',
       type: 'image/jpeg',
+      width: recordData.imageWidth || 0,
+      height: recordData.imageHeight || 0,
     });
     try {
       const mod = await moderateImage({ bucket: POST_IMAGES_BUCKET, path: newPath });
       if (mod?.decision === 'block') {
-        await supabase.storage.from(POST_IMAGES_BUCKET).remove([newPath]);
+        await removePostImageObjects(newPath);
         const err = new Error('image_blocked_by_moderation');
         err.code = 'IMAGE_BLOCKED';
         throw err;
@@ -770,12 +819,12 @@ export const getFriends = async () => {
   return { users: await getFriendsList(user.id) };
 };
 
-export const getOtherUserRecords = async (userId) => {
+export const getOtherUserRecords = async (userId, { limit = RECORDS_PAGE_SIZE, offset = 0 } = {}) => {
   const viewer = await requireUser();
   const isOwner = viewer.id === userId;
   if (!isOwner) {
     const st = await getFollowStatus(viewer.id, userId);
-    if (!st.is_friend) return { records: [], is_friend: false };
+    if (!st.is_friend) return { records: [], is_friend: false, hasMore: false };
   }
   let query = supabase
     .from('posts')
@@ -783,14 +832,19 @@ export const getOtherUserRecords = async (userId) => {
     .eq('user_id', userId)
     .eq('invalidation_flag', FLAG_ACTIVE)
     .order('date_logged', { ascending: false })
-    .order('id', { ascending: false });
+    .order('id', { ascending: false })
+    .range(offset, offset + limit - 1);
   if (!isOwner) {
     query = query.neq('visibility', 'private');
   }
   const { data, error } = await query;
   if (error) throw mapSupabaseError(error);
   const catMap = await categoryIdsMapForPosts((data || []).map((p) => p.id));
-  return { records: attachCategoriesToPostRows(data, catMap), is_friend: true };
+  return {
+    records: attachCategoriesToPostRows(data, catMap),
+    is_friend: true,
+    hasMore: (data || []).length === limit,
+  };
 };
 
 export const follow = async (followingId) => {
@@ -844,15 +898,23 @@ export const rejectIncomingFollow = async (followerId) => {
   return { message: '申請を却下しました。', rejected: true };
 };
 
-export const getTimeline = async (clientTz) => {
+/**
+ * スレッドのタイムライン。offset > 0 のときは追加ページのみ取得し、
+ * 「過去の投稿」（先頭固定）は初回だけ取得する。
+ */
+export const getTimeline = async (clientTz, { limit = TIMELINE_PAGE_SIZE, offset = 0 } = {}) => {
   const tz = clientTz || 'Asia/Tokyo';
+  const isFirstPage = offset === 0;
   const [timelineResult, memoryResult] = await Promise.all([
-    supabase.rpc('get_timeline_posts'),
-    supabase.rpc('get_thread_memory_resurface', { p_client_tz: tz }),
+    supabase.rpc('get_timeline_posts', { p_limit: limit, p_offset: offset }),
+    isFirstPage
+      ? supabase.rpc('get_thread_memory_resurface', { p_client_tz: tz })
+      : Promise.resolve({ data: [], error: null }),
   ]);
   if (timelineResult.error) throw mapSupabaseError(timelineResult.error);
   // RPC は r.user_id as author_id のみ返す（user_id 列は無い）。undefined で上書きしない。
-  const records = (timelineResult.data || []).map((r) => ({
+  const rows = timelineResult.data || [];
+  const records = rows.map((r) => ({
     ...r,
     id: toIntId(r.id),
     author_id: r.author_id ?? r.user_id,
@@ -867,6 +929,7 @@ export const getTimeline = async (clientTz) => {
   return {
     records,
     memoryResurface: memoryItems.length > 0 ? { items: memoryItems } : null,
+    hasMore: rows.length === limit,
   };
 };
 

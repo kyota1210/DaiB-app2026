@@ -1,9 +1,10 @@
 import React, { useMemo, useCallback, useEffect, createContext, useContext, memo, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, FlatList } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import XDate from 'xdate';
 import { Ionicons } from '@expo/vector-icons';
-import { getPostImageThumbnailUrl } from '../utils/imageHelper';
+import AppImage from './AppImage';
+import { getImageUrl, getPostImageThumbnailUrl } from '../utils/imageHelper';
 import { THUMB_CALENDAR_DAY } from '../constants/imageThumbs';
 import { recordDateKey } from '../utils/recordDateKey';
 
@@ -121,7 +122,12 @@ const CalendarDayTile = memo(function CalendarDayTile({
     const inner = hasPosts ? (
         <>
             {coverUri ? (
-                <Image source={{ uri: coverUri }} style={styles.tileImage} resizeMode="cover" />
+                <AppImage
+                    uri={coverUri}
+                    fallbackUri={entry?.coverFallbackUri}
+                    style={styles.tileImage}
+                    contentFit="cover"
+                />
             ) : (
                 <View style={[styles.tileImage, styles.placeholderFill, { backgroundColor: appTheme.colors.border }]}>
                     <Ionicons name="image-outline" size={20} color={appTheme.colors.inactive} />
@@ -205,6 +211,8 @@ function buildPostsByDay(records) {
         map[key] = {
             records: list,
             coverUri,
+            // サムネイル未生成の古い投稿向けフォールバック
+            coverFallbackUri: coverRecord ? getImageUrl(coverRecord.image_url) : null,
             count: list.length,
         };
     }
@@ -455,9 +463,10 @@ export default function RecordCalendarSection({
                         renderItem={renderMonthItem}
                         getItemLayout={getItemLayout}
                         initialScrollIndex={PAST_SCROLL_RANGE}
-                        initialNumToRender={5}
-                        windowSize={7}
-                        maxToRenderPerBatch={8}
+                        // 1 か月分でも日セルのサムネイルが約30枚。表示中と前後 1 か月に絞る
+                        initialNumToRender={1}
+                        windowSize={3}
+                        maxToRenderPerBatch={2}
                         removeClippedSubviews={false}
                         showsVerticalScrollIndicator
                         scrollEnabled

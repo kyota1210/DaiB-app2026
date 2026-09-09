@@ -1,6 +1,7 @@
 import React, { useContext, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AppImage from '../components/AppImage';
 import ScreenHeader from '../components/ScreenHeader';
 import ResultModal from '../components/ResultModal';
 import { AuthContext } from '../context/AuthContext';
@@ -58,6 +59,9 @@ const ProfileEditScreen = ({ navigation }) => {
                     uri,
                     name: fileName,
                     type: ext === 'png' ? 'image/png' : 'image/jpeg',
+                    // アップロード時のリサイズで長辺を判定するために実寸を渡す
+                    width: asset.width || 0,
+                    height: asset.height || 0,
                 });
             }
         } catch (e) {
@@ -140,7 +144,7 @@ const ProfileEditScreen = ({ navigation }) => {
                         onPress={handlePickImage}
                     >
                         {avatarUri ? (
-                            <Image key={avatarUri} source={{ uri: avatarUri }} style={styles.avatarImage} />
+                            <AppImage uri={avatarUri} style={styles.avatarImage} />
                         ) : (
                             <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.secondaryBackground, borderColor: theme.colors.border }]}>
                                 <Ionicons name="person" size={32} color={theme.colors.inactive} />
