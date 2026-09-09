@@ -14,6 +14,7 @@
         "EXPO_PUBLIC_POST_IMAGES_BUCKET": "daib-dev-post-images",
         "EXPO_PUBLIC_AUTH_EMAIL_REDIRECT_TO": "daibapp://auth/callback",
         "EXPO_PUBLIC_AVATARS_BUCKET": "avatars",
+        "EXPO_PUBLIC_IMAGE_CDN_URL": "https://cdn-dev.daibapp.com",
         "EXPO_PUBLIC_IAP_PRODUCT_ID_PLUS_MONTHLY": "daib_plus_monthly"
       },
       "ios": {
@@ -35,6 +36,7 @@
         "EXPO_PUBLIC_POST_IMAGES_BUCKET": "daib-prod-post-images",
         "EXPO_PUBLIC_AUTH_EMAIL_REDIRECT_TO": "daibapp://auth/callback",
         "EXPO_PUBLIC_AVATARS_BUCKET": "avatars",
+        "EXPO_PUBLIC_IMAGE_CDN_URL": "https://cdn.daibapp.com",
         "EXPO_PUBLIC_IAP_PRODUCT_ID_PLUS_MONTHLY": "daib_plus_monthly"
       },
       "ios": {

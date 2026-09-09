@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "backfill:images:dry-run": "node scripts/backfill-images.mjs --dry-run",
+    "backfill:images": "node scripts/backfill-images.mjs --apply",
+    "backfill:images:test": "node scripts/backfill-images.test.mjs"
+  },
   "dependencies": {
     "@react-navigation/bottom-tabs": "^7.8.11",
     "react-native-purchases": "^10.0.1",
@@ -9,6 +14,8 @@
   "devDependencies": {
     "@fontsource/noto-sans-jp": "^5.2.9",
     "@ideadesignmedia/convert-pdf-md": "^1.0.0",
-    "md-to-pdf": "^5.2.5"
+    "@supabase/supabase-js": "^2.116.0",
+    "md-to-pdf": "^5.2.5",
+    "sharp": "^0.35.4"
   }
 }

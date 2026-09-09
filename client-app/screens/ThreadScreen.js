@@ -5,7 +5,6 @@ import {
     StyleSheet,
     TouchableOpacity,
     FlatList,
-    Image,
     ActivityIndicator,
     RefreshControl,
     Modal,
@@ -26,8 +25,10 @@ import { getUserProfile, getOtherUserProfile } from '../api/user';
 import { getTimeline } from '../api/threads';
 import { follow, approveFollow } from '../api/follows';
 import { addReaction } from '../api/reactions';
+import AppImage from '../components/AppImage';
 import { getPostImageThumbnailUrl, getAvatarThumbnailUrl } from '../utils/imageHelper';
 import { THUMB_THREAD_FEED, THUMB_AVATAR_SM, THUMB_AVATAR_XL } from '../constants/imageThumbs';
+import { TIMELINE_PAGE_SIZE } from '../constants/pagination';
 import { SERVER_URL } from '../config';
 
 const REACTION_EMOJIS = ['❤️', '👍', '🌸', '🎉', '✨'];
@@ -97,6 +98,9 @@ const ThreadScreen = ({ navigation }) => {
     const [permission, requestPermission] = useCameraPermissions();
     const [counts, setCounts] = useState({ friend_count: 0 });
     const [records, setRecords] = useState([]);
+    /** 表示中の件数。useFocusEffect の依存に入れずに参照するため ref にも持つ */
+    const recordCountRef = useRef(0);
+    recordCountRef.current = records.length;
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [showQrModal, setShowQrModal] = useState(false);
@@ -108,6 +112,11 @@ const ThreadScreen = ({ navigation }) => {
     const [closingReactionRecordId, setClosingReactionRecordId] = useState(null);
     const [burstState, setBurstState] = useState(null);
     const burstAnim = useRef(new Animated.Value(0)).current;
+    const [hasMore, setHasMore] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    /** 次に取得すべきタイムラインの offset（「過去の投稿」は含めない） */
+    const timelineOffsetRef = useRef(0);
+    const loadingMoreRef = useRef(false);
     /** 詳細/プロフィールから戻った次のフォーカスでは再取得しない（スクロール位置維持） */
     const skipRefetchOnNextFocusRef = useRef(false);
 
@@ -118,12 +127,14 @@ const ThreadScreen = ({ navigation }) => {
                 (typeof Intl !== 'undefined' && Intl.DateTimeFormat().resolvedOptions().timeZone) || 'Asia/Tokyo';
             const [meRes, timelineRes] = await Promise.all([
                 getUserProfile(userToken),
-                getTimeline(userToken, clientTz),
+                getTimeline(userToken, clientTz, { limit: TIMELINE_PAGE_SIZE, offset: 0 }),
             ]);
             setCounts({
                 friend_count: meRes.user?.friend_count ?? 0,
             });
             const base = timelineRes.records ?? [];
+            timelineOffsetRef.current = base.length;
+            setHasMore(!!timelineRes.hasMore);
             const mem = timelineRes.memoryResurface;
             if (mem?.items?.length > 0) {
                 setRecords([...mem.items, ...base]);
@@ -138,18 +149,49 @@ const ThreadScreen = ({ navigation }) => {
         }
     }, [userToken]);
 
-    // フォーカス時: 詳細/プロフィールから戻った場合は再取得せずスクロール位置を維持
+    /** 末尾に到達したら次ページを追加取得する（既存の並びは崩さず末尾に追記） */
+    const loadMore = useCallback(async () => {
+        if (!userToken || !hasMore || loadingMoreRef.current) return;
+        loadingMoreRef.current = true;
+        setLoadingMore(true);
+        try {
+            const clientTz =
+                (typeof Intl !== 'undefined' && Intl.DateTimeFormat().resolvedOptions().timeZone) || 'Asia/Tokyo';
+            const res = await getTimeline(userToken, clientTz, {
+                limit: TIMELINE_PAGE_SIZE,
+                offset: timelineOffsetRef.current,
+            });
+            const next = res.records ?? [];
+            timelineOffsetRef.current += next.length;
+            setHasMore(!!res.hasMore);
+            if (next.length > 0) {
+                setRecords((prev) => {
+                    const seen = new Set(prev.map((r) => `${r.is_memory_resurface ? 'mem' : 'rec'}-${r.id}`));
+                    const fresh = next.filter((r) => !seen.has(`rec-${r.id}`));
+                    return [...prev, ...fresh];
+                });
+            }
+        } catch (err) {
+            console.error('ThreadScreen loadMore error', err);
+        } finally {
+            loadingMoreRef.current = false;
+            setLoadingMore(false);
+        }
+    }, [userToken, hasMore]);
+
+    // フォーカス時: 詳細/プロフィールから戻った場合は再取得せずスクロール位置を維持。
+    // 件数を依存に含めると追加読み込みごとに再取得が走って1ページ目に戻ってしまうため ref で見る。
     useFocusEffect(
         useCallback(() => {
             if (skipRefetchOnNextFocusRef.current) {
                 skipRefetchOnNextFocusRef.current = false;
                 return;
             }
-            if (records.length === 0) {
+            if (recordCountRef.current === 0) {
                 setLoading(true);
             }
             loadData();
-        }, [loadData, records.length])
+        }, [loadData])
     );
 
     const onRefresh = useCallback(async () => {
@@ -313,7 +355,7 @@ const ThreadScreen = ({ navigation }) => {
                 {isMemoryResurface ? (
                     <View style={styles.cardHeader}>
                         {authorAvatarUrl ? (
-                            <Image source={{ uri: authorAvatarUrl }} style={styles.avatar} />
+                            <AppImage uri={authorAvatarUrl} style={styles.avatar} />
                         ) : (
                             <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.border }]}>
                                 <Ionicons name="person" size={20} color={theme.colors.inactive} />
@@ -332,7 +374,7 @@ const ThreadScreen = ({ navigation }) => {
                         disabled={item.author_id == null}
                     >
                         {authorAvatarUrl ? (
-                            <Image source={{ uri: authorAvatarUrl }} style={styles.avatar} />
+                            <AppImage uri={authorAvatarUrl} style={styles.avatar} />
                         ) : (
                             <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.border }]}>
                                 <Ionicons name="person" size={20} color={theme.colors.inactive} />
@@ -350,7 +392,7 @@ const ThreadScreen = ({ navigation }) => {
                             activeOpacity={0.95}
                             onPress={() => openRecordDetail(index)}
                         >
-                            <Image source={{ uri: imageUrl }} style={styles.recordImage} resizeMode="cover" />
+                            <AppImage uri={imageUrl} style={styles.recordImage} contentFit="cover" />
                         </TouchableOpacity>
                         {item.author_id != null && item.author_id !== userInfo?.id ? (
                             <TouchableOpacity
@@ -504,7 +546,7 @@ const ThreadScreen = ({ navigation }) => {
                                     ) : scannedUser ? (
                                         <View style={[styles.scannedUserCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
                                             {scannedUser.avatar_url ? (
-                                                <Image
+                                                <AppImage
                                                     source={{
                                                         uri: getAvatarThumbnailUrl(
                                                             scannedUser.avatar_url,
@@ -597,6 +639,20 @@ const ThreadScreen = ({ navigation }) => {
                             <Text style={[styles.emptyText, { color: theme.colors.secondaryText }]}>{t('noTimeline')}</Text>
                         </View>
                     }
+                    ListFooterComponent={
+                        loadingMore ? (
+                            <View style={styles.listFooterLoader}>
+                                <ActivityIndicator size="small" color={theme.colors.primary} />
+                            </View>
+                        ) : null
+                    }
+                    onEndReached={loadMore}
+                    onEndReachedThreshold={0.6}
+                    // 1件が全幅画像なので、画面外の画像まで一斉に取得しないよう描画数を絞る
+                    initialNumToRender={3}
+                    maxToRenderPerBatch={3}
+                    windowSize={5}
+                    removeClippedSubviews
                     refreshControl={
                         <RefreshControl
                             refreshing={refreshing}
@@ -631,6 +687,7 @@ const styles = StyleSheet.create({
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     listContent: { padding: 12, paddingBottom: 80 },
     emptyContainer: { flex: 1, justifyContent: 'center', paddingBottom: 80 },
+    listFooterLoader: { paddingVertical: 20, alignItems: 'center' },
     emptyState: { alignItems: 'center', paddingVertical: 48 },
     emptyText: { marginTop: 12, fontSize: 14, textAlign: 'center' },
     card: {

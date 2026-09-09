@@ -1,0 +1,13 @@
+# Cloudflare ダッシュボードの Workers Routes と名前を合わせる。
+# Routes（cdn.daibapp.com/* / cdn-dev.daibapp.com/*）はダッシュボード側で管理済み。
+# ここでの deploy はスクリプト本体と vars の更新のみ行う。
+name = "daib-image-proxy"
+main = "src/index.js"
+compatibility_date = "2026-09-09"
+
+# Host でオリジンを切り替える（src/index.js の HOST_ORIGIN_ENV と対応）
+[vars]
+SUPABASE_ORIGIN_PROD = "https://giknxvsaovkahsonqyqd.supabase.co"
+# DNS 解決不可のため、有効な URL が分かるまで空。Host 未設定時は 502 を返す。
+# SUPABASE_ORIGIN_DEV = "https://<dev-project>.supabase.co"
+SUPABASE_ORIGIN = "https://giknxvsaovkahsonqyqd.supabase.co"

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions, ScrollView as RNScrollView, TextInput, Platform, Modal, KeyboardAvoidingView, ActivityIndicator, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions, ScrollView as RNScrollView, TextInput, Platform, Modal, KeyboardAvoidingView, ActivityIndicator, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
+import AppImage from '../components/AppImage';
 import { BlurView } from 'expo-blur';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
@@ -32,6 +33,8 @@ export default function PhotoPickerScreen({ navigation, route }) {
     const [isNewImageSelected, setIsNewImageSelected] = useState(false);
     // 元画像のサイズ（表示コンテナ用）
     const [originalImageSize, setOriginalImageSize] = useState({ width: 0, height: 0 });
+    // ピッカーが返した実寸（アップロード時のリサイズ用。表示用と違い onLoad では上書きしない）
+    const [selectedImageSize, setSelectedImageSize] = useState({ width: 0, height: 0 });
     
     // フォーム入力
     const [title, setTitle] = useState(editRecord?.title || '');
@@ -162,6 +165,10 @@ export default function PhotoPickerScreen({ navigation, route }) {
             // ピッカー結果から直接サイズを取得して onLoad を待たずに即表示
             if (asset.width > 0 && asset.height > 0) {
                 setOriginalImageSize({ width: asset.width, height: asset.height });
+                // アップロード時のリサイズで長辺を判定するために実寸を保持する
+                setSelectedImageSize({ width: asset.width, height: asset.height });
+            } else {
+                setSelectedImageSize({ width: 0, height: 0 });
             }
         }
     };
@@ -222,6 +229,10 @@ export default function PhotoPickerScreen({ navigation, route }) {
                 recordData.imageUri = selectedImage;
             } else if (isNewImageSelected) {
                 recordData.imageUri = selectedImage;
+            }
+            if (recordData.imageUri) {
+                recordData.imageWidth = selectedImageSize.width;
+                recordData.imageHeight = selectedImageSize.height;
             }
 
             if (isEditMode) {
@@ -353,14 +364,14 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                         return { width: c.width, height: c.height };
                                     })()
                                 ]}>
-                                    <Image
-                                        source={{ uri: selectedImage }}
+                                    <AppImage
+                                        uri={selectedImage}
                                         style={
                                             (originalImageSize.width === 0 || originalImageSize.height === 0)
                                                 ? styles.editModeImage
                                                 : StyleSheet.absoluteFill
                                         }
-                                        resizeMode={
+                                        contentFit={
                                             (originalImageSize.width === 0 || originalImageSize.height === 0)
                                                 ? 'contain'
                                                 : 'cover'
@@ -492,8 +503,8 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                                             }}
                                                         >
                                                             {category.icon_url && (
-                                                                <Image 
-                                                                    source={{ uri: getImageUrl(category.icon_url) }} 
+                                                                <AppImage
+                                                                    uri={getImageUrl(category.icon_url)}
                                                                     style={styles.categoryIcon}
                                                                 />
                                                             )}

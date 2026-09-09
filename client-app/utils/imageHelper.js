@@ -1,6 +1,16 @@
-import { Image } from 'react-native';
-import { SERVER_URL, SUPABASE_URL, POST_IMAGES_BUCKET, AVATARS_BUCKET, USE_SUPABASE_IMAGE_TRANSFORM } from '../config';
+import { Image } from 'expo-image';
+import { SERVER_URL, SUPABASE_URL, IMAGE_CDN_URL, POST_IMAGES_BUCKET, AVATARS_BUCKET } from '../config';
 import { supabase } from './supabase';
+
+/** 投稿画像のサムネイル派生に付けるファイル名サフィックス（{ts}.jpg → {ts}_thumb.jpg） */
+export const POST_THUMB_SUFFIX = '_thumb';
+
+/**
+ * この幅までの表示はサムネイル（長辺 480px）を使う。
+ * imageThumbs.js の GRID/TILE/BOOKLIST/LIFE_TIMELINE/CALENDAR_DAY/PROFILE_GRID が該当し、
+ * GALLERY_LIST(800) と THREAD_FEED(画面幅x2) は表示用のフルサイズを使う。
+ */
+const THUMB_MAX_WIDTH = 640;
 
 const UUID_SEGMENT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -86,8 +96,14 @@ const isAvatarStorageKey = (key) => {
     return /^avatar\.jpe?g$/i.test(parts[1]);
 };
 
+/**
+ * 公開オブジェクトの配信元。IMAGE_CDN_URL があれば Cloudflare 経由、
+ * 無ければ Supabase Storage を直接叩く（パス構造は同じ）。
+ */
+const publicOriginBase = () => (IMAGE_CDN_URL || SUPABASE_URL || '').replace(/\/$/, '');
+
 const buildAvatarsPublicUrl = (objectKey) => {
-    const base = (SUPABASE_URL || '').replace(/\/$/, '');
+    const base = publicOriginBase();
     const encodedKey = objectKey
         .split('/')
         .filter(Boolean)
@@ -100,9 +116,9 @@ const buildAvatarsPublicUrl = (objectKey) => {
     return data.publicUrl;
 };
 
-/** createClient と同じプロジェクト URL で公開オブジェクト URL を組み立てる */
+/** 公開オブジェクト URL を組み立てる（CDN 未設定時は createClient と同じプロジェクト URL） */
 const buildPostImagesPublicUrl = (objectKey) => {
-    const base = (SUPABASE_URL || '').replace(/\/$/, '');
+    const base = publicOriginBase();
     const encodedKey = objectKey
         .split('/')
         .filter(Boolean)
@@ -148,11 +164,12 @@ export const getImageUrl = (path, avatarCacheBust) => {
         return str;
     }
 
-    if (str.startsWith(`${AVATARS_BUCKET}/`) && SUPABASE_URL) {
-        return `${SUPABASE_URL}/storage/v1/object/public/${str}`;
+    const origin = publicOriginBase();
+    if (str.startsWith(`${AVATARS_BUCKET}/`) && origin) {
+        return `${origin}/storage/v1/object/public/${str}`;
     }
-    if ((str.startsWith('posts/') || str.startsWith('records/')) && SUPABASE_URL) {
-        return `${SUPABASE_URL}/storage/v1/object/public/${str}`;
+    if ((str.startsWith('posts/') || str.startsWith('records/')) && origin) {
+        return `${origin}/storage/v1/object/public/${str}`;
     }
 
     const cleanPath = str.startsWith('/') ? str.substring(1) : str;
@@ -163,72 +180,46 @@ export const getImageUrl = (path, avatarCacheBust) => {
     return `${SERVER_URL}/${cleanPath}`;
 };
 
+/** 投稿画像のオブジェクトキーをサムネイル派生のキーに変換する（{ts}.jpg → {ts}_thumb.jpg） */
+const toPostThumbObjectKey = (objectKey) =>
+    objectKey.replace(/(\.[a-z0-9]+)$/i, `${POST_THUMB_SUFFIX}$1`);
+
 /**
- * 投稿画像のサムネイル URL（Supabase の画像変換 API。未対応時は getImageUrl にフォールバック）
+ * DB の image_url から、アップロード時に生成したサムネイルのバケット内キーを求める。
+ * 削除処理などストレージ操作側から使う。派生キーを決められない場合は null。
+ */
+export const getPostImageThumbnailObjectKey = (path) => {
+    if (path == null || path === '') return null;
+    const str = typeof path === 'string' ? path.trim() : String(path).trim();
+    const postKey = normalizePostImageObjectKey(str);
+    if (!isPostImageStorageKey(postKey)) return null;
+    if (postKey.includes(`${POST_THUMB_SUFFIX}.`)) return null;
+    return toPostThumbObjectKey(postKey);
+};
+
+/**
+ * 投稿画像の表示 URL。要求幅が小さければアップロード時に生成した
+ * サムネイル（長辺 480px）を、大きければ表示用のフルサイズを返す。
  * @param {string} path
  * @param {{ width?: number, height?: number }} [opts]
  */
 export const getPostImageThumbnailUrl = (path, opts = {}) => {
     if (path == null || path === '') return null;
 
-    const str = typeof path === 'string' ? path.trim() : String(path).trim();
-    const postKey = normalizePostImageObjectKey(str);
-    if (!POST_IMAGES_BUCKET || !isPostImageStorageKey(postKey)) {
-        return getImageUrl(path);
-    }
-
-    const base = (SUPABASE_URL || '').replace(/\/$/, '');
-    if (!base || !USE_SUPABASE_IMAGE_TRANSFORM) {
-        return getImageUrl(path);
-    }
-
     const width = opts.width ?? 240;
-    const height = opts.height;
+    if (width > THUMB_MAX_WIDTH) return getImageUrl(path);
 
-    const encodedKey = postKey
-        .split('/')
-        .filter(Boolean)
-        .map((seg) => encodeURIComponent(seg))
-        .join('/');
-
-    let url = `${base}/storage/v1/render/image/public/${POST_IMAGES_BUCKET}/${encodedKey}?width=${width}`;
-    if (height != null) {
-        url += `&height=${height}&resize=cover`;
-    } else {
-        url += '&resize=contain';
-    }
-    url += '&quality=70';
-    return url;
+    const thumbKey = POST_IMAGES_BUCKET ? getPostImageThumbnailObjectKey(path) : null;
+    if (!thumbKey) return getImageUrl(path);
+    return buildPostImagesPublicUrl(thumbKey);
 };
 
 /**
- * 小さなアバター表示用 URL（Supabase の画像変換 API を利用。未対応時は getImageUrl にフォールバック）
+ * アバター表示用 URL。アバターはアップロード時に 320px 単一サイズへ縮小しているため、
+ * size は受け取るが URL は 1 種類。呼び出し側の互換のため引数は維持する。
  */
-export const getAvatarThumbnailUrl = (path, avatarCacheBust, size = 80) => {
-    if (path == null || path === '') return null;
-
-    const str = typeof path === 'string' ? path.trim() : String(path).trim();
-    const avatarKey = normalizeAvatarObjectKey(str);
-    if (!isAvatarStorageKey(avatarKey)) {
-        return getImageUrl(path, avatarCacheBust);
-    }
-
-    const base = (SUPABASE_URL || '').replace(/\/$/, '');
-    if (!base || !USE_SUPABASE_IMAGE_TRANSFORM) {
-        return getImageUrl(path, avatarCacheBust);
-    }
-
-    const encodedKey = avatarKey
-        .split('/')
-        .filter(Boolean)
-        .map((seg) => encodeURIComponent(seg))
-        .join('/');
-    let url = `${base}/storage/v1/render/image/public/${AVATARS_BUCKET}/${encodedKey}?width=${size}&height=${size}&resize=cover&quality=70`;
-    if (avatarCacheBust != null && String(avatarCacheBust).trim() !== '') {
-        url += `&v=${encodeURIComponent(String(avatarCacheBust).trim())}`;
-    }
-    return url;
-};
+export const getAvatarThumbnailUrl = (path, avatarCacheBust, _size = 80) =>
+    getImageUrl(path, avatarCacheBust);
 
 const PREFETCH_CONCURRENCY = 3;
 
@@ -240,7 +231,8 @@ export const prefetchImageUris = (uris) => {
     const run = async () => {
         for (let i = 0; i < unique.length; i += PREFETCH_CONCURRENCY) {
             const chunk = unique.slice(i, i + PREFETCH_CONCURRENCY);
-            await Promise.all(chunk.map((uri) => Image.prefetch(uri).catch(() => false)));
+            // 'memory-disk' でディスクにも載せる（RN の Image.prefetch は iOS で NSURLCache 依存だった）
+            await Promise.all(chunk.map((uri) => Image.prefetch(uri, 'memory-disk').catch(() => false)));
         }
     };
     void run();

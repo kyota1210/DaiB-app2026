@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIndicator, Modal, Dimensions, Animated, Easing, LayoutAnimation, Platform, UIManager, InteractionManager } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity, ActivityIndicator, Modal, Dimensions, Animated, Easing, LayoutAnimation, Platform, UIManager, InteractionManager } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AppImage from '../components/AppImage';
 import ResultModal from '../components/ResultModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRecordsApi } from '../api/records';
@@ -33,11 +34,7 @@ function resolveCategoryLabelNames(record, categories) {
 }
 
 const ReactionUserAvatar = React.memo(function ReactionUserAvatar({ user, theme }) {
-    const [uri, setUri] = useState(user.avatar_uri || user.avatar_fallback_uri || null);
-
-    useEffect(() => {
-        setUri(user.avatar_uri || user.avatar_fallback_uri || null);
-    }, [user.avatar_uri, user.avatar_fallback_uri]);
+    const uri = user.avatar_uri || user.avatar_fallback_uri || null;
 
     if (!uri) {
         return (
@@ -48,15 +45,10 @@ const ReactionUserAvatar = React.memo(function ReactionUserAvatar({ user, theme 
     }
 
     return (
-        <Image
-            source={{ uri, ...(Platform.OS === 'ios' ? { cache: 'force-cache' } : null) }}
+        <AppImage
+            uri={uri}
+            fallbackUri={user.avatar_fallback_uri}
             style={styles.imageReactionUserAvatar}
-            fadeDuration={0}
-            onError={() => {
-                if (user.avatar_fallback_uri && uri !== user.avatar_fallback_uri) {
-                    setUri(user.avatar_fallback_uri);
-                }
-            }}
         />
     );
 });
@@ -160,10 +152,11 @@ const RecordItem = React.memo(function RecordItem({
                         activeOpacity={0.98}
                     >
                         <View style={[styles.imageContainer, { width: SCREEN_WIDTH, height: containerHeight }]}>
-                            <Image
-                                source={{ uri: imageUrl }}
+                            <AppImage
+                                uri={imageUrl}
                                 style={styles.image}
-                                resizeMode="contain"
+                                contentFit="contain"
+                                priority="high"
                                 onLoad={handleImageLoad}
                             />
                         </View>
@@ -416,7 +409,7 @@ export default function RecordDetailScreen({ route, navigation }) {
         if (idx >= 0 && idx !== currentIndex) {
             setCurrentIndex(idx);
             setTimeout(() => {
-                scrollViewRef.current?.scrollTo({ x: SCREEN_WIDTH * idx, animated: false });
+                scrollViewRef.current?.scrollToOffset({ offset: SCREEN_WIDTH * idx, animated: false });
             }, 0);
         }
     }, [records]);
@@ -430,17 +423,8 @@ export default function RecordDetailScreen({ route, navigation }) {
         }
     };
 
-    // 初期表示時に正しい位置にスクロール
-    React.useEffect(() => {
-        if (scrollViewRef.current && initialIndex > 0) {
-            setTimeout(() => {
-                scrollViewRef.current?.scrollTo({
-                    x: SCREEN_WIDTH * initialIndex,
-                    animated: false,
-                });
-            }, 100);
-        }
-    }, [initialIndex]);
+    // 初期位置は FlatList の initialScrollIndex + getItemLayout が担当するため、
+    // マウント後のスクロール補正は不要。
 
     const handleDelete = () => {
         setShowMenu(false);
@@ -473,6 +457,34 @@ export default function RecordDetailScreen({ route, navigation }) {
         }
     };
 
+    // 各ページは画面幅ぴったりなので、FlatList が計測なしでスクロール位置を決められる
+    const getPagerItemLayout = useCallback(
+        (_data, index) => ({ length: SCREEN_WIDTH, offset: SCREEN_WIDTH * index, index }),
+        []
+    );
+
+    const renderPagerItem = useCallback(
+        ({ item: record }) => (
+            <View style={[styles.recordWrapper, { height: scrollAreaHeight }]}>
+                <RecordItem
+                    item={record}
+                    theme={theme}
+                    t={t}
+                    showFriendReactions={viewerOwnsRecord(record, userInfo?.id)}
+                    reactionUsers={
+                        viewerOwnsRecord(record, userInfo?.id)
+                            ? reactionCacheByPostId[record.id]
+                            : undefined
+                    }
+                    onPressReactionUser={handlePressReactionUser}
+                    showCategoryLabels={viewerOwnsRecord(record, userInfo?.id)}
+                    categoryLabelNames={resolveCategoryLabelNames(record, categories)}
+                />
+            </View>
+        ),
+        [scrollAreaHeight, theme, t, userInfo?.id, reactionCacheByPostId, handlePressReactionUser, categories]
+    );
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
             {/* ヘッダー（メニューバー） */}
@@ -493,14 +505,12 @@ export default function RecordDetailScreen({ route, navigation }) {
                         disabled={currentRecord.author_id == null}
                     >
                         {currentRecord.author_avatar_url ? (
-                            <Image
-                                source={{
-                                    uri: getAvatarThumbnailUrl(
-                                        currentRecord.author_avatar_url,
-                                        currentRecord.author_profile_updated_at,
-                                        THUMB_AVATAR_XS
-                                    ),
-                                }}
+                            <AppImage
+                                uri={getAvatarThumbnailUrl(
+                                    currentRecord.author_avatar_url,
+                                    currentRecord.author_profile_updated_at,
+                                    THUMB_AVATAR_XS
+                                )}
                                 style={styles.headerAuthorAvatar}
                             />
                         ) : (
@@ -553,8 +563,11 @@ export default function RecordDetailScreen({ route, navigation }) {
                     />
                 </View>
             ) : (
-                <ScrollView
+                <FlatList
                     ref={scrollViewRef}
+                    data={records}
+                    keyExtractor={(record) => record.id.toString()}
+                    renderItem={renderPagerItem}
                     horizontal
                     pagingEnabled
                     showsHorizontalScrollIndicator={false}
@@ -563,26 +576,14 @@ export default function RecordDetailScreen({ route, navigation }) {
                     style={styles.horizontalScrollView}
                     removeClippedSubviews={true}
                     onLayout={(e) => setScrollAreaHeight(e.nativeEvent.layout.height)}
-                >
-                    {records.map((record) => (
-                        <View key={record.id.toString()} style={[styles.recordWrapper, { height: scrollAreaHeight }]}>
-                            <RecordItem
-                                item={record}
-                                theme={theme}
-                                t={t}
-                                showFriendReactions={viewerOwnsRecord(record, userInfo?.id)}
-                                reactionUsers={
-                                    viewerOwnsRecord(record, userInfo?.id)
-                                        ? reactionCacheByPostId[record.id]
-                                        : undefined
-                                }
-                                onPressReactionUser={handlePressReactionUser}
-                                showCategoryLabels={viewerOwnsRecord(record, userInfo?.id)}
-                                categoryLabelNames={resolveCategoryLabelNames(record, categories)}
-                            />
-                        </View>
-                    ))}
-                </ScrollView>
+                    // 全件を同時にマウントすると 1 ページ分の画像を一斉に取得してしまうため、
+                    // 前後 1 ページだけを保持する。
+                    initialNumToRender={1}
+                    maxToRenderPerBatch={2}
+                    windowSize={3}
+                    initialScrollIndex={initialIndex > 0 ? initialIndex : undefined}
+                    getItemLayout={getPagerItemLayout}
+                />
             )}
             {/* リアクションユーザーポップアップ */}
             <Modal
@@ -608,14 +609,12 @@ export default function RecordDetailScreen({ route, navigation }) {
                             }}
                         >
                             {selectedReactionUser?.avatar_url ? (
-                                <Image
-                                    source={{
-                                        uri: getAvatarThumbnailUrl(
-                                            selectedReactionUser.avatar_url,
-                                            selectedReactionUser.avatar_updated_at,
-                                            THUMB_AVATAR_HEADER
-                                        ),
-                                    }}
+                                <AppImage
+                                    uri={getAvatarThumbnailUrl(
+                                        selectedReactionUser.avatar_url,
+                                        selectedReactionUser.avatar_updated_at,
+                                        THUMB_AVATAR_HEADER
+                                    )}
                                     style={[styles.reactionUserPopupAvatar, { borderColor: theme.colors.border }]}
                                 />
                             ) : (
@@ -791,7 +790,6 @@ const styles = StyleSheet.create({
     image: { 
         width: '100%', 
         height: '100%', 
-        resizeMode: 'contain' 
     },
     placeholderImageContainer: {
         width: '100%',

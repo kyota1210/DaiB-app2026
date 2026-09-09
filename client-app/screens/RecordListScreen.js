@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useContext, useRef } from 'react';
-import { StyleSheet, Text, View, Alert, ActivityIndicator, TouchableOpacity, Image, ScrollView, Dimensions, Modal, TextInput, KeyboardAvoidingView, Platform, RefreshControl } from 'react-native';
+import { StyleSheet, Text, View, Alert, ActivityIndicator, TouchableOpacity, ScrollView, Dimensions, Modal, TextInput, KeyboardAvoidingView, Platform, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { updateCategory } from '../api/categories';
 import { useFocusEffect } from '@react-navigation/native';
+import AppImage from '../components/AppImage';
 import { getImageUrl, getPostImageThumbnailUrl, getAvatarThumbnailUrl, prefetchImageUris } from '../utils/imageHelper';
 import {
     THUMB_GALLERY_GRID,
@@ -83,6 +84,8 @@ function getGalleryThumbUrl(imagePath, mode) {
 // ギャラリーアイテム（一覧はセルに合わせた cover 表示）
 const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid', theme, onPrefetchReactions }) => {
     const imageUrl = getGalleryThumbUrl(item.image_url, viewMode);
+    // サムネイル未生成の古い投稿は原画像で表示する
+    const fullImageUrl = getImageUrl(item.image_url);
 
     const getItemStyle = () => {
         if (viewMode === 'list') {
@@ -116,8 +119,7 @@ const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid
             style={getItemStyle()}
             onPressIn={() => {
                 if (item?.id) onPrefetchReactions?.([item.id], { prefetchAvatars: true });
-                const fullUrl = getImageUrl(item.image_url);
-                if (fullUrl) prefetchImageUris([fullUrl]);
+                if (fullImageUrl) prefetchImageUris([fullImageUrl]);
             }}
             onPress={() => navigation.navigate('RecordDetail', {
                 records: allRecords,
@@ -127,7 +129,7 @@ const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid
         >
             <View style={getContainerStyle()}>
                 {imageUrl ? (
-                    <Image source={{ uri: imageUrl }} style={getImageStyle()} resizeMode="cover" />
+                    <AppImage uri={imageUrl} fallbackUri={fullImageUrl} style={getImageStyle()} contentFit="cover" />
                 ) : (
                     <View style={[getContainerStyle(), styles.placeholderGalleryImage]}>
                         <Ionicons name="image" size={30} color="#ccc" />
@@ -712,16 +714,12 @@ export default function RecordListScreen({ navigation }) {
                             borderColor: theme.colors.border 
                         }]}>
                             {userInfo?.avatar_url ? (
-                                <Image 
-                                    key={`avatar-${userInfo.updated_at || ''}`}
-                                    source={{ 
-                                        uri: getAvatarThumbnailUrl(
-                                            userInfo.avatar_url,
-                                            userInfo.updated_at,
-                                            THUMB_AVATAR_HEADER
-                                        ),
-                                        cache: 'reload',
-                                    }} 
+                                <AppImage
+                                    uri={getAvatarThumbnailUrl(
+                                        userInfo.avatar_url,
+                                        userInfo.updated_at,
+                                        THUMB_AVATAR_HEADER
+                                    )}
                                     style={styles.userAvatar}
                                 />
                             ) : (
@@ -1222,7 +1220,6 @@ const styles = StyleSheet.create({
     galleryImage: {
         width: '100%',
         height: '100%',
-        resizeMode: 'cover',
     },
     // リスト表示用スタイル
     listContainer: {
@@ -1247,7 +1244,6 @@ const styles = StyleSheet.create({
     listImage: {
         width: '100%',
         height: '100%',
-        resizeMode: 'cover',
     },
     listDateContainer: {
         position: 'absolute',
@@ -1278,7 +1274,6 @@ const styles = StyleSheet.create({
     bookListImage: {
         width: '100%',
         height: '100%',
-        resizeMode: 'cover',
     },
     // タイル表示用スタイル（隙間あり・正方形・3列）
     tileRowContainer: {
@@ -1302,7 +1297,6 @@ const styles = StyleSheet.create({
     tileImage: {
         width: '100%',
         height: '100%',
-        resizeMode: 'cover',
     },
     placeholderGalleryImage: {
         width: '100%',
