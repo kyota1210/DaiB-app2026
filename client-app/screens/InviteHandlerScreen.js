@@ -2,24 +2,68 @@ import React, { useEffect, useState, useContext } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Linking from 'expo-linking';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import {
+    consumePendingInviteUserId,
+    isInviteUserId,
+    markInviteHandled,
+    parseInviteUserId,
+    peekPendingInviteUserId,
+    setPendingInviteUserId,
+} from '../utils/pendingInvite';
+
+const leaveInvite = (navigation, userToken) => {
+    if (navigation.canGoBack()) {
+        navigation.goBack();
+        return;
+    }
+    const home = userToken ? 'Main' : 'Auth';
+    navigation.reset({ index: 0, routes: [{ name: home }] });
+};
+
 const InviteHandlerScreen = ({ navigation, route }) => {
-    const userId = route.params?.userId;
+    const routeUserId = route.params?.userId || route.params?.params?.userId;
     const { userToken } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
     const [error, setError] = useState(false);
 
     useEffect(() => {
-        const id = String(userId || '').trim();
-        if (!id || !userToken) {
-            setError(true);
-            return;
+        const openProfile = (id) => {
+            markInviteHandled(id);
+            if (!userToken) {
+                setPendingInviteUserId(id);
+                navigation.reset({ index: 0, routes: [{ name: 'Auth' }] });
+                return;
+            }
+            consumePendingInviteUserId();
+            navigation.replace('UserProfile', { userId: id, fromInvite: true });
+        };
+
+        const fromRoute = isInviteUserId(routeUserId) ? String(routeUserId).trim() : '';
+        const fromPending = peekPendingInviteUserId() || '';
+        const knownId = fromRoute || fromPending;
+        // URL の再取得を待たない。待つと effect の再実行でキャンセルされ、読み込みのまま残る。
+        if (knownId) {
+            openProfile(knownId);
+            return undefined;
         }
-        navigation.replace('UserProfile', { userId: id });
-    }, [userId, userToken]);
+
+        let cancelled = false;
+        (async () => {
+            const fromUrl = parseInviteUserId(await Linking.getInitialURL());
+            if (cancelled) return;
+            if (!fromUrl) {
+                setError(true);
+                return;
+            }
+            openProfile(fromUrl);
+        })();
+        return () => { cancelled = true; };
+    }, [routeUserId, userToken, navigation]);
 
     if (error) {
         return (
@@ -31,7 +75,7 @@ const InviteHandlerScreen = ({ navigation, route }) => {
                     </Text>
                     <TouchableOpacity
                         style={[styles.button, { backgroundColor: theme.colors.primary }]}
-                        onPress={() => navigation.goBack()}
+                        onPress={() => leaveInvite(navigation, userToken)}
                     >
                         <Text style={styles.buttonText}>{t('back')}</Text>
                     </TouchableOpacity>

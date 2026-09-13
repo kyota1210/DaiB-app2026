@@ -16,7 +16,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getOtherUserProfile, getOtherUserRecords } from '../api/user';
-import { follow, unfollow, approveFollow } from '../api/follows';
+import { unfollow, acceptInvite } from '../api/follows';
 import AppImage from '../components/AppImage';
 import { getImageUrl, getAvatarThumbnailUrl, getPostImageThumbnailUrl } from '../utils/imageHelper';
 import { THUMB_PROFILE_GRID, THUMB_AVATAR_PROFILE } from '../constants/imageThumbs';
@@ -50,6 +50,7 @@ const UserProfileScreen = ({ navigation, route }) => {
     const skipRefetchOnNextFocusRef = useRef(false);
 
     const isMe = userInfo?.id != null && String(userId) === String(userInfo.id);
+    const fromInvite = route.params?.fromInvite === true;
 
     const loadProfileAndRecords = useCallback(async () => {
         if (userId == null) return;
@@ -195,29 +196,19 @@ const UserProfileScreen = ({ navigation, route }) => {
             return;
         }
 
-        if (user.is_following) {
-            const message = t('cancelFriendRequestConfirmWithName').replace('{{name}}', name);
-            Alert.alert('', message, [
-                { text: t('cancel'), style: 'cancel' },
-                { text: t('cancelFriendRequest'), style: 'destructive', onPress: () => doUnfollow() },
-            ]);
-            return;
-        }
+        if (!fromInvite) return;
 
         setFollowBusy(true);
         try {
-            if (user.is_followed_by && !user.is_followed_by_approved) {
-                // 相手からの未承認申請がある場合は承認
-                const res = await approveFollow(userToken, user.id);
-                const nowFriend = !!res?.is_friend;
-                setUser((prev) => prev ? { ...prev, is_followed_by_approved: true, is_friend: nowFriend } : null);
-                Alert.alert('', t('requestApprovedWithName').replace('{{name}}', name));
-            } else {
-                // 新規申請またはフォロー
-                await follow(userToken, user.id);
-                setUser((prev) => prev ? { ...prev, is_following: true } : null);
-                Alert.alert('', t('friendRequestSentWithName').replace('{{name}}', name));
-            }
+            await acceptInvite(userToken, user.id);
+            setUser((prev) => prev ? {
+                ...prev,
+                is_following: true,
+                is_followed_by: true,
+                is_followed_by_approved: true,
+                is_friend: true,
+            } : null);
+            Alert.alert('', t('friendRequestApprovedWithName').replace('{{name}}', name));
         } catch (err) {
             console.error('follow error', err);
         } finally {
@@ -324,29 +315,16 @@ const UserProfileScreen = ({ navigation, route }) => {
                     >
                         <Text style={[styles.followButtonText, { color: theme.colors.text }]}>{t('settings')}</Text>
                     </TouchableOpacity>
-                ) : !user.is_friend ? (
+                ) : fromInvite && !user.is_friend ? (
                     <TouchableOpacity
-                        style={[
-                            styles.followButton,
-                            user.is_following
-                                ? { backgroundColor: theme.colors.secondaryBackground }
-                                : { backgroundColor: theme.colors.primary },
-                        ]}
+                        style={[styles.followButton, { backgroundColor: theme.colors.primary }]}
                         onPress={handleAction}
                         disabled={followBusy}
                     >
                         {followBusy ? (
-                            <ActivityIndicator size="small" color={theme.colors.text} />
+                            <ActivityIndicator size="small" color="#fff" />
                         ) : (
-                            <Text style={[styles.followButtonText, {
-                                color: user.is_following ? theme.colors.text : '#fff',
-                            }]}>
-                                {user.is_following
-                                    ? t('cancelFriendRequest')
-                                    : user.is_followed_by && !user.is_followed_by_approved
-                                        ? t('approveFriendRequest')
-                                        : t('follow')}
-                            </Text>
+                            <Text style={[styles.followButtonText, { color: '#fff' }]}>{t('follow')}</Text>
                         )}
                     </TouchableOpacity>
                 ) : null}
@@ -402,7 +380,13 @@ const UserProfileScreen = ({ navigation, route }) => {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
             <View style={[styles.topBar, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border }]}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                <TouchableOpacity
+                    onPress={() => {
+                        if (navigation.canGoBack()) navigation.goBack();
+                        else navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+                    }}
+                    style={styles.backButton}
+                >
                     <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
                 </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: theme.colors.text }]} numberOfLines={1}>{headerTitle}</Text>

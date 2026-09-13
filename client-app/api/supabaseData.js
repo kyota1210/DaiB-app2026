@@ -274,50 +274,56 @@ const ensureProfileRowBeforeUpdate = async () => {
   throw mapSupabaseError(rpcError);
 };
 
-const appendFollowCounts = async (userId, baseUser) => {
-  try {
-    const [{ count: followingCount }, { count: followerCount }, friendsRes] = await Promise.all([
-      supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', userId).eq('invalidation_flag', 0),
-      supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', userId).eq('invalidation_flag', 0),
-      getFriendsList(userId),
-    ]);
-    return {
-      ...baseUser,
-      following_count: followingCount ?? 0,
-      follower_count: followerCount ?? 0,
-      friend_count: friendsRes.length,
-    };
-  } catch {
-    // follows.user_id が UUID でないレガシーDBなどで失敗してもプロフィール表示は続行
-    return {
-      ...baseUser,
-      following_count: 0,
-      follower_count: 0,
-      friend_count: 0,
-    };
+/** 有効なフォロー。smallint 0 / boolean false のどちらでも無効化されていない */
+const isActiveFollow = (flag) =>
+  flag == null || flag === 0 || flag === false || flag === '0' || flag === 'false';
+
+/**
+ * 相互フォロー（フレンド）の相手 ID。
+ * 投稿の有無やプロフィール行には依存しない。両方向が有効かつ approved = true のときだけ数える。
+ */
+const listMutualFriendIds = async (userId) => {
+  const [{ data: outgoing, error: outErr }, { data: incoming, error: inErr }] = await Promise.all([
+    supabase.from('follows').select('following_id,approved,invalidation_flag').eq('follower_id', userId),
+    supabase.from('follows').select('follower_id,approved,invalidation_flag').eq('following_id', userId),
+  ]);
+  if (outErr) throw mapSupabaseError(outErr);
+  if (inErr) throw mapSupabaseError(inErr);
+
+  const approvedOutgoing = new Set(
+    (outgoing || [])
+      .filter((row) => row.approved === true && isActiveFollow(row.invalidation_flag))
+      .map((row) => row.following_id)
+  );
+  const friendIds = [];
+  for (const row of incoming || []) {
+    if (row.approved === true && isActiveFollow(row.invalidation_flag) && approvedOutgoing.has(row.follower_id)) {
+      friendIds.push(row.follower_id);
+    }
   }
+  return friendIds;
+};
+
+const appendFollowCounts = async (userId, baseUser) => {
+  const [followingRes, followerRes, friendCount] = await Promise.all([
+    supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', userId).eq('invalidation_flag', 0),
+    supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', userId).eq('invalidation_flag', 0),
+    listMutualFriendIds(userId).then((ids) => ids.length).catch((err) => {
+      console.error('friend count error', err);
+      return null;
+    }),
+  ]);
+  return {
+    ...baseUser,
+    following_count: followingRes.error ? (baseUser.following_count ?? 0) : (followingRes.count ?? 0),
+    follower_count: followerRes.error ? (baseUser.follower_count ?? 0) : (followerRes.count ?? 0),
+    // 取得失敗時は 0 に潰さず、既存値があればそれを残す
+    friend_count: friendCount ?? baseUser.friend_count ?? 0,
+  };
 };
 
 const getFriendsList = async (userId) => {
-  // 両方向 approved = true のフォロー関係がフレンド
-  const { data: following, error: followingErr } = await supabase
-    .from('follows')
-    .select('following_id')
-    .eq('follower_id', userId)
-    .eq('invalidation_flag', 0)
-    .eq('approved', true);
-  if (followingErr) throw mapSupabaseError(followingErr);
-  const ids = (following || []).map((v) => v.following_id);
-  if (ids.length === 0) return [];
-  const { data: backFollows, error: backErr } = await supabase
-    .from('follows')
-    .select('follower_id')
-    .eq('following_id', userId)
-    .in('follower_id', ids)
-    .eq('invalidation_flag', 0)
-    .eq('approved', true);
-  if (backErr) throw mapSupabaseError(backErr);
-  const friendIds = (backFollows || []).map((v) => v.follower_id);
+  const friendIds = await listMutualFriendIds(userId);
   if (friendIds.length === 0) return [];
   const { data: users, error: usersErr } = await supabase
     .from('profiles')
@@ -325,6 +331,13 @@ const getFriendsList = async (userId) => {
     .in('id', friendIds);
   if (usersErr) throw mapSupabaseError(usersErr);
   return users || [];
+};
+
+/** 相互フォロー数。投稿・プロフィールの有無とは無関係 */
+export const getFriendCount = async () => {
+  const user = await requireUser();
+  const ids = await listMutualFriendIds(user.id);
+  return ids.length;
 };
 
 export const requestPasswordReset = async (email) => {
@@ -845,6 +858,13 @@ export const getOtherUserRecords = async (userId, { limit = RECORDS_PAGE_SIZE, o
     is_friend: true,
     hasMore: (data || []).length === limit,
   };
+};
+
+/** 招待を受けてフォローする。両者の follows を承認済みにし、その場で相互フォローにする。 */
+export const acceptInvite = async (inviterId) => {
+  const { data, error } = await supabase.rpc('accept_invite', { p_inviter_id: inviterId });
+  if (error) throw mapSupabaseError(error);
+  return data || { following: true, is_followed_by: true, is_friend: true };
 };
 
 export const follow = async (followingId) => {

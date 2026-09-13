@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -12,6 +12,14 @@ import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  consumePendingInviteUserId,
+  isInviteAlreadyHandled,
+  markInviteHandled,
+  parseInviteUserId,
+  peekPendingInviteUserId,
+  rememberInviteFromUrl,
+} from './utils/pendingInvite';
 
 // フォント読み込みと認証状態の確認が終わるまでネイティブスプラッシュを表示したままにする。
 // 閉じる直前の拡大は JS 側で行うため、ネイティブ側のフェードは使わない。
@@ -22,6 +30,8 @@ SplashScreen.setOptions({ duration: 0, fade: false });
 const SPLASH_BACKGROUND = '#F9F4EF';
 const SPLASH_IMAGE_WIDTH = 200;
 
+const navigationRef = createNavigationContainerRef();
+
 const linking = {
   prefixes: [Linking.createURL('/'), 'daibapp://'],
   config: {
@@ -29,7 +39,52 @@ const linking = {
       InviteHandler: 'invite/:userId',
     },
   },
+  async getInitialURL() {
+    const url = await Linking.getInitialURL();
+    const id = rememberInviteFromUrl(url);
+    // 起動URLはここで処理済みにする。アラート後などに同じURLが再配信されても案内画面に戻さない。
+    if (id) markInviteHandled(id);
+    return url;
+  },
+  subscribe(listener) {
+    const sub = Linking.addEventListener('url', ({ url }) => {
+      const id = parseInviteUserId(url);
+      if (id && isInviteAlreadyHandled(id)) return;
+      if (id) {
+        rememberInviteFromUrl(url);
+        markInviteHandled(id);
+      }
+      listener(url);
+    });
+    return () => sub.remove();
+  },
 };
+
+function InviteLinkResume() {
+  const { userToken } = React.useContext(AuthContext);
+
+  React.useEffect(() => {
+    if (!userToken || !peekPendingInviteUserId()) return undefined;
+
+    const openProfile = () => {
+      if (!navigationRef.isReady()) return false;
+      const names = navigationRef.getRootState()?.routeNames ?? [];
+      if (!names.includes('UserProfile')) return false;
+      const id = consumePendingInviteUserId();
+      if (id) navigationRef.navigate('UserProfile', { userId: id, fromInvite: true });
+      return true;
+    };
+
+    if (openProfile()) return undefined;
+
+    const unsubscribe = navigationRef.addListener('state', () => {
+      if (openProfile()) unsubscribe();
+    });
+    return unsubscribe;
+  }, [userToken]);
+
+  return null;
+}
 
 function OpeningSplash({ onFinished }) {
   const scale = React.useRef(new Animated.Value(1)).current;
@@ -96,9 +151,10 @@ const AppContent = () => {
   return (
     <View style={styles.root}>
       <StatusBar style={theme.isDark ? 'light' : 'dark'} />
-      <NavigationContainer linking={linking}>
+      <NavigationContainer ref={navigationRef} linking={linking}>
         <AppNavigator />
       </NavigationContainer>
+      <InviteLinkResume />
       {splashVisible ? <OpeningSplash onFinished={hideSplash} /> : null}
     </View>
   );
