@@ -918,6 +918,135 @@ export const rejectIncomingFollow = async (followerId) => {
   return { message: '申請を却下しました。', rejected: true };
 };
 
+const isMissingRpc = (error) => {
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    error?.code === 'PGRST202' ||
+    message.includes('could not find the function') ||
+    message.includes('does not exist')
+  );
+};
+
+/** クライアント TZ の「今日」から days 日前の日付（YYYY-MM-DD） */
+const localDateMinusDays = (days, timeZone) => {
+  const tz = timeZone || 'Asia/Tokyo';
+  let ymd;
+  try {
+    ymd = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+  } catch {
+    ymd = new Date().toISOString().slice(0, 10);
+  }
+  const [y, m, d] = ymd.split('-').map(Number);
+  const utc = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
+  utc.setUTCDate(utc.getUTCDate() - days);
+  return utc.toISOString().slice(0, 10);
+};
+
+const mapTimelineRows = (rows) =>
+  (rows || []).map((r) => ({
+    ...r,
+    id: toIntId(r.id),
+    author_id: r.author_id ?? r.user_id,
+  }));
+
+/**
+ * get_timeline_posts が失敗・空振りしたときの直接取得。
+ * 引数付き RPC 未適用（PGRST202）や、SECURITY INVOKER の reactions JOIN が
+ * フレンド投稿を落とした場合でも、投稿一覧の RLS（フレンドは public を読める）で取る。
+ */
+const fetchTimelinePostsDirect = async (limit, offset, timeZone) => {
+  const user = await requireUser();
+  const friendIds = await listMutualFriendIds(user.id);
+  if (!friendIds.length) return [];
+
+  const { data: blocks, error: blockErr } = await supabase
+    .from('user_blocks')
+    .select('blocked_user_id')
+    .eq('user_id', user.id);
+  if (blockErr) throw mapSupabaseError(blockErr);
+  const blocked = new Set((blocks || []).map((row) => row.blocked_user_id));
+  const visibleFriendIds = friendIds.filter((id) => !blocked.has(id));
+  if (!visibleFriendIds.length) return [];
+
+  const { data, error } = await supabase
+    .from('posts')
+    .select('id,user_id,title,description,date_logged,image_url')
+    .in('user_id', visibleFriendIds)
+    .eq('visibility', 'public')
+    .eq('invalidation_flag', FLAG_ACTIVE)
+    .gte('date_logged', localDateMinusDays(7, timeZone))
+    .order('date_logged', { ascending: false })
+    .order('id', { ascending: false })
+    .range(offset, offset + limit - 1);
+  if (error) throw mapSupabaseError(error);
+
+  const rows = data || [];
+  const authorIds = [...new Set(rows.map((post) => post.user_id))];
+  const postIds = rows.map((post) => post.id);
+  const [profilesRes, reactionsRes] = await Promise.all([
+    authorIds.length
+      ? supabase.from('profiles').select('id,user_name,avatar_url,updated_at').in('id', authorIds)
+      : Promise.resolve({ data: [], error: null }),
+    postIds.length
+      ? supabase.from('reactions').select('post_id,emoji').eq('user_id', user.id).in('post_id', postIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (profilesRes.error) throw mapSupabaseError(profilesRes.error);
+  if (reactionsRes.error) throw mapSupabaseError(reactionsRes.error);
+
+  const profileById = new Map((profilesRes.data || []).map((profile) => [profile.id, profile]));
+  const reactionByPost = new Map(
+    (reactionsRes.data || []).map((reaction) => [toIntId(reaction.post_id), reaction.emoji])
+  );
+
+  return rows.map((post) => {
+    const profile = profileById.get(post.user_id);
+    return {
+      id: post.id,
+      author_id: post.user_id,
+      author_name: profile?.user_name ?? '',
+      author_avatar_url: profile?.avatar_url ?? null,
+      author_profile_updated_at: profile?.updated_at ?? null,
+      title: post.title,
+      description: post.description,
+      date_logged: post.date_logged,
+      image_url: post.image_url,
+      my_reaction: reactionByPost.get(toIntId(post.id)) ?? null,
+    };
+  });
+};
+
+const fetchTimelinePostRows = async (limit, offset, timeZone) => {
+  const parameterized = await supabase.rpc('get_timeline_posts', { p_limit: limit, p_offset: offset });
+  if (!parameterized.error) {
+    const rows = parameterized.data || [];
+    if (rows.length > 0 || offset > 0) return rows;
+    // RPC が 0 件でも、JOIN/RLS でフレンド投稿だけ落ちていることがある
+    try {
+      const direct = await fetchTimelinePostsDirect(limit, offset, timeZone);
+      return direct.length > 0 ? direct : rows;
+    } catch (err) {
+      console.warn('timeline direct fallback failed', err);
+      return rows;
+    }
+  }
+
+  if (isMissingRpc(parameterized.error)) {
+    const legacy = await supabase.rpc('get_timeline_posts');
+    if (!legacy.error) {
+      return (legacy.data || []).slice(offset, offset + limit);
+    }
+  }
+
+  console.warn('get_timeline_posts failed, falling back to direct query', parameterized.error);
+  return fetchTimelinePostsDirect(limit, offset, timeZone);
+};
+
 /**
  * スレッドのタイムライン。offset > 0 のときは追加ページのみ取得し、
  * 「過去の投稿」（先頭固定）は初回だけ取得する。
@@ -925,20 +1054,14 @@ export const rejectIncomingFollow = async (followerId) => {
 export const getTimeline = async (clientTz, { limit = TIMELINE_PAGE_SIZE, offset = 0 } = {}) => {
   const tz = clientTz || 'Asia/Tokyo';
   const isFirstPage = offset === 0;
-  const [timelineResult, memoryResult] = await Promise.all([
-    supabase.rpc('get_timeline_posts', { p_limit: limit, p_offset: offset }),
+  const [rows, memoryResult] = await Promise.all([
+    fetchTimelinePostRows(limit, offset, tz),
     isFirstPage
       ? supabase.rpc('get_thread_memory_resurface', { p_client_tz: tz })
       : Promise.resolve({ data: [], error: null }),
   ]);
-  if (timelineResult.error) throw mapSupabaseError(timelineResult.error);
   // RPC は r.user_id as author_id のみ返す（user_id 列は無い）。undefined で上書きしない。
-  const rows = timelineResult.data || [];
-  const records = rows.map((r) => ({
-    ...r,
-    id: toIntId(r.id),
-    author_id: r.author_id ?? r.user_id,
-  }));
+  const records = mapTimelineRows(rows);
   const memoryItems = (memoryResult.data || []).map((r) => ({
     ...r,
     id: toIntId(r.id),
