@@ -31,7 +31,7 @@
 - [ ] 返金ポリシー: IAP は Apple の払い戻しに従う旨を明記
 - [ ] 動作環境（iOS バージョン）
 
-確定した値は [client-app/screens/SpecifiedCommercialTransactionsScreen.js](../client-app/screens/SpecifiedCommercialTransactionsScreen.js) に反映する（F0-4 で画面を新設）。
+確定した値は公開ページ [https://kyota1210.github.io/daib-legal/specified-commercial.html](https://kyota1210.github.io/daib-legal/specified-commercial.html) に反映する（正本）。アプリは `LEGAL_URLS.specifiedCommercial` で当該 URL を開く。
 
 ### 1.3 Google Play Console（Android 展開する場合）
 
@@ -80,7 +80,7 @@
 - [ ] **キーワード（100 文字以内）**: 確定する
 - [ ] **サポート URL**: F0-3 で確定する公開ホストの `/support` を指す
 - [ ] **マーケティング URL**（任意）
-- [ ] **プライバシーポリシー URL**: F0-3 のホスト上で公開（`/privacy.html` 等）
+- [ ] **プライバシーポリシー URL**: `https://kyota1210.github.io/daib-legal/privacy-policy.html`
 - [ ] **スクリーンショット**:
   - iPhone 6.9"（iPhone 16 Pro Max 等）: 最低 3 枚、最大 10 枚
   - iPhone 6.5"（iPhone 11 Pro Max 等）: 最低 3 枚、最大 10 枚

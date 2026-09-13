@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, TextInput, Alert, TouchableOpacity, ScrollView 
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { TERMS_URL, PRIVACY_URL, openLegalUrl } from '../utils/openLegalUrl';
+import { openLegalUrl } from '../utils/openLegalUrl';
 
 export default function SignupScreen({ navigation }) {
     const [email, setEmail] = useState('');
@@ -124,14 +124,14 @@ export default function SignupScreen({ navigation }) {
                         {tDevice('signupTermsPrefix')}
                         <Text
                             style={[styles.termsLink, { color: theme.colors.primary }]}
-                            onPress={() => openLegalUrl(TERMS_URL)}
+                            onPress={() => openLegalUrl('terms')}
                         >
                             {tDevice('terms')}
                         </Text>
                         {tDevice('signupTermsMiddle')}
                         <Text
                             style={[styles.termsLink, { color: theme.colors.primary }]}
-                            onPress={() => openLegalUrl(PRIVACY_URL)}
+                            onPress={() => openLegalUrl('privacyPolicy')}
                         >
                             {tDevice('privacy')}
                         </Text>

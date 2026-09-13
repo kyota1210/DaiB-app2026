@@ -8,7 +8,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
 import { getUnreadCount } from '../api/notifications';
-import { TERMS_URL, PRIVACY_URL, SPECIFIED_COMMERCIAL_URL, openLegalUrl } from '../utils/openLegalUrl';
+import { openLegalUrl } from '../utils/openLegalUrl';
 
 const ProfileScreen = ({ navigation }) => {
     const { userInfo } = useContext(AuthContext);
@@ -141,7 +141,7 @@ const ProfileScreen = ({ navigation }) => {
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
-                            onPress={() => openLegalUrl(TERMS_URL)}
+                            onPress={() => openLegalUrl('terms')}
                         >
                             <Ionicons name="document-text-outline" size={24} color={theme.colors.icon} />
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('terms')}</Text>
@@ -149,7 +149,7 @@ const ProfileScreen = ({ navigation }) => {
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
-                            onPress={() => openLegalUrl(PRIVACY_URL)}
+                            onPress={() => openLegalUrl('privacyPolicy')}
                         >
                             <Ionicons name="shield-checkmark-outline" size={24} color={theme.colors.icon} />
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('privacy')}</Text>
@@ -157,7 +157,7 @@ const ProfileScreen = ({ navigation }) => {
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
-                            onPress={() => openLegalUrl(SPECIFIED_COMMERCIAL_URL)}
+                            onPress={() => openLegalUrl('specifiedCommercial')}
                         >
                             <Ionicons name="receipt-outline" size={24} color={theme.colors.icon} />
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('specifiedCommercialTransactions')}</Text>

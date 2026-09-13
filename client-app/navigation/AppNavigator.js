@@ -28,11 +28,8 @@ import DisplaySettingsScreen from '../screens/DisplaySettingsScreen';
 import PhotoPickerScreen from '../screens/PhotoPickerScreen';
 import HelpScreen from '../screens/HelpScreen';
 import AboutScreen from '../screens/AboutScreen';
-import TermsScreen from '../screens/TermsScreen';
-import PrivacyScreen from '../screens/PrivacyScreen';
 import ContactScreen from '../screens/ContactScreen';
 import InviteHandlerScreen from '../screens/InviteHandlerScreen';
-import SpecifiedCommercialTransactionsScreen from '../screens/SpecifiedCommercialTransactionsScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AdminScreen from '../screens/AdminScreen';
 
@@ -139,8 +136,6 @@ const AuthStack = () => {
           headerTintColor: '#1c1c1e',
         }}
       />
-      <Stack.Screen name="Terms" component={TermsScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Privacy" component={PrivacyScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 };
@@ -184,9 +179,6 @@ const AppNavigator = () => {
           <Stack.Screen name="PhotoPicker" component={PhotoPickerScreen} />
           <Stack.Screen name="Help" component={HelpScreen} />
           <Stack.Screen name="About" component={AboutScreen} />
-          <Stack.Screen name="Terms" component={TermsScreen} />
-          <Stack.Screen name="Privacy" component={PrivacyScreen} />
-          <Stack.Screen name="SpecifiedCommercialTransactions" component={SpecifiedCommercialTransactionsScreen} />
           <Stack.Screen name="Contact" component={ContactScreen} />
           <Stack.Screen name="FriendHub" component={FriendHubScreen} />
           <Stack.Screen name="UserProfile" component={UserProfileScreen} />

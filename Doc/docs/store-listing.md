@@ -54,11 +54,11 @@ DaiB は、毎日の出来事や気持ちをシンプルに残せる日記アプ
 - 価格: 250 円 / 月
 - 自動更新は期間終了の 24 時間以上前にキャンセルしない限り、同額で更新されます
 - 設定 → Apple ID → サブスクリプションからいつでもキャンセル可能
-- 利用規約: https://<host>/terms.html
-- プライバシーポリシー: https://<host>/privacy.html
+- 利用規約: https://kyota1210.github.io/daib-legal/terms.html
+- プライバシーポリシー: https://kyota1210.github.io/daib-legal/privacy-policy.html
 ```
 
-> ホスト URL は F0-3 で確定したドメインに置換すること。
+> 法務 URL は GitHub Pages（`daib-legal`）を正とする。その他ホストは F0-3 で確定したドメインに置換すること。
 
 ### 2.3 Keywords（100 字以内、カンマ区切り）
 
@@ -72,8 +72,8 @@ DaiB は、毎日の出来事や気持ちをシンプルに残せる日記アプ
 |---|---|
 | Support URL | `https://<host>/support` |
 | Marketing URL（任意） | `https://<host>/` |
-| Privacy Policy URL | `https://<host>/privacy.html` |
-| Terms (EULA) URL | `https://<host>/terms.html` |
+| Privacy Policy URL | `https://kyota1210.github.io/daib-legal/privacy-policy.html` |
+| Terms (EULA) URL | `https://kyota1210.github.io/daib-legal/terms.html` |
 
 ---
 
@@ -106,8 +106,8 @@ DaiB is a simple journaling app that lets you capture daily moments — text, ph
 - Price: 250 JPY / month
 - Auto-renew unless cancelled at least 24 hours before the period ends
 - Manage / cancel anytime: Settings → Apple ID → Subscriptions
-- Terms of Use: https://<host>/terms.html
-- Privacy Policy: https://<host>/privacy.html
+- Terms of Use: https://kyota1210.github.io/daib-legal/terms.html
+- Privacy Policy: https://kyota1210.github.io/daib-legal/privacy-policy.html
 ```
 
 ### 3.3 Keywords
@@ -145,7 +145,7 @@ iOS 必須サイズ（[Apple ガイドライン](https://developer.apple.com/hel
 
 ## 5. App Privacy 質問票（App Store Connect）
 
-[docs/privacy-policy.md](privacy-policy.md) と [client-app/screens/PrivacyScreen.js](../client-app/screens/PrivacyScreen.js) の改訂内容に基づく回答。
+公開ページ [https://kyota1210.github.io/daib-legal/privacy-policy.html](https://kyota1210.github.io/daib-legal/privacy-policy.html)（ミラー: [docs/privacy-policy.md](privacy-policy.md)）の内容に基づく回答。
 
 ### 5.1 Data Linked to You（ユーザーIDに紐づく）
 
