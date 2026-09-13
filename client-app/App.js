@@ -4,7 +4,7 @@ import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { useFonts, Nunito_900Black } from '@expo-google-fonts/nunito';
 import AppNavigator from './navigation/AppNavigator';
 import { AuthProvider, AuthContext } from './context/AuthContext';
@@ -13,9 +13,14 @@ import { LanguageProvider } from './context/LanguageContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-// フォント読み込みと認証状態の確認が終わるまでネイティブスプラッシュを表示したままにする
+// フォント読み込みと認証状態の確認が終わるまでネイティブスプラッシュを表示したままにする。
+// 閉じる直前の拡大は JS 側で行うため、ネイティブ側のフェードは使わない。
 SplashScreen.preventAutoHideAsync().catch(() => { /* すでに非表示の場合は無視 */ });
-SplashScreen.setOptions({ duration: 300, fade: true });
+SplashScreen.setOptions({ duration: 0, fade: false });
+
+// app.json の expo-splash-screen と揃える。ずれると切替の瞬間に位置や色が飛ぶ。
+const SPLASH_BACKGROUND = '#F9F4EF';
+const SPLASH_IMAGE_WIDTH = 200;
 
 const linking = {
   prefixes: [Linking.createURL('/'), 'daibapp://'],
@@ -26,25 +31,75 @@ const linking = {
   },
 };
 
+function OpeningSplash({ onFinished }) {
+  const scale = React.useRef(new Animated.Value(1)).current;
+  const opacity = React.useRef(new Animated.Value(1)).current;
+  const started = React.useRef(false);
+
+  const onLayout = React.useCallback(() => {
+    if (started.current) return;
+    started.current = true;
+
+    // 同じ見た目のオーバーレイが描画されてからネイティブスプラッシュを外し、拡大を始める
+    requestAnimationFrame(() => {
+      SplashScreen.hideAsync()
+        .catch(() => { /* noop */ })
+        .finally(() => {
+          Animated.parallel([
+            Animated.timing(scale, {
+              toValue: 8,
+              duration: 700,
+              easing: Easing.in(Easing.cubic),
+              useNativeDriver: true,
+            }),
+            Animated.sequence([
+              Animated.delay(280),
+              Animated.timing(opacity, {
+                toValue: 0,
+                duration: 420,
+                easing: Easing.in(Easing.quad),
+                useNativeDriver: true,
+              }),
+            ]),
+          ]).start(({ finished }) => {
+            if (finished) onFinished();
+          });
+        });
+    });
+  }, [onFinished, opacity, scale]);
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      onLayout={onLayout}
+      style={[styles.splashOverlay, { opacity }]}
+    >
+      <Animated.Image
+        source={require('./assets/splash-screen.png')}
+        resizeMode="contain"
+        style={[styles.splashImage, { transform: [{ scale }] }]}
+      />
+    </Animated.View>
+  );
+}
+
 const AppContent = () => {
   const { theme } = useTheme();
   const { isLoading } = React.useContext(AuthContext);
-
-  // 最初の描画が画面に反映されてからスプラッシュを閉じ、白画面の差し込みを防ぐ
-  const onLayoutRootView = React.useCallback(() => {
-    SplashScreen.hideAsync().catch(() => { /* noop */ });
-  }, []);
+  const [splashVisible, setSplashVisible] = React.useState(true);
+  const hideSplash = React.useCallback(() => setSplashVisible(false), []);
 
   if (isLoading) {
     return null;
   }
 
   return (
-    <View style={styles.root} onLayout={onLayoutRootView}>
+    <View style={styles.root}>
       <StatusBar style={theme.isDark ? 'light' : 'dark'} />
       <NavigationContainer linking={linking}>
         <AppNavigator />
       </NavigationContainer>
+      {splashVisible ? <OpeningSplash onFinished={hideSplash} /> : null}
     </View>
   );
 };
@@ -84,5 +139,16 @@ export default function App() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  splashOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: SPLASH_BACKGROUND,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  splashImage: {
+    width: SPLASH_IMAGE_WIDTH,
+    height: SPLASH_IMAGE_WIDTH,
   },
 });
