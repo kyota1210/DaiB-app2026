@@ -21,23 +21,51 @@
   <p id="lead">アプリで招待を受け取りましょう</p>
   <a class="btn" id="openApp" href="#" hidden>アプリで開く</a>
   <a class="btn" id="store" href="https://apps.apple.com/jp/app/id6793158649">App Store でダウンロード</a>
-  <p class="note" id="note" hidden>すでにアプリをお持ちの方は「アプリで開く」を選んでください</p>
+  <p class="note" id="note" hidden>自動で開かない場合は「アプリで開く」を選んでください</p>
 </div>
 <script>
 (function () {
   var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   var userId = new URLSearchParams(window.location.search).get('u') || '';
+  var lead = document.getElementById('lead');
 
   if (!UUID.test(userId)) {
-    document.getElementById('lead').textContent = 'アプリをダウンロードしてください';
+    lead.textContent = 'アプリをダウンロードしてください';
     return;
   }
 
+  var scheme = 'daibapp://invite/' + encodeURIComponent(userId);
   var openApp = document.getElementById('openApp');
-  openApp.setAttribute('href', 'daibapp://invite/' + encodeURIComponent(userId));
+  openApp.setAttribute('href', scheme);
   openApp.hidden = false;
   document.getElementById('store').classList.add('sub');
   document.getElementById('note').hidden = false;
+
+  var ua = navigator.userAgent || '';
+  // LINE 等のアプリ内ブラウザはカスタムスキームを開けない。
+  var isInAppBrowser = /Line\/|Instagram|FBAN|FBAV|Twitter|MicroMessenger/i.test(ua);
+  if (isInAppBrowser) {
+    lead.textContent = 'この画面からはアプリを開けません。メニューから Safari で開いてください。';
+    return;
+  }
+
+  if (!/iphone|ipad|ipod|android/i.test(ua)) return;
+
+  // インストール済みなら DaiB が前面に出る。失敗してもこのページは残し、
+  // ボタンとストア導線からやり直せるようにする。
+  lead.textContent = 'アプリを開いています...';
+  var left = false;
+  var markLeft = function () { left = true; };
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) markLeft();
+  });
+  window.addEventListener('pagehide', markLeft);
+  window.location.href = scheme;
+
+  setTimeout(function () {
+    if (left || document.hidden) return;
+    lead.textContent = 'アプリで招待を受け取りましょう';
+  }, 1600);
 })();
 </script>
 </body>

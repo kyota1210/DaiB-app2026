@@ -8,11 +8,6 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-screen.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#E8E6E1"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kytm1210.daibapp2026",
@@ -50,7 +45,15 @@
         }
       ],
       "expo-font",
-      "expo-updates"
+      "expo-updates",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-screen.png",
+          "backgroundColor": "#F9F4EF",
+          "imageWidth": 200
+        }
+      ]
     ],
     "extra": {
       "eas": {

@@ -21,9 +21,9 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { getUserProfile, getOtherUserProfile } from '../api/user';
+import { getFriendCount, getOtherUserProfile } from '../api/user';
 import { getTimeline } from '../api/threads';
-import { follow, approveFollow } from '../api/follows';
+import { acceptInvite } from '../api/follows';
 import { addReaction } from '../api/reactions';
 import AppImage from '../components/AppImage';
 import { getPostImageThumbnailUrl, getAvatarThumbnailUrl } from '../utils/imageHelper';
@@ -120,18 +120,24 @@ const ThreadScreen = ({ navigation }) => {
     /** 詳細/プロフィールから戻った次のフォーカスでは再取得しない（スクロール位置維持） */
     const skipRefetchOnNextFocusRef = useRef(false);
 
+    /** 投稿の有無とは別に、相互フォロー数だけを更新する */
+    const loadFriendCount = useCallback(async () => {
+        if (!userToken) return;
+        try {
+            const friend_count = await getFriendCount(userToken);
+            setCounts({ friend_count });
+        } catch (err) {
+            console.error('ThreadScreen friend count error', err);
+        }
+    }, [userToken]);
+
     const loadData = useCallback(async () => {
         if (!userToken) return;
+        const countPromise = loadFriendCount();
         try {
             const clientTz =
                 (typeof Intl !== 'undefined' && Intl.DateTimeFormat().resolvedOptions().timeZone) || 'Asia/Tokyo';
-            const [meRes, timelineRes] = await Promise.all([
-                getUserProfile(userToken),
-                getTimeline(userToken, clientTz, { limit: TIMELINE_PAGE_SIZE, offset: 0 }),
-            ]);
-            setCounts({
-                friend_count: meRes.user?.friend_count ?? 0,
-            });
+            const timelineRes = await getTimeline(userToken, clientTz, { limit: TIMELINE_PAGE_SIZE, offset: 0 });
             const base = timelineRes.records ?? [];
             timelineOffsetRef.current = base.length;
             setHasMore(!!timelineRes.hasMore);
@@ -147,7 +153,8 @@ const ThreadScreen = ({ navigation }) => {
             setLoading(false);
             // プルリフレッシュ時は onRefresh 側で setRefreshing(false) を行うためここでは触らない
         }
-    }, [userToken]);
+        await countPromise;
+    }, [userToken, loadFriendCount]);
 
     /** 末尾に到達したら次ページを追加取得する（既存の並びは崩さず末尾に追記） */
     const loadMore = useCallback(async () => {
@@ -185,13 +192,14 @@ const ThreadScreen = ({ navigation }) => {
         useCallback(() => {
             if (skipRefetchOnNextFocusRef.current) {
                 skipRefetchOnNextFocusRef.current = false;
+                loadFriendCount();
                 return;
             }
             if (recordCountRef.current === 0) {
                 setLoading(true);
             }
             loadData();
-        }, [loadData])
+        }, [loadData, loadFriendCount])
     );
 
     const onRefresh = useCallback(async () => {
@@ -241,20 +249,21 @@ const ThreadScreen = ({ navigation }) => {
         if (!scannedUser || !userToken || scanBusy) return;
         setScanBusy(true);
         try {
-            let res;
-            if (scannedUser.is_followed_by) {
-                res = await approveFollow(userToken, scannedUser.id);
-            } else {
-                res = await follow(userToken, scannedUser.id);
-            }
-            const nowFriend = !!res?.is_friend;
-            setScannedUser((prev) => (prev ? { ...prev, is_following: true, is_friend: nowFriend } : null));
+            await acceptInvite(userToken, scannedUser.id);
+            setScannedUser((prev) => (prev ? {
+                ...prev,
+                is_following: true,
+                is_followed_by: true,
+                is_followed_by_approved: true,
+                is_friend: true,
+            } : null));
+            loadFriendCount();
         } catch (e) {
             console.error(e);
         } finally {
             setScanBusy(false);
         }
-    }, [scannedUser, userToken, scanBusy]);
+    }, [scannedUser, userToken, scanBusy, loadFriendCount]);
 
     const openRecordDetail = (index) => {
         if (records.length === 0) return;
@@ -562,9 +571,9 @@ const ThreadScreen = ({ navigation }) => {
                                                 </View>
                                             )}
                                             <Text style={[styles.scannedUserName, { color: theme.colors.text }]}>{scannedUser.user_name || ''}</Text>
-                                            {scannedUser.is_following ? (
+                                            {scannedUser.is_friend ? (
                                                 <Text style={[styles.qrFollowedMessage, { color: theme.colors.secondaryText }]}>
-                                                    {scannedUser.is_friend ? t('friendRequestApproved') : t('friendRequestSent')}
+                                                    {t('friendRequestApproved')}
                                                 </Text>
                                             ) : (
                                                 <TouchableOpacity
@@ -576,7 +585,7 @@ const ThreadScreen = ({ navigation }) => {
                                                     {scanBusy ? (
                                                         <ActivityIndicator size="small" color="#fff" />
                                                     ) : (
-                                                        <Text style={[styles.qrFollowButtonText, { color: '#fff' }]}>{t('sendFriendRequest')}</Text>
+                                                        <Text style={[styles.qrFollowButtonText, { color: '#fff' }]}>{t('follow')}</Text>
                                                     )}
                                                 </TouchableOpacity>
                                             )}
