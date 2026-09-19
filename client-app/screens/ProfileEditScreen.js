@@ -8,6 +8,8 @@ import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ContentColumn from '../components/ContentColumn';
+import { CONTENT_MAX_WIDTH_FORM } from '../hooks/useContentWidth';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import { updateProfile } from '../api/user';
@@ -106,6 +108,7 @@ const ProfileEditScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ContentColumn maxWidth={CONTENT_MAX_WIDTH_FORM} style={{ flex: 1 }}>
             <ScreenHeader
                 title={t('profileSettings')}
                 onBack={() => navigation.goBack()}
@@ -189,6 +192,8 @@ const ProfileEditScreen = ({ navigation }) => {
                     navigation.goBack();
                 }}
             />
+        
+            </ContentColumn>
         </SafeAreaView>
     );
 };

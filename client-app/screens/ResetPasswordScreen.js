@@ -14,6 +14,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { AuthContext } from '../context/AuthContext';
 import { resetPassword } from '../api/auth';
+import ContentColumn from '../components/ContentColumn';
+import { CONTENT_MAX_WIDTH_FORM } from '../hooks/useContentWidth';
 
 export default function ResetPasswordScreen() {
     const [newPassword, setNewPassword] = useState('');
@@ -67,6 +69,7 @@ export default function ResetPasswordScreen() {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
         >
+            <ContentColumn maxWidth={CONTENT_MAX_WIDTH_FORM} style={styles.wrapper}>
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 keyboardShouldPersistTaps="handled"
@@ -130,6 +133,7 @@ export default function ResetPasswordScreen() {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
+            </ContentColumn>
         </KeyboardAvoidingView>
     );
 }

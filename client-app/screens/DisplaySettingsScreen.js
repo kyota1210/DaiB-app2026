@@ -2,6 +2,8 @@ import React, { useState, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ContentColumn from '../components/ContentColumn';
+import { CONTENT_MAX_WIDTH_FORM } from '../hooks/useContentWidth';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { AuthContext } from '../context/AuthContext';
@@ -74,6 +76,7 @@ const DisplaySettingsScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ContentColumn maxWidth={CONTENT_MAX_WIDTH_FORM} style={{ flex: 1 }}>
             <ScreenHeader
                 title={t('displaySettings')}
                 onBack={() => navigation.goBack()}
@@ -120,6 +123,8 @@ const DisplaySettingsScreen = ({ navigation }) => {
                     })}
                 </View>
             </ScrollView>
+        
+            </ContentColumn>
         </SafeAreaView>
     );
 };

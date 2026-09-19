@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal,
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import ContentColumn from '../components/ContentColumn';
+import { CONTENT_MAX_WIDTH_FORM } from '../hooks/useContentWidth';
 import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -270,6 +272,7 @@ const CategoryManagementScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ContentColumn maxWidth={CONTENT_MAX_WIDTH_FORM} style={{ flex: 1 }}>
             <ScreenHeader title="カテゴリー管理" onBack={() => navigation.goBack()} />
 
             <ScrollView style={[styles.scrollView, { backgroundColor: theme.colors.background }]}>
@@ -416,6 +419,8 @@ const CategoryManagementScreen = ({ navigation }) => {
                 confirmLabel="削除"
             />
 
+        
+            </ContentColumn>
         </SafeAreaView>
     );
 };

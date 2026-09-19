@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity, ActivityIndicator, Modal, Dimensions, Animated, Easing, LayoutAnimation, Platform, UIManager, InteractionManager } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity, ActivityIndicator, Modal, Animated, Easing, LayoutAnimation, Platform, UIManager, InteractionManager } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AppImage from '../components/AppImage';
 import ResultModal from '../components/ResultModal';
+import ContentColumn from '../components/ContentColumn';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRecordsApi } from '../api/records';
 import { addReaction } from '../api/reactions';
@@ -12,8 +13,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getImageUrl, getAvatarThumbnailUrl, prefetchReactionAvatarUris } from '../utils/imageHelper';
 import { THUMB_AVATAR_XS, THUMB_AVATAR_HEADER } from '../constants/imageThumbs';
-const SCREEN_HEIGHT = Dimensions.get('window').height;
-const SCREEN_WIDTH = Dimensions.get('window').width;
+import { useContentWidth, CONTENT_MAX_WIDTH_MEDIA } from '../hooks/useContentWidth';
 const REACTION_EMOJIS = ['❤️', '👍', '🌸', '🎉', '✨'];
 
 /** 閲覧ユーザーがその投稿の著者か（ギャラリー等で author_id が無い場合は自分の投稿として扱う） */
@@ -99,6 +99,7 @@ const RecordItem = React.memo(function RecordItem({
     item,
     theme,
     t,
+    contentWidth,
     showReactionControl,
     isReactionBarExpanded,
     onToggleReactionBar,
@@ -137,7 +138,7 @@ const RecordItem = React.memo(function RecordItem({
         }
     }, []);
 
-    const containerHeight = originalAspect != null ? SCREEN_WIDTH / originalAspect : SCREEN_WIDTH;
+    const containerHeight = originalAspect != null ? contentWidth / originalAspect : contentWidth;
 
     return (
         <ScrollView 
@@ -151,7 +152,7 @@ const RecordItem = React.memo(function RecordItem({
                     <TouchableOpacity
                         activeOpacity={0.98}
                     >
-                        <View style={[styles.imageContainer, { width: SCREEN_WIDTH, height: containerHeight }]}>
+                        <View style={[styles.imageContainer, { width: contentWidth, height: containerHeight }]}>
                             <AppImage
                                 uri={imageUrl}
                                 style={styles.image}
@@ -273,6 +274,7 @@ const RecordItem = React.memo(function RecordItem({
 
 export default function RecordDetailScreen({ route, navigation }) {
     const { records: paramsRecords, initialIndex } = route.params;
+    const { contentWidth, windowHeight } = useContentWidth(CONTENT_MAX_WIDTH_MEDIA);
     const { records: contextRecords, categories, reactionCacheByPostId, loadReactionsForPosts } = useRecordsAndCategories();
     // タイムラインから開いた場合（author_id あり）は params をそのまま使用
     const paramsHaveAuthorInfo = paramsRecords?.some?.((r) => r.author_id != null);
@@ -291,7 +293,7 @@ export default function RecordDetailScreen({ route, navigation }) {
     const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
-    const [scrollAreaHeight, setScrollAreaHeight] = useState(SCREEN_HEIGHT);
+    const [scrollAreaHeight, setScrollAreaHeight] = useState(windowHeight);
     const scrollViewRef = useRef(null);
     const menuButtonRef = useRef(null);
     const { deleteRecord } = useRecordsApi();
@@ -409,15 +411,15 @@ export default function RecordDetailScreen({ route, navigation }) {
         if (idx >= 0 && idx !== currentIndex) {
             setCurrentIndex(idx);
             setTimeout(() => {
-                scrollViewRef.current?.scrollToOffset({ offset: SCREEN_WIDTH * idx, animated: false });
+                scrollViewRef.current?.scrollToOffset({ offset: contentWidth * idx, animated: false });
             }, 0);
         }
-    }, [records]);
+    }, [records, contentWidth]);
 
     // 横スクロール終了時に現在のインデックスを更新
     const handleMomentumScrollEnd = (event) => {
         const offsetX = event.nativeEvent.contentOffset.x;
-        const index = Math.round(offsetX / SCREEN_WIDTH);
+        const index = Math.round(offsetX / contentWidth);
         if (index >= 0 && index < records.length) {
             setCurrentIndex(index);
         }
@@ -457,19 +459,20 @@ export default function RecordDetailScreen({ route, navigation }) {
         }
     };
 
-    // 各ページは画面幅ぴったりなので、FlatList が計測なしでスクロール位置を決められる
+    // 各ページはコンテンツ幅ぴったりなので、FlatList が計測なしでスクロール位置を決められる
     const getPagerItemLayout = useCallback(
-        (_data, index) => ({ length: SCREEN_WIDTH, offset: SCREEN_WIDTH * index, index }),
-        []
+        (_data, index) => ({ length: contentWidth, offset: contentWidth * index, index }),
+        [contentWidth]
     );
 
     const renderPagerItem = useCallback(
         ({ item: record }) => (
-            <View style={[styles.recordWrapper, { height: scrollAreaHeight }]}>
+            <View style={[styles.recordWrapper, { width: contentWidth, height: scrollAreaHeight }]}>
                 <RecordItem
                     item={record}
                     theme={theme}
                     t={t}
+                    contentWidth={contentWidth}
                     showFriendReactions={viewerOwnsRecord(record, userInfo?.id)}
                     reactionUsers={
                         viewerOwnsRecord(record, userInfo?.id)
@@ -482,11 +485,12 @@ export default function RecordDetailScreen({ route, navigation }) {
                 />
             </View>
         ),
-        [scrollAreaHeight, theme, t, userInfo?.id, reactionCacheByPostId, handlePressReactionUser, categories]
+        [scrollAreaHeight, theme, t, userInfo?.id, reactionCacheByPostId, handlePressReactionUser, categories, contentWidth]
     );
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ContentColumn maxWidth={CONTENT_MAX_WIDTH_MEDIA} style={styles.contentColumn}>
             {/* ヘッダー（メニューバー） */}
             <View style={[styles.header, { 
                 backgroundColor: theme.colors.background,
@@ -545,11 +549,12 @@ export default function RecordDetailScreen({ route, navigation }) {
 
             {/* コンテンツ: タイムライン他人投稿時は1件のみ表示（横スワイプ不可）、それ以外は横スワイプ可能 */}
             {isTimelineOtherUser && currentRecord ? (
-                <View style={styles.singleRecordWrapper}>
+                <View style={[styles.singleRecordWrapper, { width: contentWidth }]}>
                     <RecordItem
                         item={currentRecord}
                         theme={theme}
                         t={t}
+                        contentWidth={contentWidth}
                         showReactionControl
                         isReactionBarExpanded={isReactionBarExpanded}
                         onToggleReactionBar={toggleReactionBar}
@@ -585,7 +590,7 @@ export default function RecordDetailScreen({ route, navigation }) {
                     getItemLayout={getPagerItemLayout}
                 />
             )}
-            {/* リアクションユーザーポップアップ */}
+            </ContentColumn>            {/* リアクションユーザーポップアップ */}
             <Modal
                 visible={!!selectedReactionUser}
                 transparent={true}
@@ -749,15 +754,16 @@ const styles = StyleSheet.create({
         textAlign: 'left',
     },
     singleRecordWrapper: {
-        width: SCREEN_WIDTH,
         flex: 1,
     },
     horizontalScrollView: {
         flex: 1,
     },
     recordWrapper: {
-        width: SCREEN_WIDTH,
-        // height は onLayout で取得した scrollAreaHeight を指定（ヘッダー分を除いた表示高さに合わせ、縦長コンテンツが最後までスクロールできるようにする）
+        // width / height は contentWidth と onLayout で指定
+    },
+    contentColumn: {
+        flex: 1,
     },
     recordItem: {
         flex: 1,

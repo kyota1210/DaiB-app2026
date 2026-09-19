@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ContentColumn from '../components/ContentColumn';
+import { CONTENT_MAX_WIDTH_FORM } from '../hooks/useContentWidth';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import ScreenHeader from '../components/ScreenHeader';
@@ -141,16 +143,20 @@ const NotificationsScreen = ({ navigation }) => {
     if (loading) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ContentColumn maxWidth={CONTENT_MAX_WIDTH_FORM} style={{ flex: 1 }}>
                 <ScreenHeader title={t('notifications')} onBack={() => navigation.goBack()} />
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={theme.colors.primary} />
                 </View>
-            </SafeAreaView>
+            
+            </ContentColumn>
+        </SafeAreaView>
         );
     }
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ContentColumn maxWidth={CONTENT_MAX_WIDTH_FORM} style={{ flex: 1 }}>
             <ScreenHeader
                 title={t('notifications')}
                 onBack={() => navigation.goBack()}
@@ -236,6 +242,8 @@ const NotificationsScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </TouchableOpacity>
             </Modal>
+        
+            </ContentColumn>
         </SafeAreaView>
     );
 };

@@ -1,6 +1,8 @@
 import React, { useState, useContext } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ContentColumn from '../components/ContentColumn';
+import { CONTENT_MAX_WIDTH_FORM } from '../hooks/useContentWidth';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { AuthContext } from '../context/AuthContext';
@@ -60,6 +62,7 @@ const ContactScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ContentColumn maxWidth={CONTENT_MAX_WIDTH_FORM} style={{ flex: 1 }}>
             <ScreenHeader title={t('contact')} onBack={() => navigation.goBack()} />
 
             <KeyboardAvoidingView
@@ -184,6 +187,8 @@ const ContactScreen = ({ navigation }) => {
                 message={errorMessage}
                 onClose={() => setShowErrorModal(false)}
             />
+        
+            </ContentColumn>
         </SafeAreaView>
     );
 };

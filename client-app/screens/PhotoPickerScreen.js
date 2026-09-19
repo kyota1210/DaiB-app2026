@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions, ScrollView as RNScrollView, TextInput, Platform, Modal, KeyboardAvoidingView, ActivityIndicator, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView as RNScrollView, TextInput, Platform, Modal, KeyboardAvoidingView, ActivityIndicator, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import AppImage from '../components/AppImage';
+import ContentColumn from '../components/ContentColumn';
 import { BlurView } from 'expo-blur';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
@@ -14,11 +15,11 @@ import { useRecordsAndCategories } from '../context/RecordsAndCategoriesContext'
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getImageUrl } from '../utils/imageHelper';
 import { useFeatureGate, FREE_LIMITS } from '../hooks/useFeatureGate';
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
+import { useContentWidth, CONTENT_MAX_WIDTH_MEDIA } from '../hooks/useContentWidth';
 
 export default function PhotoPickerScreen({ navigation, route }) {
     const insets = useSafeAreaInsets();
+    const { contentWidth } = useContentWidth(CONTENT_MAX_WIDTH_MEDIA);
     const { userToken, userInfo } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
@@ -133,9 +134,9 @@ export default function PhotoPickerScreen({ navigation, route }) {
     const getContainerDimensions = () => {
         if (originalImageSize?.width && originalImageSize?.height) {
             const { width: w, height: h } = originalImageSize;
-            return { width: SCREEN_WIDTH, height: SCREEN_WIDTH * (h / w) };
+            return { width: contentWidth, height: contentWidth * (h / w) };
         }
-        return { width: SCREEN_WIDTH, height: SCREEN_WIDTH };
+        return { width: contentWidth, height: contentWidth };
     };
 
     // 画像を選択
@@ -308,6 +309,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
             <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+                <ContentColumn maxWidth={CONTENT_MAX_WIDTH_MEDIA} style={styles.container}>
                 <KeyboardAvoidingView 
                     style={[styles.container, { backgroundColor: theme.colors.background }]} 
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -611,6 +613,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
                         )}
                     </ScrollView>
                 </KeyboardAvoidingView>
+                </ContentColumn>
 
                 {/* 成功モーダル（シンプル表示） */}
                 <Modal
@@ -705,7 +708,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     imageWrapper: {
-        width: SCREEN_WIDTH,
+        width: '100%',
         backgroundColor: '#000',
         overflow: 'hidden',
         position: 'relative',

@@ -8,7 +8,6 @@ import {
     ActivityIndicator,
     RefreshControl,
     Modal,
-    Dimensions,
     Animated,
     Easing,
     Share,
@@ -26,15 +25,14 @@ import { getTimeline } from '../api/threads';
 import { acceptInvite } from '../api/follows';
 import { addReaction } from '../api/reactions';
 import AppImage from '../components/AppImage';
+import ContentColumn from '../components/ContentColumn';
 import { getPostImageThumbnailUrl, getAvatarThumbnailUrl } from '../utils/imageHelper';
 import { THUMB_THREAD_FEED, THUMB_AVATAR_SM, THUMB_AVATAR_XL } from '../constants/imageThumbs';
 import { TIMELINE_PAGE_SIZE } from '../constants/pagination';
 import { SERVER_URL } from '../config';
+import { useContentWidth, CONTENT_MAX_WIDTH_MEDIA } from '../hooks/useContentWidth';
 
 const REACTION_EMOJIS = ['❤️', '👍', '🌸', '🎉', '✨'];
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const QR_SIZE = Math.min(SCREEN_WIDTH - 80, 240);
 
 function getMemoryHorizonLabel(horizon, t) {
     switch (horizon) {
@@ -92,6 +90,8 @@ const AnimatedReactionBar = React.memo(({ emojis, onSelect, isClosing, onCloseCo
 
 const ThreadScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
+    const { contentWidth } = useContentWidth(CONTENT_MAX_WIDTH_MEDIA);
+    const qrSize = Math.min(contentWidth - 80, 240);
     const { userToken, userInfo } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
@@ -498,14 +498,14 @@ const ThreadScreen = ({ navigation }) => {
                                             {t('showMyQr')}
                                         </Text>
                                         {userInfo?.id ? (
-                                            <View style={[styles.qrCodeWrap, { backgroundColor: '#fff', padding: 16, borderRadius: 12, width: QR_SIZE + 32, height: QR_SIZE + 32, justifyContent: 'center' }]}>
+                                            <View style={[styles.qrCodeWrap, { backgroundColor: '#fff', padding: 16, borderRadius: 12, width: qrSize + 32, height: qrSize + 32, justifyContent: 'center' }]}>
                                                 <QRCode
                                                     value={`daibapp://invite/${userInfo.id}`}
-                                                    size={QR_SIZE}
+                                                    size={qrSize}
                                                     color="#000"
                                                     backgroundColor="#fff"
                                                     logo={require('../assets/icon.png')}
-                                                    logoSize={QR_SIZE * 0.22}
+                                                    logoSize={qrSize * 0.22}
                                                     logoBackgroundColor="#fff"
                                                     logoMargin={2}
                                                     ecl="H"
@@ -633,6 +633,7 @@ const ThreadScreen = ({ navigation }) => {
                     <ActivityIndicator size="large" color={theme.colors.primary} />
                 </View>
             ) : (
+                <ContentColumn maxWidth={CONTENT_MAX_WIDTH_MEDIA} style={styles.container}>
                 <FlatList
                     data={listData}
                     keyExtractor={(row) =>
@@ -671,6 +672,7 @@ const ThreadScreen = ({ navigation }) => {
                         />
                     }
                 />
+                </ContentColumn>
             )}
 
         </SafeAreaView>

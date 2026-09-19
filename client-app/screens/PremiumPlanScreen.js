@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Linking, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ContentColumn from '../components/ContentColumn';
+import { CONTENT_MAX_WIDTH_FORM } from '../hooks/useContentWidth';
 import { useTheme } from '../context/ThemeContext';
 import ScreenHeader from '../components/ScreenHeader';
 import { useLanguage } from '../context/LanguageContext';
@@ -136,6 +138,7 @@ const PremiumPlanScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ContentColumn maxWidth={CONTENT_MAX_WIDTH_FORM} style={{ flex: 1 }}>
             <ScreenHeader title={t('subscriptionScreenTitle')} onBack={() => navigation.goBack()} />
 
             <ScrollView style={[styles.scrollView, { backgroundColor: theme.colors.background }]}>
@@ -255,6 +258,8 @@ const PremiumPlanScreen = ({ navigation }) => {
                     </Text>
                 </View>
             </ScrollView>
+        
+            </ContentColumn>
         </SafeAreaView>
     );
 };

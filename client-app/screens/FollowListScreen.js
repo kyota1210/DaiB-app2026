@@ -10,6 +10,8 @@ import {
     Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ContentColumn from '../components/ContentColumn';
+import { CONTENT_MAX_WIDTH_FORM } from '../hooks/useContentWidth';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenHeader from '../components/ScreenHeader';
@@ -132,6 +134,7 @@ const FollowListScreen = ({ navigation, route }) => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ContentColumn maxWidth={CONTENT_MAX_WIDTH_FORM} style={{ flex: 1 }}>
             <ScreenHeader title={title} onBack={() => navigation.goBack()} />
             {loading ? (
                 <View style={styles.centered}>
@@ -155,6 +158,8 @@ const FollowListScreen = ({ navigation, route }) => {
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />}
                 />
             )}
+        
+            </ContentColumn>
         </SafeAreaView>
     );
 };

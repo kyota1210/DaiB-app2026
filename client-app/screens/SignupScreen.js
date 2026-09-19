@@ -4,6 +4,8 @@ import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { openLegalUrl } from '../utils/openLegalUrl';
+import ContentColumn from '../components/ContentColumn';
+import { CONTENT_MAX_WIDTH_FORM } from '../hooks/useContentWidth';
 
 export default function SignupScreen({ navigation }) {
     const [email, setEmail] = useState('');
@@ -59,6 +61,7 @@ export default function SignupScreen({ navigation }) {
 
     return (
         <View style={[styles.wrapper, { backgroundColor: theme.colors.background }]}>
+            <ContentColumn maxWidth={CONTENT_MAX_WIDTH_FORM} style={styles.wrapper}>
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 keyboardShouldPersistTaps="handled"
@@ -153,6 +156,7 @@ export default function SignupScreen({ navigation }) {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
+            </ContentColumn>
         </View>
     );
 }

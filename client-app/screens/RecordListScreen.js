@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback, useContext, useRef } from 'react';
-import { StyleSheet, Text, View, Alert, ActivityIndicator, TouchableOpacity, ScrollView, Dimensions, Modal, TextInput, KeyboardAvoidingView, Platform, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useCallback, useContext, useRef, useMemo } from 'react';
+import { StyleSheet, Text, View, Alert, ActivityIndicator, TouchableOpacity, ScrollView, Modal, TextInput, KeyboardAvoidingView, Platform, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { updateCategory } from '../api/categories';
 import { useFocusEffect } from '@react-navigation/native';
 import AppImage from '../components/AppImage';
+import ContentColumn from '../components/ContentColumn';
 import { getImageUrl, getPostImageThumbnailUrl, getAvatarThumbnailUrl, prefetchImageUris } from '../utils/imageHelper';
 import {
     THUMB_GALLERY_GRID,
@@ -21,14 +22,12 @@ import { useLanguage } from '../context/LanguageContext';
 import { SERVER_URL } from '../config';
 import RecordCalendarSection from '../components/RecordCalendarSection';
 import RecordLifeTimelineSection from '../components/RecordLifeTimelineSection';
+import { useContentWidth, CONTENT_MAX_WIDTH_MEDIA } from '../hooks/useContentWidth';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const IMAGE_PADDING = 1; // 画像間の余白
-const COLUMN_WIDTH = (SCREEN_WIDTH - IMAGE_PADDING * 4) / 3; // 3列
 // タイル表示（他ユーザープロフィール同様: 隙間あり・正方形・3列）
 const TILE_PADDING = 16;
 const TILE_GAP = 8;
-const TILE_SIZE = (SCREEN_WIDTH - TILE_PADDING * 2 - TILE_GAP * (3 - 1)) / 3;
 
 const LIST_AREA_MODES = ['gallery', 'calendar', 'lifeTimeline'];
 
@@ -82,7 +81,7 @@ function getGalleryThumbUrl(imagePath, mode) {
 }
 
 // ギャラリーアイテム（一覧はセルに合わせた cover 表示）
-const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid', theme, onPrefetchReactions }) => {
+const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid', theme, onPrefetchReactions, columnWidth, tileSize }) => {
     const imageUrl = getGalleryThumbUrl(item.image_url, viewMode);
     // サムネイル未生成の古い投稿は原画像で表示する
     const fullImageUrl = getImageUrl(item.image_url);
@@ -92,12 +91,12 @@ const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid
             return [styles.listItem, { backgroundColor: theme.colors.card }];
         }
         if (viewMode === 'booklist') {
-            return styles.bookListItem;
+            return [styles.bookListItem, { width: columnWidth, height: columnWidth * 1.5, marginRight: IMAGE_PADDING }];
         }
         if (viewMode === 'tile') {
-            return [styles.tileCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }];
+            return [styles.tileCard, { width: tileSize, height: tileSize, backgroundColor: theme.colors.card, borderColor: theme.colors.border }];
         }
-        return styles.galleryCard;
+        return [styles.galleryCard, { width: columnWidth, height: columnWidth, marginRight: IMAGE_PADDING }];
     };
 
     const getImageStyle = () => {
@@ -148,6 +147,16 @@ const GalleryItem = ({ item, navigation, allRecords, itemIndex, viewMode = 'grid
 };
 
 export default function RecordListScreen({ navigation }) {
+    const { contentWidth, windowHeight } = useContentWidth(CONTENT_MAX_WIDTH_MEDIA);
+    const columnWidth = useMemo(
+        () => (contentWidth - IMAGE_PADDING * 4) / 3,
+        [contentWidth]
+    );
+    const tileSize = useMemo(
+        () => (contentWidth - TILE_PADDING * 2 - TILE_GAP * (3 - 1)) / 3,
+        [contentWidth]
+    );
+
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', 'booklist', 'tile'
     const [listAreaMode, setListAreaMode] = useState('gallery'); // gallery | calendar | lifeTimeline
@@ -254,6 +263,8 @@ export default function RecordListScreen({ navigation }) {
                             viewMode="grid"
                             theme={theme}
                             onPrefetchReactions={loadReactionsForPosts}
+                            columnWidth={columnWidth}
+                            tileSize={tileSize}
                         />
                     ))}
                 </View>
@@ -280,6 +291,8 @@ export default function RecordListScreen({ navigation }) {
                         viewMode="list"
                         theme={theme}
                         onPrefetchReactions={loadReactionsForPosts}
+                        columnWidth={columnWidth}
+                        tileSize={tileSize}
                     />
                 ))}
             </View>
@@ -307,6 +320,8 @@ export default function RecordListScreen({ navigation }) {
                             viewMode="booklist"
                             theme={theme}
                             onPrefetchReactions={loadReactionsForPosts}
+                            columnWidth={columnWidth}
+                            tileSize={tileSize}
                         />
                     ))}
                 </View>
@@ -336,6 +351,8 @@ export default function RecordListScreen({ navigation }) {
                             viewMode="tile"
                             theme={theme}
                             onPrefetchReactions={loadReactionsForPosts}
+                            columnWidth={columnWidth}
+                            tileSize={tileSize}
                         />
                     ))}
                 </View>
@@ -390,7 +407,7 @@ export default function RecordListScreen({ navigation }) {
                                     setSelectedCategory(category.id);
                                     if (horizontalScrollViewRef.current) {
                                         horizontalScrollViewRef.current.scrollTo({
-                                            x: index * SCREEN_WIDTH,
+                                            x: index * contentWidth,
                                             animated: true,
                                         });
                                     }
@@ -483,7 +500,7 @@ export default function RecordListScreen({ navigation }) {
     // 横スワイプ時の処理
     const handleHorizontalScroll = (event) => {
         const offsetX = event.nativeEvent.contentOffset.x;
-        const pageIndex = Math.round(offsetX / SCREEN_WIDTH);
+        const pageIndex = Math.round(offsetX / contentWidth);
         
         if (pageIndex >= 0 && pageIndex < categories.length) {
             const newCategory = categories[pageIndex];
@@ -504,12 +521,12 @@ export default function RecordListScreen({ navigation }) {
             const categoryIndex = categories.findIndex(cat => cat.id === selectedCategory);
             if (categoryIndex >= 0) {
                 horizontalScrollViewRef.current.scrollTo({
-                    x: categoryIndex * SCREEN_WIDTH,
+                    x: categoryIndex * contentWidth,
                     animated: true
                 });
             }
         }
-    }, [selectedCategory, categories.length]);
+    }, [selectedCategory, categories.length, contentWidth]);
 
     // 選択中のカテゴリタブが画面内に収まるようにタブバーをスクロール
     React.useEffect(() => {
@@ -521,9 +538,9 @@ export default function RecordListScreen({ navigation }) {
         const layout = layouts[categoryIndex];
         if (!layout) return;
         const { x: tabX, width: tabWidth } = layout;
-        const scrollX = Math.max(0, tabX - SCREEN_WIDTH / 2 + tabWidth / 2);
+        const scrollX = Math.max(0, tabX - contentWidth / 2 + tabWidth / 2);
         scrollRef.scrollTo({ x: scrollX, animated: true });
-    }, [selectedCategory, categories.length]);
+    }, [selectedCategory, categories.length, contentWidth]);
 
     const handleCategoryScrollEnd = useCallback((event, categoryId) => {
         const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
@@ -603,7 +620,7 @@ export default function RecordListScreen({ navigation }) {
     const calendarPagerViewportHeight =
         horizontalPagerHeight > 0
             ? horizontalPagerHeight
-            : Math.round(SCREEN_HEIGHT * 0.5);
+            : Math.round(windowHeight * 0.5);
 
     // 初期表示時に選択されたカテゴリのページにスクロール
     React.useEffect(() => {
@@ -612,13 +629,13 @@ export default function RecordListScreen({ navigation }) {
             if (initialIndex >= 0) {
                 setTimeout(() => {
                     horizontalScrollViewRef.current?.scrollTo({
-                        x: initialIndex * SCREEN_WIDTH,
+                        x: initialIndex * contentWidth,
                         animated: false
                     });
                 }, 100);
             }
         }
-    }, [categories.length]);
+    }, [categories.length, contentWidth]);
 
     const showInitialLoading = (loadingCategories && categories.length === 0)
         || (loadingRecords && (recordsByCategory.all?.length ?? 0) === 0);
@@ -760,6 +777,7 @@ export default function RecordListScreen({ navigation }) {
                 </TouchableOpacity>
             </View>
 
+            <ContentColumn maxWidth={CONTENT_MAX_WIDTH_MEDIA} style={styles.mainContentColumn}>
             <View style={styles.mainContent}>
                 {/* カテゴリタブUI */}
                 {renderCategoryTabs()}
@@ -806,6 +824,7 @@ export default function RecordListScreen({ navigation }) {
                                         navigation={navigation}
                                         language={activeLanguage}
                                         containerHeight={calendarPagerViewportHeight}
+                                        contentWidth={contentWidth}
                                         onPrefetchReactions={loadReactionsForPosts}
                                     />
                                 ) : listAreaMode === 'lifeTimeline' ? (
@@ -833,7 +852,7 @@ export default function RecordListScreen({ navigation }) {
                                     style={[
                                         styles.categoryPage,
                                         {
-                                            width: SCREEN_WIDTH,
+                                            width: contentWidth,
                                             height: calendarPagerViewportHeight,
                                         },
                                     ]}
@@ -855,7 +874,7 @@ export default function RecordListScreen({ navigation }) {
                                 onScroll={(e) => handleCategoryScrollEnd(e, category.id)}
                                 scrollEventThrottle={400}
                                 contentContainerStyle={styles.scrollContent}
-                                style={styles.categoryPage}
+                                style={[styles.categoryPage, { width: contentWidth }]}
                                 refreshControl={
                                     <RefreshControl
                                         refreshing={refreshing}
@@ -871,6 +890,7 @@ export default function RecordListScreen({ navigation }) {
                     })}
                 </ScrollView>
             </View>
+            </ContentColumn>
 
             {/* カテゴリー編集モーダル */}
             <Modal
@@ -1176,13 +1196,16 @@ const styles = StyleSheet.create({
     horizontalScrollView: {
         flex: 1,
     },
+    mainContentColumn: {
+        flex: 1,
+    },
     /** カレンダーモード: 縦方向に子ページが親と同じ高さになるよう伸ばす（CalendarList と親 ScrollView のネストを避ける） */
     horizontalPagerContentCalendar: {
         flexGrow: 1,
         alignItems: 'stretch',
     },
     categoryPage: {
-        width: SCREEN_WIDTH,
+        // width は contentWidth をインライン指定
     },
     scrollContent: {
         padding: IMAGE_PADDING,
@@ -1207,9 +1230,6 @@ const styles = StyleSheet.create({
         marginBottom: IMAGE_PADDING,
     },
     galleryCard: {
-        width: COLUMN_WIDTH,
-        height: COLUMN_WIDTH,
-        marginRight: IMAGE_PADDING,
         overflow: 'hidden',
     },
     imageContainer: {
@@ -1261,9 +1281,6 @@ const styles = StyleSheet.create({
     },
     // ブックリスト表示用スタイル
     bookListItem: {
-        width: COLUMN_WIDTH,
-        height: COLUMN_WIDTH * 1.5, // 縦長（1.5倍）
-        marginRight: IMAGE_PADDING,
         overflow: 'hidden',
     },
     bookListImageContainer: {
@@ -1283,8 +1300,6 @@ const styles = StyleSheet.create({
         gap: TILE_GAP,
     },
     tileCard: {
-        width: TILE_SIZE,
-        height: TILE_SIZE,
         borderRadius: 12,
         borderWidth: StyleSheet.hairlineWidth,
         overflow: 'hidden',

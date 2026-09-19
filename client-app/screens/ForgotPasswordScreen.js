@@ -13,6 +13,8 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { requestPasswordReset } from '../api/auth';
+import ContentColumn from '../components/ContentColumn';
+import { CONTENT_MAX_WIDTH_FORM } from '../hooks/useContentWidth';
 
 export default function ForgotPasswordScreen({ navigation }) {
     const [email, setEmail] = useState('');
@@ -50,6 +52,7 @@ export default function ForgotPasswordScreen({ navigation }) {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
         >
+            <ContentColumn maxWidth={CONTENT_MAX_WIDTH_FORM} style={styles.wrapper}>
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 keyboardShouldPersistTaps="handled"
@@ -91,6 +94,7 @@ export default function ForgotPasswordScreen({ navigation }) {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
+            </ContentColumn>
         </KeyboardAvoidingView>
     );
 }

@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ContentColumn from '../components/ContentColumn';
+import { CONTENT_MAX_WIDTH_FORM } from '../hooks/useContentWidth';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import ScreenHeader from '../components/ScreenHeader';
@@ -15,6 +17,7 @@ const AboutScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ContentColumn maxWidth={CONTENT_MAX_WIDTH_FORM} style={{ flex: 1 }}>
             <ScreenHeader title={t('about')} onBack={() => navigation.goBack()} />
 
             <ScrollView 
@@ -78,6 +81,8 @@ const AboutScreen = ({ navigation }) => {
                     </Text>
                 </View>
             </ScrollView>
+        
+            </ContentColumn>
         </SafeAreaView>
     );
 };

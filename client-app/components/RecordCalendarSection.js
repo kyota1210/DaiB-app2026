@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback, useEffect, createContext, useContext, memo, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import XDate from 'xdate';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,11 +7,7 @@ import AppImage from './AppImage';
 import { getImageUrl, getPostImageThumbnailUrl } from '../utils/imageHelper';
 import { THUMB_CALENDAR_DAY } from '../constants/imageThumbs';
 import { recordDateKey } from '../utils/recordDateKey';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-/** 1週間分のセルをおおよそ正方形に（余白はカレンダー側 padding と margin で調整） */
-const DAY_TILE_SIZE = Math.max(44, Math.floor((SCREEN_WIDTH - 28) / 7) - 4);
+import { useContentWidth, CONTENT_MAX_WIDTH_MEDIA } from '../hooks/useContentWidth';
 
 /** 月タイトル行の目安高さ（フォント・上下余白・曜日行との隙間を含む） */
 const CALENDAR_MONTH_TITLE_EST = 76;
@@ -25,6 +21,11 @@ const CALENDAR_MONTH_HEIGHT_TRIM = 22;
 const CALENDAR_FIRST_DAY = 0;
 const PAST_SCROLL_RANGE = 36;
 const FUTURE_SCROLL_RANGE = 36;
+
+/** 1週間分のセルをおおよそ正方形に（余白はカレンダー側 padding と margin で調整） */
+function dayTileSizeForWidth(contentWidth) {
+    return Math.max(44, Math.floor((contentWidth - 28) / 7) - 4);
+}
 
 /**
  * その月のカレンダーグリッドに必要な週の行数（react-native-calendars の表示と整合）
@@ -42,13 +43,28 @@ function weekRowCountInMonth(year, monthIndex, firstDayOfWeek) {
     return Math.ceil((lead + daysInMonth) / 7);
 }
 
-function monthBlockHeightForWeekRows(weekRows) {
+function monthBlockHeightForWeekRows(weekRows, dayTileSize) {
     return Math.max(
         CALENDAR_MONTH_TITLE_EST +
             CALENDAR_WEEKDAY_HEADER_EST +
-            weekRows * (DAY_TILE_SIZE + WEEK_ROW_VERTICAL) -
+            weekRows * (dayTileSize + WEEK_ROW_VERTICAL) -
             CALENDAR_MONTH_HEIGHT_TRIM,
         200
+    );
+}
+
+function calendarListMinHeight(windowHeight, dayTileSize) {
+    return Math.min(
+        Math.round(windowHeight * 0.58),
+        Math.max(
+            400,
+            (CALENDAR_MONTH_TITLE_EST +
+                CALENDAR_WEEKDAY_HEADER_EST +
+                6 * (dayTileSize + WEEK_ROW_VERTICAL) -
+                CALENDAR_MONTH_HEIGHT_TRIM) *
+                2 +
+                24
+        )
     );
 }
 
@@ -60,23 +76,10 @@ function xDateToMarkingString(d) {
     return `${y}-${m}-${day}`;
 }
 
-/** flex が効かない場合のビューポート最小高さ（最大週数を仮定） */
-const CALENDAR_LIST_MIN_HEIGHT = Math.min(
-    Math.round(SCREEN_HEIGHT * 0.58),
-    Math.max(
-        400,
-        (CALENDAR_MONTH_TITLE_EST +
-            CALENDAR_WEEKDAY_HEADER_EST +
-            6 * (DAY_TILE_SIZE + WEEK_ROW_VERTICAL) -
-            CALENDAR_MONTH_HEIGHT_TRIM) *
-            2 +
-            24
-    )
-);
-
 const DayTileContext = createContext({
     postsByDay: {},
     appTheme: { colors: {} },
+    dayTileSize: 44,
 });
 
 LocaleConfig.locales.ja = {
@@ -99,7 +102,7 @@ const CalendarDayTile = memo(function CalendarDayTile({
     accessibilityLabel: a11yLabel,
     testID,
 }) {
-    const { postsByDay, appTheme } = useContext(DayTileContext);
+    const { postsByDay, appTheme, dayTileSize } = useContext(DayTileContext);
     const dateString = dateData?.dateString;
     const entry = dateString ? postsByDay[dateString] : null;
     const hasPosts = entry && entry.count > 0;
@@ -176,6 +179,7 @@ const CalendarDayTile = memo(function CalendarDayTile({
                 testID={testID}
                 style={[
                     styles.tileTouchable,
+                    { width: dayTileSize, height: dayTileSize },
                     todayRing,
                     tileBg,
                 ]}
@@ -245,8 +249,14 @@ export default function RecordCalendarSection({
     language,
     /** 親から渡す表示領域の高さ（横 ScrollView 内では必須に近い） */
     containerHeight,
+    /** 親の ContentColumn 幅。未指定時は hook で算出 */
+    contentWidth: contentWidthProp,
     onPrefetchReactions,
 }) {
+    const { contentWidth: hookWidth, windowHeight } = useContentWidth(CONTENT_MAX_WIDTH_MEDIA);
+    const contentWidth = contentWidthProp ?? hookWidth;
+    const dayTileSize = useMemo(() => dayTileSizeForWidth(contentWidth), [contentWidth]);
+
     useEffect(() => {
         LocaleConfig.defaultLocale = language === 'en' ? '' : 'ja';
     }, [language]);
@@ -256,8 +266,8 @@ export default function RecordCalendarSection({
     const postsByDay = useMemo(() => buildPostsByDay(records), [records]);
 
     const dayContextValue = useMemo(
-        () => ({ postsByDay, appTheme: theme }),
-        [postsByDay, theme]
+        () => ({ postsByDay, appTheme: theme, dayTileSize }),
+        [postsByDay, theme, dayTileSize]
     );
 
     const calendarTheme = useMemo(
@@ -350,7 +360,8 @@ export default function RecordCalendarSection({
     const { monthHeights, monthOffsets } = useMemo(() => {
         const heights = listMonths.map((m) =>
             monthBlockHeightForWeekRows(
-                weekRowCountInMonth(m.getFullYear(), m.getMonth(), CALENDAR_FIRST_DAY)
+                weekRowCountInMonth(m.getFullYear(), m.getMonth(), CALENDAR_FIRST_DAY),
+                dayTileSize
             )
         );
         const offsets = [];
@@ -360,7 +371,7 @@ export default function RecordCalendarSection({
             acc += heights[i];
         }
         return { monthHeights: heights, monthOffsets: offsets };
-    }, [listMonths]);
+    }, [listMonths, dayTileSize]);
 
     const getItemLayout = useCallback(
         (_, index) => ({
@@ -422,7 +433,7 @@ export default function RecordCalendarSection({
             const h = monthHeights[index];
             const dateStr = xDateToMarkingString(item);
             return (
-                <View style={{ height: h, width: SCREEN_WIDTH }}>
+                <View style={{ height: h, width: contentWidth }}>
                     <Calendar
                         current={dateStr}
                         firstDay={CALENDAR_FIRST_DAY}
@@ -434,7 +445,7 @@ export default function RecordCalendarSection({
                         onDayPress={onDayPress}
                         renderHeader={renderCalendarHeader}
                         style={{
-                            width: SCREEN_WIDTH,
+                            width: contentWidth,
                             minHeight: h,
                             paddingLeft: 2,
                             paddingRight: 2,
@@ -443,13 +454,13 @@ export default function RecordCalendarSection({
                 </View>
             );
         },
-        [monthHeights, calendarTheme, onDayPress, renderCalendarHeader]
+        [monthHeights, calendarTheme, onDayPress, renderCalendarHeader, contentWidth]
     );
 
     const outerHeight =
         containerHeight != null && containerHeight > 0
             ? containerHeight
-            : CALENDAR_LIST_MIN_HEIGHT;
+            : calendarListMinHeight(windowHeight, dayTileSize);
     const listViewportHeight = Math.max(outerHeight, 120);
 
     return (
@@ -472,7 +483,7 @@ export default function RecordCalendarSection({
                         scrollEnabled
                         nestedScrollEnabled
                         onScrollToIndexFailed={onScrollToIndexFailed}
-                        style={{ height: listViewportHeight, width: SCREEN_WIDTH }}
+                        style={{ height: listViewportHeight, width: contentWidth }}
                     />
                 </View>
             </View>
@@ -492,8 +503,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     tileTouchable: {
-        width: DAY_TILE_SIZE,
-        height: DAY_TILE_SIZE,
         borderRadius: 8,
         overflow: 'hidden',
     },

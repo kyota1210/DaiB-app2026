@@ -7,6 +7,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ContentColumn from '../components/ContentColumn';
+import { CONTENT_MAX_WIDTH_FORM } from '../hooks/useContentWidth';
 import ScreenHeader from '../components/ScreenHeader';
 import { supabase } from '../utils/supabase';
 import { deleteOwnAccount } from '../api/account';
@@ -181,6 +183,7 @@ const LoginInfoScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ContentColumn maxWidth={CONTENT_MAX_WIDTH_FORM} style={{ flex: 1 }}>
             <ScreenHeader title={t('loginInfo')} onBack={() => navigation.goBack()} />
 
             <ScrollView style={[styles.scrollView, { backgroundColor: theme.colors.background }]}>
@@ -301,6 +304,8 @@ const LoginInfoScreen = ({ navigation }) => {
 
                 <View style={{ height: 40 }} />
             </ScrollView>
+        
+            </ContentColumn>
         </SafeAreaView>
     );
 };

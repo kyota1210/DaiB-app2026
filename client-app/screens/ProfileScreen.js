@@ -6,6 +6,8 @@ import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ContentColumn from '../components/ContentColumn';
+import { CONTENT_MAX_WIDTH_FORM } from '../hooks/useContentWidth';
 import ScreenHeader from '../components/ScreenHeader';
 import { getUnreadCount } from '../api/notifications';
 import { openLegalUrl } from '../utils/openLegalUrl';
@@ -31,6 +33,7 @@ const ProfileScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ContentColumn maxWidth={CONTENT_MAX_WIDTH_FORM} style={{ flex: 1 }}>
             <ScreenHeader title={t('settings')} onBack={() => navigation.goBack()} />
 
             <ScrollView
@@ -183,6 +186,8 @@ const ProfileScreen = ({ navigation }) => {
                     </View>
                 </View>
             </ScrollView>
+        
+            </ContentColumn>
         </SafeAreaView>
     );
 };

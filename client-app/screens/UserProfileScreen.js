@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext, useRef } from 'react';
+import React, { useState, useCallback, useContext, useRef, useMemo } from 'react';
 import {
     View,
     Text,
@@ -7,7 +7,6 @@ import {
     ActivityIndicator,
     Alert,
     FlatList,
-    Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -18,21 +17,25 @@ import { useLanguage } from '../context/LanguageContext';
 import { getOtherUserProfile, getOtherUserRecords } from '../api/user';
 import { unfollow, acceptInvite } from '../api/follows';
 import AppImage from '../components/AppImage';
+import ContentColumn from '../components/ContentColumn';
 import { getImageUrl, getAvatarThumbnailUrl, getPostImageThumbnailUrl } from '../utils/imageHelper';
 import { THUMB_PROFILE_GRID, THUMB_AVATAR_PROFILE } from '../constants/imageThumbs';
 import { PROFILE_GRID_PAGE_SIZE } from '../constants/pagination';
 import { blockUser, unblockUser, isUserBlocked } from '../api/moderation';
 import ReportSheet from '../components/ReportSheet';
+import { useContentWidth, CONTENT_MAX_WIDTH_MEDIA } from '../hooks/useContentWidth';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_PADDING = 16;
 const CARD_GAP = 8;
 const NUM_COLUMNS = 3;
-const CARD_WIDTH = (SCREEN_WIDTH - CARD_PADDING * 2 - CARD_GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
-const CARD_IMAGE_HEIGHT = CARD_WIDTH;
 
 const UserProfileScreen = ({ navigation, route }) => {
     const userId = route.params?.userId;
+    const { contentWidth } = useContentWidth(CONTENT_MAX_WIDTH_MEDIA);
+    const cardWidth = useMemo(
+        () => (contentWidth - CARD_PADDING * 2 - CARD_GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS,
+        [contentWidth]
+    );
     const { userToken, userInfo } = useContext(AuthContext);
     const { theme } = useTheme();
     const { t } = useLanguage();
@@ -253,9 +256,10 @@ const UserProfileScreen = ({ navigation, route }) => {
         });
         // サムネイル未生成の古い投稿は原画像で表示する
         const fullImageUrl = getImageUrl(item.image_url);
+        const sizeStyle = { width: cardWidth, height: cardWidth };
         return (
             <TouchableOpacity
-                style={[styles.recordCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+                style={[styles.recordCard, sizeStyle, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
                 onPress={() => openRecordDetail(index)}
                 activeOpacity={0.9}
             >
@@ -263,11 +267,11 @@ const UserProfileScreen = ({ navigation, route }) => {
                     <AppImage
                         uri={imageUrl}
                         fallbackUri={fullImageUrl}
-                        style={styles.recordCardImage}
+                        style={sizeStyle}
                         contentFit="cover"
                     />
                 ) : (
-                    <View style={[styles.recordCardPlaceholder, { backgroundColor: theme.colors.secondaryBackground }]}>
+                    <View style={[styles.recordCardPlaceholder, sizeStyle, { backgroundColor: theme.colors.secondaryBackground }]}>
                         <Ionicons name="image-outline" size={32} color={theme.colors.inactive} />
                     </View>
                 )}
@@ -379,6 +383,7 @@ const UserProfileScreen = ({ navigation, route }) => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+            <ContentColumn maxWidth={CONTENT_MAX_WIDTH_MEDIA} style={styles.container}>
             <View style={[styles.topBar, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border }]}>
                 <TouchableOpacity
                     onPress={() => {
@@ -399,6 +404,7 @@ const UserProfileScreen = ({ navigation, route }) => {
                 )}
             </View>
             {renderContent()}
+            </ContentColumn>
         </SafeAreaView>
     );
 };
@@ -426,9 +432,8 @@ const styles = StyleSheet.create({
     followButtonText: { fontSize: 16, fontWeight: '600' },
     recordsLoader: { marginTop: 12 },
     recordRow: { paddingHorizontal: CARD_PADDING, marginBottom: CARD_GAP, gap: CARD_GAP },
-    recordCard: { width: CARD_WIDTH, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
-    recordCardImage: { width: CARD_WIDTH, height: CARD_IMAGE_HEIGHT },
-    recordCardPlaceholder: { width: CARD_WIDTH, height: CARD_IMAGE_HEIGHT, alignItems: 'center', justifyContent: 'center' },
+    recordCard: { borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+    recordCardPlaceholder: { alignItems: 'center', justifyContent: 'center' },
     emptyRecords: { padding: 24, alignItems: 'center' },
     emptyRecordsText: { fontSize: 14 },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
