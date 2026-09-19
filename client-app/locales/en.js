@@ -82,6 +82,7 @@ export default {
     other: 'Other',
     help: 'Help',
     about: 'About',
+    reviewApp: 'Rate the App',
     terms: 'Terms of Service',
     privacy: 'Privacy Policy',
     specifiedCommercialTransactions: 'Commercial Transaction Act Notice',

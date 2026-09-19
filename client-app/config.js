@@ -13,6 +13,12 @@ export const LEGAL_URLS = {
     specifiedCommercial: 'https://kyota1210.github.io/daib-legal/specified-commercial.html',
 };
 
+/** App Store アプリ ID（レビュー投稿ページ用） */
+export const IOS_APP_STORE_ID = '6793158649';
+
+/** Android パッケージ名（Play ストアレビュー用） */
+export const ANDROID_PACKAGE_NAME = 'com.kytm1210.daibapp2026';
+
 export const SUPABASE_URL = trimEndSlash(process.env.EXPO_PUBLIC_SUPABASE_URL || '');
 const _serverUrlEnv = trimEndSlash(process.env.EXPO_PUBLIC_SERVER_URL || '');
 export const SERVER_URL = _serverUrlEnv || (SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/invite-redirect` : '');

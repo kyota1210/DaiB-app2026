@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
 import { getUnreadCount } from '../api/notifications';
 import { openLegalUrl } from '../utils/openLegalUrl';
+import { openStoreReview } from '../utils/openStoreReview';
 
 const ProfileScreen = ({ navigation }) => {
     const { userInfo } = useContext(AuthContext);
@@ -137,6 +138,14 @@ const ProfileScreen = ({ navigation }) => {
                         >
                             <Ionicons name="information-circle-outline" size={24} color={theme.colors.icon} />
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('about')}</Text>
+                            <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
+                            onPress={openStoreReview}
+                        >
+                            <Ionicons name="star-outline" size={24} color={theme.colors.icon} />
+                            <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('reviewApp')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
                         <TouchableOpacity

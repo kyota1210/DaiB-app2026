@@ -82,6 +82,7 @@ export default {
     other: 'その他',
     help: 'ヘルプ',
     about: 'アプリについて',
+    reviewApp: 'アプリをレビュー',
     terms: '利用規約',
     privacy: 'プライバシーポリシー',
     specifiedCommercialTransactions: '特定商取引法に基づく表記',
