@@ -1,6 +1,6 @@
 # セキュリティ: レート制限 / 画像モデレーション
 
-最終更新日: 2026-04-26
+最終更新日: 2026-09-27
 
 F3-3 で導入した、Edge Function のレート制限と画像モデレーション（NSFW 検出）の構成。
 
@@ -22,6 +22,7 @@ F3-3 で導入した、Edge Function のレート制限と画像モデレーシ�
 | Function | キー | 窓 | 上限 |
 |---|---|---|---|
 | `submit-contact` | `submit-contact:<userId>` | 5 分 | 3 |
+| `submit-report` | `submit-report:<userId>` | 10 分 | 5 |
 | `delete-account` | `delete-account:<userId>` | 1 時間 | 3 |
 | `moderate-image` | `moderate-image:<userId>` | 60 秒 | 30 |
 
@@ -88,9 +89,40 @@ supabase secrets set GOOGLE_CLOUD_VISION_API_KEY=xxxxxxx --project-ref <ref>
 
 ---
 
-## 3. テストチェックリスト
+## 3. 通報（`submit-report`）
+
+### 3.1 構成
+
+- Edge Function: `supabase/functions/submit-report/index.ts`
+- クライアント API: `client-app/api/moderation.js` の `createReport`
+- DB: `public.reports`（INSERT は service_role のみ。authenticated は SELECT のみ）
+
+### 3.2 挙動
+
+1. JWT 認証必須
+2. `target_type` / `reason` のホワイトリスト検証
+3. レート制限（10 分 / 5 件）
+4. `reports` へ `status='open'` で INSERT（同一 reporter+target は UNIQUE で 409）
+5. Resend で `support@daibapp.com` へメール通知（失敗しても受付自体は成功）
+
+通報された側への自動 BAN / 非表示は行わない。運用者がメールを受け取り、24 時間以内に `reports.status` を更新し、必要なら投稿の論理削除等を人手で行う。
+
+### 3.3 シークレット
+
+| 変数 | 用途 |
+|---|---|
+| `RESEND_API_KEY` | Resend API（`submit-contact` と共用） |
+| `CONTACT_FROM_EMAIL` または `REPORT_FROM_EMAIL` | 送信元（Resend 検証済みドメイン） |
+
+通知先メールはコード上 `support@daibapp.com` 固定。
+
+---
+
+## 4. テストチェックリスト
 
 - [ ] `submit-contact` を 5 分内に 4 回叩く → 4 回目が 429
+- [ ] `submit-report` を 10 分内に 6 回叩く → 6 回目が 429
+- [ ] 同一 `(reporter, target_type, target_id)` を再通報 → 409 `already_reported`
 - [ ] `delete-account` を立て続けに呼ぶ → 4 回目が 429
 - [ ] （廃止）旧 `verify-iap-receipt` のユーザー単位レート制限は削除済み。Webhook はシークレット検証のみ。
 - [ ] `moderate-image` に他人の `<userId>/` パスを渡す → 403

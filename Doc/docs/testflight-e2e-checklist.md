@@ -68,9 +68,11 @@ App Store 提出前に preview ビルドを TestFlight に配布し、本書の�
 |---|---|---|
 | ユーザーを通報 | ReportSheet が開く → 理由選択 → submit → success | [ ] |
 | 投稿を通報（RecordDetail） | 「…」メニューから通報 → submit → success | [ ] |
-| 短時間に同一通報を多重送信 | レート制限で 429（Edge Function）または DB 制約 | [ ] |
+| 短時間に同一通報を多重送信 | レート制限で 429（Edge Function `submit-report`） | [ ] |
+| 同一対象を再通報 | 409 `already_reported` | [ ] |
 | ユーザーをブロック | 自プロフィールから消え、相手側からも自分が見えない | [ ] |
 | ブロック解除 | 解除後に再表示される | [ ] |
+| 運営メール | `support@daibapp.com` に通報通知が届く（Resend 設定時） | [ ] |
 | Supabase `reports` テーブル | 運用者が status を更新できる（service_role） | [ ] |
 
 ---

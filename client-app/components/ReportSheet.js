@@ -39,7 +39,16 @@ const ReportSheet = ({ visible, onClose, targetType, targetId, targetLabel }) =>
       onClose?.();
       Alert.alert(t('completed'), t('reportSubmitted'));
     } catch (e) {
-      Alert.alert(t('error'), e.message || t('reportFailed'));
+      const code = (e && e.message) || 'report_failed';
+      const localized =
+        code === 'too_many_requests'
+          ? t('reportRateLimited')
+          : code === 'already_reported'
+            ? t('reportAlreadySubmitted')
+            : code === 'cannot_report_self'
+              ? t('reportCannotSelf')
+              : t('reportFailed');
+      Alert.alert(t('error'), localized);
     } finally {
       setSubmitting(false);
     }

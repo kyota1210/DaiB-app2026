@@ -64,6 +64,10 @@ verify_jwt = false
 [functions.submit-contact]
 verify_jwt = true
 
+# Edge Function: 通報受付（レート制限 + support@daibapp.com 通知）
+[functions.submit-report]
+verify_jwt = true
+
 # Edge Function: 画像モデレーション（Vision SafeSearch）
 [functions.moderate-image]
 verify_jwt = true

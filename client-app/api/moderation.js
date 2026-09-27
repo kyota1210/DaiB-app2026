@@ -7,7 +7,8 @@ const requireUserId = async () => {
 };
 
 /**
- * 通報を作成する。
+ * 通報を作成する（Edge Function `submit-report` 経由）。
+ * レート制限・重複防止・運営メール通知はサーバー側で行う。
  * @param {Object} args
  * @param {'post'|'user'|'comment'} args.target_type
  * @param {string|number} args.target_id
@@ -15,16 +16,37 @@ const requireUserId = async () => {
  * @param {string} [args.detail]
  */
 export const createReport = async ({ target_type, target_id, reason, detail }) => {
-  const reporterId = await requireUserId();
-  const { error } = await supabase.from('reports').insert({
-    reporter_id: reporterId,
-    target_type,
-    target_id: String(target_id),
-    reason,
-    detail: detail || null,
+  await requireUserId();
+  const { data, error } = await supabase.functions.invoke('submit-report', {
+    method: 'POST',
+    body: {
+      target_type,
+      target_id: String(target_id),
+      reason,
+      detail: detail || null,
+    },
   });
-  if (error) throw new Error(error.message);
-  return { success: true };
+  if (error) {
+    let code = error.message || 'report_failed';
+    try {
+      const ctx = error.context;
+      if (ctx && typeof ctx.json === 'function') {
+        const body = await ctx.json();
+        if (body?.error) code = body.error;
+      } else if (ctx?.json?.error) {
+        code = ctx.json.error;
+      } else if (data?.error) {
+        code = data.error;
+      }
+    } catch (_) {
+      if (data?.error) code = data.error;
+    }
+    throw new Error(code);
+  }
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+  return data ?? { ok: true };
 };
 
 /** 指定ユーザーをブロックする */

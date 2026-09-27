@@ -113,9 +113,12 @@ supabase secrets set \
   REVENUECAT_WEBHOOK_AUTHORIZATION=<prod用トークン> \
   --project-ref giknxvsaovkahsonqyqd
 
-# お問い合わせ転送用（任意）
+# お問い合わせ / 通報メール（Resend）
 supabase secrets set \
-  CONTACT_NOTIFY_WEBHOOK=https://<運用通知 Webhook 等>
+  RESEND_API_KEY=<Resend API Key> \
+  CONTACT_FROM_EMAIL=noreply@daibapp.com \
+  CONTACT_NOTIFY_EMAIL=support@daibapp.com \
+  --project-ref <ref>
 
 # 画像モデレーション（moderate-image。未設定なら関数内で判定スキップ＝allow）
 supabase secrets set \
@@ -129,6 +132,7 @@ supabase functions deploy invite-redirect
 supabase functions deploy delete-account
 supabase functions deploy revenuecat-webhook
 supabase functions deploy submit-contact
+supabase functions deploy submit-report
 supabase functions deploy moderate-image
 ```
 
