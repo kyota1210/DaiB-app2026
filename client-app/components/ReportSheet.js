@@ -1,5 +1,18 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import React, { useState, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -15,6 +28,9 @@ const REASONS = [
 const ReportSheet = ({ visible, onClose, targetType, targetId, targetLabel, onSubmitted }) => {
   const { theme } = useTheme();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
+  const scrollRef = useRef(null);
+  const detailOffsetY = useRef(0);
   const [reason, setReason] = useState('spam');
   const [detail, setDetail] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -28,6 +44,16 @@ const ReportSheet = ({ visible, onClose, targetType, targetId, targetLabel, onSu
     if (submitting) return;
     reset();
     onClose?.();
+  };
+
+  const scrollDetailIntoView = () => {
+    // キーボード表示アニメーション後にスクロール
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, detailOffsetY.current - 24),
+        animated: true,
+      });
+    }, Platform.OS === 'ios' ? 250 : 100);
   };
 
   const handleSubmit = async () => {
@@ -63,7 +89,11 @@ const ReportSheet = ({ visible, onClose, targetType, targetId, targetLabel, onSu
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <View style={styles.backdrop}>
+      <KeyboardAvoidingView
+        style={styles.backdrop}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
         <View style={[styles.sheet, { backgroundColor: theme.colors.background }]}>
           <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
             <TouchableOpacity onPress={handleClose} disabled={submitting}>
@@ -73,7 +103,17 @@ const ReportSheet = ({ visible, onClose, targetType, targetId, targetLabel, onSu
             <View style={{ width: 24 }} />
           </View>
 
-          <ScrollView contentContainerStyle={styles.content}>
+          <ScrollView
+            ref={scrollRef}
+            contentContainerStyle={[
+              styles.content,
+              { paddingBottom: Math.max(insets.bottom, 16) + 12 },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            automaticallyAdjustKeyboardInsets
+            showsVerticalScrollIndicator={false}
+          >
             {targetLabel ? (
               <Text style={[styles.target, { color: theme.colors.secondaryText }]}>
                 {t('reportTarget')}: {targetLabel}
@@ -97,21 +137,28 @@ const ReportSheet = ({ visible, onClose, targetType, targetId, targetLabel, onSu
               </TouchableOpacity>
             ))}
 
-            <Text style={[styles.sectionLabel, { color: theme.colors.text, marginTop: 20 }]}>{t('reportDetailLabel')}</Text>
-            <TextInput
-              style={[styles.detailInput, {
-                backgroundColor: theme.colors.secondaryBackground,
-                borderColor: theme.colors.border,
-                color: theme.colors.text,
-              }]}
-              value={detail}
-              onChangeText={setDetail}
-              placeholder={t('reportDetailPlaceholder')}
-              placeholderTextColor={theme.colors.inactive}
-              multiline
-              maxLength={1000}
-              editable={!submitting}
-            />
+            <View
+              onLayout={(e) => {
+                detailOffsetY.current = e.nativeEvent.layout.y;
+              }}
+            >
+              <Text style={[styles.sectionLabel, { color: theme.colors.text, marginTop: 20 }]}>{t('reportDetailLabel')}</Text>
+              <TextInput
+                style={[styles.detailInput, {
+                  backgroundColor: theme.colors.secondaryBackground,
+                  borderColor: theme.colors.border,
+                  color: theme.colors.text,
+                }]}
+                value={detail}
+                onChangeText={setDetail}
+                placeholder={t('reportDetailPlaceholder')}
+                placeholderTextColor={theme.colors.inactive}
+                multiline
+                maxLength={1000}
+                editable={!submitting}
+                onFocus={scrollDetailIntoView}
+              />
+            </View>
 
             <TouchableOpacity
               style={[styles.submitButton, { backgroundColor: '#FF3B30', opacity: submitting ? 0.6 : 1 }]}
@@ -128,14 +175,19 @@ const ReportSheet = ({ visible, onClose, targetType, targetId, targetLabel, onSu
             </Text>
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheet: { borderTopLeftRadius: 16, borderTopRightRadius: 16, maxHeight: '85%' },
+  sheet: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    maxHeight: '90%',
+    flexShrink: 1,
+  },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1,

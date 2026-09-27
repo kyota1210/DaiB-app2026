@@ -221,7 +221,7 @@ export default {
     reportDetailLabel: '詳細（任意）',
     reportDetailPlaceholder: '通報の詳細を入力してください（最大1000文字）',
     submitReport: '通報を送信する',
-    reportSubmitted: '通報を受け付けました。確認のうえ対応します。',
+    reportSubmitted: '通報を受け付けました。確認の上、原則として 24 時間以内に初動対応します。',
     reportFailed: '通報の送信に失敗しました。',
     reportRateLimited: '通報の送信が集中しています。しばらくしてから再度お試しください。',
     reportAlreadySubmitted: 'この対象はすでに通報済みです。',

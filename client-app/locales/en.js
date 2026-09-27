@@ -223,7 +223,7 @@ export default {
     reportDetailLabel: 'Details (optional)',
     reportDetailPlaceholder: 'Enter details (up to 1000 characters)',
     submitReport: 'Submit report',
-    reportSubmitted: 'Your report has been submitted. We will review it and take action if necessary.',
+    reportSubmitted: 'Your report has been submitted. We will review it and aim to take initial action within 24 hours.',
     reportFailed: 'Failed to submit the report.',
     reportRateLimited: 'Too many reports. Please try again later.',
     reportAlreadySubmitted: 'You have already reported this target.',
