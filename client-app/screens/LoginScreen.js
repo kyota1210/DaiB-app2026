@@ -28,7 +28,11 @@ export default function LoginScreen({ navigation }) {
         
         const result = await authContext.signIn(email, password);
         if (!result.success) {
-            Alert.alert(tDevice('loginFailed'), result.error);
+            const message =
+                result.error === 'account_suspended'
+                    ? tDevice('accountSuspended')
+                    : result.error;
+            Alert.alert(tDevice('loginFailed'), message);
         }
         // 成功した場合、AppNavigatorが自動で画面を切り替えます
         setLoading(false);

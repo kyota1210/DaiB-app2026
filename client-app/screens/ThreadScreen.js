@@ -24,10 +24,11 @@ import { useLanguage } from '../context/LanguageContext';
 import { getFriendCount, getOtherUserProfile } from '../api/user';
 import { getTimeline } from '../api/threads';
 import { acceptInvite } from '../api/follows';
-import { isUserBlocked, unblockUser } from '../api/moderation';
+import { isUserBlocked, unblockUser, blockUser } from '../api/moderation';
 import { addReaction } from '../api/reactions';
 import AppImage from '../components/AppImage';
 import ContentColumn from '../components/ContentColumn';
+import ReportSheet from '../components/ReportSheet';
 import { getPostImageThumbnailUrl, getAvatarThumbnailUrl } from '../utils/imageHelper';
 import { THUMB_THREAD_FEED, THUMB_AVATAR_SM, THUMB_AVATAR_XL } from '../constants/imageThumbs';
 import { TIMELINE_PAGE_SIZE } from '../constants/pagination';
@@ -121,6 +122,18 @@ const ThreadScreen = ({ navigation }) => {
     const loadingMoreRef = useRef(false);
     /** 詳細/プロフィールから戻った次のフォーカスでは再取得しない（スクロール位置維持） */
     const skipRefetchOnNextFocusRef = useRef(false);
+    const [reportVisible, setReportVisible] = useState(false);
+    const [reportTarget, setReportTarget] = useState(null);
+    /** 通報済みでローカル非表示にした投稿 ID（同一セッション中の再取得でも出さない） */
+    const hiddenPostIdsRef = useRef(new Set());
+    const reportTargetRef = useRef(null);
+    reportTargetRef.current = reportTarget;
+
+    const filterHiddenPosts = useCallback((list) => {
+        const hidden = hiddenPostIdsRef.current;
+        if (!hidden.size || !list?.length) return list ?? [];
+        return list.filter((r) => !hidden.has(r.id));
+    }, []);
 
     /** 投稿の有無とは別に、相互フォロー数だけを更新する */
     const loadFriendCount = useCallback(async () => {
@@ -140,8 +153,8 @@ const ThreadScreen = ({ navigation }) => {
             const clientTz =
                 (typeof Intl !== 'undefined' && Intl.DateTimeFormat().resolvedOptions().timeZone) || 'Asia/Tokyo';
             const timelineRes = await getTimeline(userToken, clientTz, { limit: TIMELINE_PAGE_SIZE, offset: 0 });
-            const base = timelineRes.records ?? [];
-            timelineOffsetRef.current = base.length;
+            const base = filterHiddenPosts(timelineRes.records ?? []);
+            timelineOffsetRef.current = (timelineRes.records ?? []).length;
             setHasMore(!!timelineRes.hasMore);
             const mem = timelineRes.memoryResurface;
             if (mem?.items?.length > 0) {
@@ -156,7 +169,7 @@ const ThreadScreen = ({ navigation }) => {
             // プルリフレッシュ時は onRefresh 側で setRefreshing(false) を行うためここでは触らない
         }
         await countPromise;
-    }, [userToken, loadFriendCount]);
+    }, [userToken, loadFriendCount, filterHiddenPosts]);
 
     /** 末尾に到達したら次ページを追加取得する（既存の並びは崩さず末尾に追記） */
     const loadMore = useCallback(async () => {
@@ -170,8 +183,8 @@ const ThreadScreen = ({ navigation }) => {
                 limit: TIMELINE_PAGE_SIZE,
                 offset: timelineOffsetRef.current,
             });
-            const next = res.records ?? [];
-            timelineOffsetRef.current += next.length;
+            const next = filterHiddenPosts(res.records ?? []);
+            timelineOffsetRef.current += (res.records ?? []).length;
             setHasMore(!!res.hasMore);
             if (next.length > 0) {
                 setRecords((prev) => {
@@ -186,7 +199,7 @@ const ThreadScreen = ({ navigation }) => {
             loadingMoreRef.current = false;
             setLoadingMore(false);
         }
-    }, [userToken, hasMore]);
+    }, [userToken, hasMore, filterHiddenPosts]);
 
     // フォーカス時: 詳細/プロフィールから戻った場合は再取得せずスクロール位置を維持。
     // 件数を依存に含めると追加読み込みごとに再取得が走って1ページ目に戻ってしまうため ref で見る。
@@ -388,6 +401,61 @@ const ThreadScreen = ({ navigation }) => {
         setClosingReactionRecordId(null);
     }, []);
 
+    const handlePostMoreActions = useCallback((item) => {
+        if (!item?.id || item.author_id == null || item.author_id === userInfo?.id) return;
+        const label = (item.author_name || '').trim() || t('thisUser');
+        Alert.alert(label, '', [
+            {
+                text: t('report'),
+                onPress: () => {
+                    setReportTarget({
+                        id: item.id,
+                        label: (item.title || '').trim() || label,
+                        authorId: item.author_id,
+                    });
+                    setReportVisible(true);
+                },
+            },
+            { text: t('cancel'), style: 'cancel' },
+        ]);
+    }, [userInfo?.id, t]);
+
+    const handleReportSubmitted = useCallback(() => {
+        const target = reportTargetRef.current;
+        if (!target?.id) return;
+
+        hiddenPostIdsRef.current.add(target.id);
+        setRecords((prev) => prev.filter((r) => r.id !== target.id));
+
+        const authorId = target.authorId;
+        if (!authorId) {
+            setTimeout(() => {
+                Alert.alert(t('completed'), t('reportSubmitted'));
+            }, 300);
+            return;
+        }
+
+        setTimeout(() => {
+            Alert.alert(t('completed'), `${t('reportSubmitted')}\n\n${t('blockUserConfirm')}`, [
+                { text: t('cancel'), style: 'cancel' },
+                {
+                    text: t('blockUser'),
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await blockUser(authorId);
+                            setRecords((prev) => prev.filter((r) => r.author_id !== authorId));
+                            loadFriendCount();
+                            Alert.alert(t('completed'), t('blockUserDone'));
+                        } catch (e) {
+                            Alert.alert(t('error'), e?.message || t('blockUserFailed'));
+                        }
+                    },
+                },
+            ]);
+        }, 300);
+    }, [t, loadFriendCount]);
+
     const listData = useMemo(() => {
         if (!records.length) return [];
         return records.map((record, recordIndex) => ({ feedKind: 'post', record, recordIndex }));
@@ -421,6 +489,18 @@ const ThreadScreen = ({ navigation }) => {
             ? getMemoryHorizonLabel(item.memory_horizon, t)
             : null;
 
+        const isOwnPost = item.author_id == null || item.author_id === userInfo?.id;
+        const moreButton = !isOwnPost && !isMemoryResurface ? (
+            <TouchableOpacity
+                style={styles.postMoreButton}
+                onPress={() => handlePostMoreActions(item)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityLabel={t('report')}
+            >
+                <Ionicons name="ellipsis-horizontal" size={20} color={theme.colors.secondaryText} />
+            </TouchableOpacity>
+        ) : null;
+
         return (
             <TouchableOpacity
                 style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
@@ -450,24 +530,27 @@ const ThreadScreen = ({ navigation }) => {
                         {item.my_reaction ? <Text style={styles.reactionBadgeEmoji}>{item.my_reaction}</Text> : null}
                     </View>
                 ) : (
-                    <TouchableOpacity
-                        style={styles.cardHeader}
-                        onPress={openUserProfile}
-                        activeOpacity={0.8}
-                        disabled={item.author_id == null}
-                    >
-                        {authorAvatarUrl ? (
-                            <AppImage uri={authorAvatarUrl} style={styles.avatar} />
-                        ) : (
-                            <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.border }]}>
-                                <Ionicons name="person" size={20} color={theme.colors.inactive} />
-                            </View>
-                        )}
-                        <Text style={[styles.authorName, { color: theme.colors.text }]} numberOfLines={1}>
-                            {item.author_name || ''}
-                        </Text>
-                        {item.my_reaction ? <Text style={styles.reactionBadgeEmoji}>{item.my_reaction}</Text> : null}
-                    </TouchableOpacity>
+                    <View style={styles.cardHeader}>
+                        <TouchableOpacity
+                            style={styles.cardHeaderMain}
+                            onPress={openUserProfile}
+                            activeOpacity={0.8}
+                            disabled={item.author_id == null}
+                        >
+                            {authorAvatarUrl ? (
+                                <AppImage uri={authorAvatarUrl} style={styles.avatar} />
+                            ) : (
+                                <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.border }]}>
+                                    <Ionicons name="person" size={20} color={theme.colors.inactive} />
+                                </View>
+                            )}
+                            <Text style={[styles.authorName, { color: theme.colors.text }]} numberOfLines={1}>
+                                {item.author_name || ''}
+                            </Text>
+                            {item.my_reaction ? <Text style={styles.reactionBadgeEmoji}>{item.my_reaction}</Text> : null}
+                        </TouchableOpacity>
+                        {moreButton}
+                    </View>
                 )}
                 {imageUrl ? (
                     <View style={styles.imageArea}>
@@ -749,6 +832,18 @@ const ThreadScreen = ({ navigation }) => {
                 </ContentColumn>
             )}
 
+            <ReportSheet
+                visible={reportVisible}
+                onClose={() => {
+                    setReportVisible(false);
+                    setReportTarget(null);
+                }}
+                onSubmitted={handleReportSubmitted}
+                targetType="post"
+                targetId={reportTarget?.id}
+                targetLabel={reportTarget?.label || ''}
+            />
+
         </SafeAreaView>
     );
 };
@@ -792,6 +887,8 @@ const styles = StyleSheet.create({
     memoryLabelIcon: { marginRight: 6 },
     memoryLabelText: { fontSize: 12, fontWeight: '700', flex: 1 },
     cardHeader: { flexDirection: 'row', alignItems: 'center', padding: 10 },
+    cardHeaderMain: { flex: 1, flexDirection: 'row', alignItems: 'center', minWidth: 0 },
+    postMoreButton: { padding: 4, marginLeft: 4 },
     avatar: { width: 32, height: 32, borderRadius: 16 },
     avatarPlaceholder: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
     authorName: { marginLeft: 8, fontSize: 14, fontWeight: '600', flex: 1 },

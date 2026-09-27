@@ -43,6 +43,99 @@ const json = (status: number, body: Record<string, unknown>) =>
 
 const sanitize = (s: string, max: number) => s.replace(/\s+/g, ' ').trim().slice(0, max);
 
+const formatUserLabel = (id: string | null | undefined, name: string | null | undefined) => {
+  const n = (name || '').trim();
+  if (id && n) return `${n} (ID: ${id})`;
+  if (id) return `ID: ${id}`;
+  if (n) return n;
+  return '(不明)';
+};
+
+type ProfileRow = { id: string; user_name: string | null };
+
+const fetchProfile = async (
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<ProfileRow | null> => {
+  const { data, error } = await admin
+    .from('profiles')
+    .select('id,user_name')
+    .eq('id', userId)
+    .maybeSingle();
+  if (error) {
+    console.warn('report profile lookup failed', error.message);
+    return null;
+  }
+  return data as ProfileRow | null;
+};
+
+/** メール本文用: 対象の投稿者・投稿タイトルなどを解決する */
+const resolveTargetContext = async (
+  admin: ReturnType<typeof createClient>,
+  targetType: string,
+  targetId: string,
+): Promise<{
+  subjectHint: string;
+  lines: string[];
+}> => {
+  if (targetType === 'post') {
+    const { data: post, error } = await admin
+      .from('posts')
+      .select('id,user_id,title,date_logged,deleted_at')
+      .eq('id', targetId)
+      .maybeSingle();
+    if (error) {
+      console.warn('report post lookup failed', error.message);
+    }
+    if (!post) {
+      return {
+        subjectHint: `投稿:${targetId}`,
+        lines: [
+          `対象種別: 投稿`,
+          `投稿 ID: ${targetId}`,
+          `投稿者: (投稿が見つかりません)`,
+          `投稿タイトル: (不明)`,
+        ],
+      };
+    }
+    const author = post.user_id ? await fetchProfile(admin, post.user_id) : null;
+    const title = String(post.title ?? '').trim() || '(無題)';
+    const authorLabel = formatUserLabel(post.user_id, author?.user_name);
+    return {
+      subjectHint: `${author?.user_name?.trim() || '投稿者不明'}の投稿「${title.slice(0, 40)}」`,
+      lines: [
+        `対象種別: 投稿`,
+        `投稿者: ${authorLabel}`,
+        `投稿 ID: ${post.id}`,
+        `投稿タイトル: ${title}`,
+        `投稿日: ${post.date_logged ?? '(不明)'}`,
+        `削除済み: ${post.deleted_at ? 'はい' : 'いいえ'}`,
+      ],
+    };
+  }
+
+  if (targetType === 'user') {
+    const profile = await fetchProfile(admin, targetId);
+    const label = formatUserLabel(targetId, profile?.user_name);
+    return {
+      subjectHint: `ユーザー:${profile?.user_name?.trim() || targetId}`,
+      lines: [
+        `対象種別: ユーザー`,
+        `対象ユーザー: ${label}`,
+      ],
+    };
+  }
+
+  // comment など
+  return {
+    subjectHint: `${targetType}:${targetId}`,
+    lines: [
+      `対象種別: ${targetType}`,
+      `対象 ID: ${targetId}`,
+    ],
+  };
+};
+
 const sendMailViaResend = async (params: {
   to: string;
   from: string;
@@ -151,19 +244,27 @@ Deno.serve(async (req) => {
   if (RESEND_API_KEY && REPORT_FROM_EMAIL) {
     try {
       const reasonLabel = REASON_LABEL[reason] ?? reason;
+      const [reporterProfile, targetCtx] = await Promise.all([
+        fetchProfile(admin, userId),
+        resolveTargetContext(admin, targetType, targetId),
+      ]);
+      const reporterLabel = formatUserLabel(userId, reporterProfile?.user_name);
+
       await sendMailViaResend({
         to: REPORT_NOTIFY_EMAIL,
         from: REPORT_FROM_EMAIL,
-        subject: `[通報] ${targetType}:${targetId} / ${reasonLabel}`,
+        subject: `[通報] ${targetCtx.subjectHint} / ${reasonLabel}`,
         text: [
           '新しい通報が届きました。原則 24 時間以内に初動対応してください。',
           '',
+          '—— 概要 ——',
+          `通報者: ${reporterLabel}`,
+          ...targetCtx.lines,
+          `通報理由: ${reasonLabel} (${reason})`,
+          `詳細: ${detail ?? '(なし)'}`,
+          '',
+          '—— 管理情報 ——',
           `Report ID: ${inserted?.id ?? 'unknown'}`,
-          `Reporter User ID: ${userId}`,
-          `Target Type: ${targetType}`,
-          `Target ID: ${targetId}`,
-          `Reason: ${reason} (${reasonLabel})`,
-          `Detail: ${detail ?? '(なし)'}`,
           `Status: open`,
           `Received At: ${new Date().toISOString()}`,
         ].join('\n'),

@@ -140,6 +140,7 @@ export default {
     passwordLengthRule: 'パスワードは8文字以上16文字以内で入力してください',
     passwordInvalidChars: 'パスワードは半角英数字と記号のみ使用できます',
     loginFailed: 'ログインに失敗しました',
+    accountSuspended: 'このアカウントは停止されています。ご不明な点はお問い合わせください。',
     newUserRegistration: '新規登録',
     displayNameOptional: '表示名',
     signUp: 'アカウントを作成',

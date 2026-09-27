@@ -140,6 +140,7 @@ export default {
     passwordLengthRule: 'Password must be 8 to 16 characters',
     passwordInvalidChars: 'Password can only contain half-width letters, numbers and symbols',
     loginFailed: 'Login failed',
+    accountSuspended: 'This account has been suspended. Please contact support if you have questions.',
     newUserRegistration: 'Sign Up',
     displayNameOptional: 'Display Name',
     signUp: 'Create Account',

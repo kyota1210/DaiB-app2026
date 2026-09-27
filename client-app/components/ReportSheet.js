@@ -12,7 +12,7 @@ const REASONS = [
   { id: 'other', labelKey: 'reportReasonOther' },
 ];
 
-const ReportSheet = ({ visible, onClose, targetType, targetId, targetLabel }) => {
+const ReportSheet = ({ visible, onClose, targetType, targetId, targetLabel, onSubmitted }) => {
   const { theme } = useTheme();
   const { t } = useLanguage();
   const [reason, setReason] = useState('spam');
@@ -36,8 +36,15 @@ const ReportSheet = ({ visible, onClose, targetType, targetId, targetLabel }) =>
     try {
       await createReport({ target_type: targetType, target_id: targetId, reason, detail });
       reset();
+      // 親で投稿非表示などを先に実行してから閉じる
+      onSubmitted?.({ target_type: targetType, target_id: targetId });
       onClose?.();
-      Alert.alert(t('completed'), t('reportSubmitted'));
+      if (!onSubmitted) {
+        // Modal 閉鎖後に出さないとアラートが消える端末がある
+        setTimeout(() => {
+          Alert.alert(t('completed'), t('reportSubmitted'));
+        }, 300);
+      }
     } catch (e) {
       const code = (e && e.message) || 'report_failed';
       const localized =

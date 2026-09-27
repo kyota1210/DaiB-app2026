@@ -360,6 +360,11 @@ export const getUserInfo = async () => {
   const profile = await getMyProfile(authUser);
   // メールは Supabase Auth（auth.users）側のみにあり profiles 行にはないため結合する
   const user = { ...profile, email: authUser.email ?? null };
+  if (user.is_suspended === true) {
+    const err = new Error('account_suspended');
+    err.code = 'ACCOUNT_SUSPENDED';
+    throw err;
+  }
   return { user: await appendFollowCounts(user.id, user) };
 };
 

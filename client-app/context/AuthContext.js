@@ -71,6 +71,12 @@ export const AuthProvider = ({ children }) => {
                             setUserToken(null);
                             setUserInfo(null);
                             await purchasesLogOut();
+                            if (error?.message === 'account_suspended' || error?.code === 'ACCOUNT_SUSPENDED') {
+                                Alert.alert(
+                                    '',
+                                    'This account has been suspended. / このアカウントは停止されています。'
+                                );
+                            }
                         }
                     }
                 }
@@ -112,6 +118,12 @@ export const AuthProvider = ({ children }) => {
                     setUserToken(null);
                     setUserInfo(null);
                     await purchasesLogOut();
+                    if (error?.message === 'account_suspended' || error?.code === 'ACCOUNT_SUSPENDED') {
+                        Alert.alert(
+                            '',
+                            'This account has been suspended. / このアカウントは停止されています。'
+                        );
+                    }
                 }
                 // ログイン時のセキュリティ通知メールは廃止
             } else {
@@ -163,13 +175,24 @@ export const AuthProvider = ({ children }) => {
                 if (!token) {
                     return { success: false, error: 'セッションを取得できませんでした。' };
                 }
-                setUserToken(token);
-                if (data.session?.user?.id) {
-                    await purchasesLogIn(data.session.user.id);
+                try {
+                    if (data.session?.user?.id) {
+                        await purchasesLogIn(data.session.user.id);
+                    }
+                    const info = await getUserInfo(token);
+                    setUserToken(token);
+                    setUserInfo(info.user);
+                    return { success: true };
+                } catch (profileError) {
+                    await supabase.auth.signOut();
+                    setUserToken(null);
+                    setUserInfo(null);
+                    await purchasesLogOut();
+                    if (profileError?.message === 'account_suspended' || profileError?.code === 'ACCOUNT_SUSPENDED') {
+                        return { success: false, error: 'account_suspended' };
+                    }
+                    return { success: false, error: profileError.message };
                 }
-                const info = await getUserInfo(token);
-                setUserInfo(info.user);
-                return { success: true };
             } catch (error) {
                 return { success: false, error: error.message };
             }

@@ -105,9 +105,35 @@ supabase secrets set GOOGLE_CLOUD_VISION_API_KEY=xxxxxxx --project-ref <ref>
 4. `reports` へ `status='open'` で INSERT（同一 reporter+target は UNIQUE で 409）
 5. Resend で `support@daibapp.com` へメール通知（失敗しても受付自体は成功）
 
-通報された側への自動 BAN / 非表示は行わない。運用者がメールを受け取り、24 時間以内に `reports.status` を更新し、必要なら投稿の論理削除等を人手で行う。
+通報された側への自動 BAN / 非表示は行わない。運用者がメールを受け取り、以下の Dashboard フローで対応する（原則 24 時間以内に初動）。
 
-### 3.3 シークレット
+### 3.3 運営対応フロー（当面: Supabase Dashboard）
+
+1. **メール確認**  
+   `support@daibapp.com` の通報メールで `Report ID` / 通報者 / 投稿者 / 投稿 ID / 理由を確認する。
+
+2. **reports を開く**（Table Editor → `reports`）  
+   `id = Report ID` の行を探し、内容を照合する。
+
+3. **対象投稿の対応**（いずれか）  
+   - **論理削除**: `posts` で対象行の `invalidation_flag = 1`、`deleted_at = now()`  
+   - **非公開**: `visibility = 'private'`（フレンドからも見えなくなる）
+
+4. **reports.status を更新**  
+   - 対応した場合: `status = 'actioned'`、`reviewed_at = now()`  
+   - 問題なしと判断: `status = 'dismissed'`、`reviewed_at = now()`  
+   - 調査中: `status = 'reviewing'`
+
+5. **悪質な場合はアカウント停止**  
+   `profiles` で対象ユーザーの `is_suspended = true` にする。  
+   - 書き込み（投稿・フォロー・リアクション・Storage 等）は RLS で拒否される  
+   - 停止中ユーザーの投稿はフレンドタイムラインから除外される  
+   - アプリはプロフィール取得時に検知して強制ログアウトする  
+   - `is_suspended` / `is_admin` はクライアント API から変更不可（Dashboard / service_role のみ）
+
+解除時は `is_suspended = false` に戻す。
+
+### 3.4 シークレット
 
 | 変数 | 用途 |
 |---|---|
@@ -118,7 +144,22 @@ supabase secrets set GOOGLE_CLOUD_VISION_API_KEY=xxxxxxx --project-ref <ref>
 
 ---
 
-## 4. テストチェックリスト
+## 4. アカウント停止（`profiles.is_suspended`）
+
+migration: `20260927000002_account_suspension.sql`
+
+| 要素 | 内容 |
+|---|---|
+| カラム | `profiles.is_suspended boolean NOT NULL DEFAULT false` |
+| 変更ガード | `prevent_is_admin_change` が `is_suspended` もブロック |
+| ヘルパー | `is_current_user_suspended()` / `assert_current_user_not_suspended()` |
+| RLS | 投稿・カテゴリ・フォロー・リアクション・ブロック・問い合わせ等の書き込みを拒否 |
+| Storage | avatars / posts / daib-dev-post-images の書き込みを拒否 |
+| RPC | `soft_delete_post` / `accept_invite` で停止チェック。`get_timeline_posts` は停止ユーザーの投稿を除外 |
+
+---
+
+## 5. テストチェックリスト
 
 - [ ] `submit-contact` を 5 分内に 4 回叩く → 4 回目が 429
 - [ ] `submit-report` を 10 分内に 6 回叩く → 6 回目が 429
@@ -128,3 +169,6 @@ supabase secrets set GOOGLE_CLOUD_VISION_API_KEY=xxxxxxx --project-ref <ref>
 - [ ] `moderate-image` に他人の `<userId>/` パスを渡す → 403
 - [ ] `GOOGLE_CLOUD_VISION_API_KEY` 未設定時、投稿が問題なく作成できる
 - [ ] `GOOGLE_CLOUD_VISION_API_KEY` 設定 + NSFW テスト画像で `block` 判定 → 投稿失敗 + ストレージから削除されている
+- [ ] `profiles.is_suspended = true` にしたユーザーでログイン → `account_suspended` で拒否される
+- [ ] 停止中ユーザーが投稿 INSERT を試みる → RLS で拒否される
+- [ ] 停止中ユーザーの投稿がフレンドの `get_timeline_posts` に出ない
