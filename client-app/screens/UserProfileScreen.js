@@ -186,6 +186,70 @@ const UserProfileScreen = ({ navigation, route }) => {
         }, [loadProfileAndRecords])
     );
 
+    const isBlockedError = (err) => /blocked/i.test(String(err?.message || err || ''));
+
+    /** 自分がブロックしている場合: 解除確認 → 解除後にフォローを続行 */
+    const promptUnblockToFollow = () => {
+        if (!user) return;
+        Alert.alert('', t('cannotFollowBecauseBlocked'), [
+            { text: t('cancel'), style: 'cancel' },
+            {
+                text: t('unblockUser'),
+                onPress: async () => {
+                    try {
+                        await unblockUser(user.id);
+                        setBlocked(false);
+                        await doAcceptInvite();
+                    } catch (e) {
+                        Alert.alert(t('error'), e.message || t('unblockUserFailed'));
+                    }
+                },
+            },
+        ]);
+    };
+
+    const handleFollowBlockedError = async (err) => {
+        if (!isBlockedError(err)) {
+            Alert.alert(t('error'), err?.message || t('followFailed'));
+            return;
+        }
+        if (!user) return;
+        let iBlocked = blocked;
+        try {
+            iBlocked = await isUserBlocked(user.id);
+            setBlocked(iBlocked);
+        } catch (_) {
+            /* keep current blocked state */
+        }
+        if (iBlocked) {
+            promptUnblockToFollow();
+        } else {
+            Alert.alert(t('error'), t('cannotFollowBlockedByThem'));
+        }
+    };
+
+    const doAcceptInvite = async () => {
+        if (followBusy || !user) return;
+        const name = (user.user_name || '').trim() || t('thisUser');
+        setFollowBusy(true);
+        try {
+            await acceptInvite(userToken, user.id);
+            setUser((prev) => prev ? {
+                ...prev,
+                is_following: true,
+                is_followed_by: true,
+                is_followed_by_approved: true,
+                is_friend: true,
+            } : null);
+            Alert.alert('', t('friendRequestApprovedWithName').replace('{{name}}', name));
+        } catch (err) {
+            console.error('follow error', err);
+            await handleFollowBlockedError(err);
+        } finally {
+            setFollowBusy(false);
+        }
+    };
+
     const handleAction = async () => {
         if (followBusy || !user) return;
         const name = (user.user_name || '').trim() || t('thisUser');
@@ -201,22 +265,12 @@ const UserProfileScreen = ({ navigation, route }) => {
 
         if (!fromInvite) return;
 
-        setFollowBusy(true);
-        try {
-            await acceptInvite(userToken, user.id);
-            setUser((prev) => prev ? {
-                ...prev,
-                is_following: true,
-                is_followed_by: true,
-                is_followed_by_approved: true,
-                is_friend: true,
-            } : null);
-            Alert.alert('', t('friendRequestApprovedWithName').replace('{{name}}', name));
-        } catch (err) {
-            console.error('follow error', err);
-        } finally {
-            setFollowBusy(false);
+        if (blocked) {
+            promptUnblockToFollow();
+            return;
         }
+
+        await doAcceptInvite();
     };
 
     const doUnfollow = async () => {

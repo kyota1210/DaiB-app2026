@@ -233,7 +233,11 @@ export default {
     unblockUserConfirm: 'このユーザーのブロックを解除しますか？',
     unblockUserDone: 'ブロックを解除しました。',
     blockUserFailed: 'ブロックに失敗しました。',
+    unblockUserFailed: 'ブロックの解除に失敗しました。',
     blockedNotice: 'このユーザーをブロックしています。',
+    cannotFollowBecauseBlocked: 'このユーザーをブロックしているため、フォローできません。ブロックを解除しますか？',
+    cannotFollowBlockedByThem: '相手にブロックされているため、フォローできません。',
+    followFailed: 'フォローに失敗しました。',
     passwordSection: 'パスワード',
     
     // Plusプラン（課金）

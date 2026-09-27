@@ -11,6 +11,7 @@ import {
     Animated,
     Easing,
     Share,
+    Alert,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -23,6 +24,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { getFriendCount, getOtherUserProfile } from '../api/user';
 import { getTimeline } from '../api/threads';
 import { acceptInvite } from '../api/follows';
+import { isUserBlocked, unblockUser } from '../api/moderation';
 import { addReaction } from '../api/reactions';
 import AppImage from '../components/AppImage';
 import ContentColumn from '../components/ContentColumn';
@@ -245,7 +247,7 @@ const ThreadScreen = ({ navigation }) => {
         [userToken, scanBusy]
     );
 
-    const handleFollowScannedUser = useCallback(async () => {
+    const followScannedUser = useCallback(async () => {
         if (!scannedUser || !userToken || scanBusy) return;
         setScanBusy(true);
         try {
@@ -260,10 +262,82 @@ const ThreadScreen = ({ navigation }) => {
             loadFriendCount();
         } catch (e) {
             console.error(e);
+            const isBlockedErr = /blocked/i.test(String(e?.message || e || ''));
+            if (!isBlockedErr) {
+                Alert.alert(t('error'), e?.message || t('followFailed'));
+                return;
+            }
+            let iBlocked = false;
+            try {
+                iBlocked = await isUserBlocked(scannedUser.id);
+            } catch (_) {
+                /* ignore */
+            }
+            if (iBlocked) {
+                Alert.alert('', t('cannotFollowBecauseBlocked'), [
+                    { text: t('cancel'), style: 'cancel' },
+                    {
+                        text: t('unblockUser'),
+                        onPress: async () => {
+                            try {
+                                await unblockUser(scannedUser.id);
+                                setScanBusy(true);
+                                try {
+                                    await acceptInvite(userToken, scannedUser.id);
+                                    setScannedUser((prev) => (prev ? {
+                                        ...prev,
+                                        is_following: true,
+                                        is_followed_by: true,
+                                        is_followed_by_approved: true,
+                                        is_friend: true,
+                                    } : null));
+                                    loadFriendCount();
+                                } catch (followErr) {
+                                    console.error(followErr);
+                                    Alert.alert(t('error'), followErr?.message || t('followFailed'));
+                                } finally {
+                                    setScanBusy(false);
+                                }
+                            } catch (unblockErr) {
+                                Alert.alert(t('error'), unblockErr?.message || t('unblockUserFailed'));
+                            }
+                        },
+                    },
+                ]);
+            } else {
+                Alert.alert(t('error'), t('cannotFollowBlockedByThem'));
+            }
         } finally {
             setScanBusy(false);
         }
-    }, [scannedUser, userToken, scanBusy, loadFriendCount]);
+    }, [scannedUser, userToken, scanBusy, loadFriendCount, t]);
+
+    const handleFollowScannedUser = useCallback(async () => {
+        if (!scannedUser || !userToken || scanBusy) return;
+        try {
+            const blocked = await isUserBlocked(scannedUser.id);
+            if (blocked) {
+                Alert.alert('', t('cannotFollowBecauseBlocked'), [
+                    { text: t('cancel'), style: 'cancel' },
+                    {
+                        text: t('unblockUser'),
+                        onPress: async () => {
+                            try {
+                                await unblockUser(scannedUser.id);
+                                await followScannedUser();
+                            } catch (e) {
+                                Alert.alert(t('error'), e?.message || t('unblockUserFailed'));
+                            }
+                        },
+                    },
+                ]);
+                return;
+            }
+        } catch (_) {
+            /* ブロック確認失敗時は通常のフォローを試行 */
+        }
+        await followScannedUser();
+    }, [scannedUser, userToken, scanBusy, followScannedUser, t]);
 
     const openRecordDetail = (index) => {
         if (records.length === 0) return;

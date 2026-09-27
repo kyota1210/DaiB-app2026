@@ -235,7 +235,11 @@ export default {
     unblockUserConfirm: 'Unblock this user?',
     unblockUserDone: 'User unblocked.',
     blockUserFailed: 'Failed to block the user.',
+    unblockUserFailed: 'Failed to unblock the user.',
     blockedNotice: 'You have blocked this user.',
+    cannotFollowBecauseBlocked: 'You have blocked this user, so you cannot follow them. Unblock?',
+    cannotFollowBlockedByThem: 'You cannot follow this user because they have blocked you.',
+    followFailed: 'Failed to follow.',
     
     // Plus plan (subscriptions)
     premiumActive: 'Plus Plan Active',
