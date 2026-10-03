@@ -27,7 +27,6 @@ import LanguageSettingScreen from '../screens/LanguageSettingScreen';
 import DisplaySettingsScreen from '../screens/DisplaySettingsScreen';
 import PhotoPickerScreen from '../screens/PhotoPickerScreen';
 import HelpScreen from '../screens/HelpScreen';
-import AboutScreen from '../screens/AboutScreen';
 import ContactScreen from '../screens/ContactScreen';
 import InviteHandlerScreen from '../screens/InviteHandlerScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
@@ -178,7 +177,6 @@ const AppNavigator = () => {
           <Stack.Screen name="DisplaySettings" component={DisplaySettingsScreen} />
           <Stack.Screen name="PhotoPicker" component={PhotoPickerScreen} />
           <Stack.Screen name="Help" component={HelpScreen} />
-          <Stack.Screen name="About" component={AboutScreen} />
           <Stack.Screen name="Contact" component={ContactScreen} />
           <Stack.Screen name="FriendHub" component={FriendHubScreen} />
           <Stack.Screen name="UserProfile" component={UserProfileScreen} />

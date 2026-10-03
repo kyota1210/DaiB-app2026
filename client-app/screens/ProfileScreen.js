@@ -1,6 +1,7 @@
 import React, { useContext, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -19,6 +20,7 @@ const ProfileScreen = ({ navigation }) => {
     const { t } = useLanguage();
     const isAdmin = userInfo?.is_admin === true;
     const [unreadCount, setUnreadCount] = useState(0);
+    const appVersion = Constants.expoConfig?.version || '1.0.0';
 
     const loadUnreadCount = useCallback(async () => {
         const count = await getUnreadCount();
@@ -108,7 +110,7 @@ const ProfileScreen = ({ navigation }) => {
                 </View>
 
                 <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('other')}</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('aboutApp')}</Text>
                     <View style={[styles.menuSection, { backgroundColor: theme.colors.background }]}>
                         <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
@@ -135,22 +137,33 @@ const ProfileScreen = ({ navigation }) => {
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('help')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
+                        <View style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}>
+                            <Ionicons name="information-circle-outline" size={24} color={theme.colors.icon} />
+                            <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('version')}</Text>
+                            <Text style={[styles.menuValue, { color: theme.colors.secondaryText }]}>{appVersion}</Text>
+                        </View>
                         <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
-                            onPress={() => navigation.navigate('About')}
+                            onPress={() => navigation.navigate('Contact')}
                         >
-                            <Ionicons name="information-circle-outline" size={24} color={theme.colors.icon} />
-                            <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('about')}</Text>
+                            <Ionicons name="mail-outline" size={24} color={theme.colors.icon} />
+                            <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('contact')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
+                            style={styles.menuItem}
                             onPress={openStoreReview}
                         >
                             <Ionicons name="star-outline" size={24} color={theme.colors.icon} />
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('reviewApp')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
+                    </View>
+                </View>
+
+                <View style={styles.section}>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.secondaryText }]}>{t('other')}</Text>
+                    <View style={[styles.menuSection, { backgroundColor: theme.colors.background }]}>
                         <TouchableOpacity
                             style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
                             onPress={() => openLegalUrl('terms')}
@@ -168,19 +181,11 @@ const ProfileScreen = ({ navigation }) => {
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
+                            style={styles.menuItem}
                             onPress={() => openLegalUrl('specifiedCommercial')}
                         >
                             <Ionicons name="receipt-outline" size={24} color={theme.colors.icon} />
                             <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('specifiedCommercialTransactions')}</Text>
-                            <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={() => navigation.navigate('Contact')}
-                        >
-                            <Ionicons name="mail-outline" size={24} color={theme.colors.icon} />
-                            <Text style={[styles.menuText, { color: theme.colors.text }]}>{t('contact')}</Text>
                             <Ionicons name="chevron-forward" size={24} color={theme.colors.inactive} />
                         </TouchableOpacity>
                     </View>
@@ -226,6 +231,9 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 16,
         marginLeft: 12,
+    },
+    menuValue: {
+        fontSize: 15,
     },
     menuRight: {
         flexDirection: 'row',

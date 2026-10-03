@@ -18,6 +18,10 @@ import {
     purchasesGetProductInfoForDisplay,
     isPurchasesAvailable,
 } from '../utils/purchases';
+import { openLegalUrl } from '../utils/openLegalUrl';
+
+/** App Store 審査向け Standard EULA（サブスク画面の利用規約リンク） */
+const APPLE_STANDARD_EULA_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
 
 const PremiumPlanScreen = ({ navigation }) => {
     const { theme } = useTheme();
@@ -151,7 +155,7 @@ const PremiumPlanScreen = ({ navigation }) => {
                 >
                     {isPremium ? (
                         <View style={styles.statusIconContainer}>
-                            <Ionicons name="diamond" size={48} color="#FFD700" />
+                            <Ionicons name="diamond" size={48} color="#4E5F5C" />
                         </View>
                     ) : null}
                     <Text style={[styles.statusTitle, { color: theme.colors.text }]}>
@@ -256,6 +260,28 @@ const PremiumPlanScreen = ({ navigation }) => {
                         {t('iapDisclaimer') ||
                             '自動更新サブスクリプションです。期間終了の24時間以上前にキャンセルしない限り、同額で自動更新されます。設定 → Apple ID → サブスクリプションからいつでもキャンセルできます。'}
                     </Text>
+
+                    <View style={styles.legalLinksRow}>
+                        <TouchableOpacity
+                            onPress={() => {
+                                Linking.openURL(APPLE_STANDARD_EULA_URL).catch(() => { /* noop */ });
+                            }}
+                            accessibilityRole="link"
+                        >
+                            <Text style={[styles.legalLinkText, { color: theme.colors.inactive }]}>
+                                {t('terms')}
+                            </Text>
+                        </TouchableOpacity>
+                        <Text style={[styles.legalLinkSeparator, { color: theme.colors.inactive }]}>|</Text>
+                        <TouchableOpacity
+                            onPress={() => openLegalUrl('privacyPolicy')}
+                            accessibilityRole="link"
+                        >
+                            <Text style={[styles.legalLinkText, { color: theme.colors.inactive }]}>
+                                {t('privacy')}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </ScrollView>
         
@@ -266,14 +292,13 @@ const PremiumPlanScreen = ({ navigation }) => {
 
 const FeatureItem = ({ icon, title, description, theme, isLast }) => (
     <View style={[styles.featureItem, { borderBottomColor: theme.colors.border, borderBottomWidth: isLast ? 0 : 1 }]}>
-        <View style={[styles.featureIconContainer, { backgroundColor: theme.isDark ? '#1a3a5c' : '#E8F4FF' }]}>
-            <Ionicons name={icon} size={24} color={theme.colors.primary} />
+        <View style={[styles.featureIconContainer, { backgroundColor: theme.isDark ? '#4E5F5C' : '#7C9A92' }]}>
+            <Ionicons name={icon} size={24} color="#fff" />
         </View>
         <View style={styles.featureTextContainer}>
             <Text style={[styles.featureTitle, { color: theme.colors.text }]}>{title}</Text>
             <Text style={[styles.featureDescription, { color: theme.colors.secondaryText }]}>{description}</Text>
         </View>
-        <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
     </View>
 );
 
@@ -397,6 +422,22 @@ const styles = StyleSheet.create({
         fontSize: 12,
         lineHeight: 18,
         textAlign: 'left',
+    },
+    legalLinksRow: {
+        marginTop: 20,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    legalLinkText: {
+        fontSize: 13,
+        fontWeight: '400',
+        textDecorationLine: 'underline',
+    },
+    legalLinkSeparator: {
+        fontSize: 13,
     },
 });
 
