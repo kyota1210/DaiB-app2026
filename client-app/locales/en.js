@@ -54,7 +54,9 @@ export default {
     scanQrToFollow: 'Scan QR code to send friend request',
     permissionRequired: 'Permission required',
     photoLibraryAccess: 'Photo library access',
-    cameraPermissionButton: 'Allow camera',
+    cameraPermissionButton: 'Next',
+    cameraAccessOffMessage: 'Camera access is turned off. To scan QR codes, please turn on camera access.',
+    openSettings: 'Open Settings',
     settings: 'Settings',
     detail: 'Detail',
     

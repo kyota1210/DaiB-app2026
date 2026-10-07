@@ -12,6 +12,7 @@ import {
     Easing,
     Share,
     Alert,
+    Linking,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -111,6 +112,7 @@ const ThreadScreen = ({ navigation }) => {
     const [scannedUser, setScannedUser] = useState(null);
     const [scanBusy, setScanBusy] = useState(false);
     const [scanNoUserFound, setScanNoUserFound] = useState(false);
+    const [showCameraAccessModal, setShowCameraAccessModal] = useState(false);
     const [expandedReactionRecordId, setExpandedReactionRecordId] = useState(null);
     const [closingReactionRecordId, setClosingReactionRecordId] = useState(null);
     const [burstState, setBurstState] = useState(null);
@@ -634,7 +636,13 @@ const ThreadScreen = ({ navigation }) => {
                         {/* ×ボタン: セーフエリア下の左上に配置（タップ可能に） */}
                         <TouchableOpacity
                             style={[styles.qrModalCloseFixed, { top: insets.top + 12, left: Math.max(insets.left, 8) + 8 }]}
-                            onPress={() => { setShowQrModal(false); setQrMode('display'); setScannedUser(null); setScanNoUserFound(false); }}
+                            onPress={() => {
+                                setShowQrModal(false);
+                                setQrMode('display');
+                                setScannedUser(null);
+                                setScanNoUserFound(false);
+                                setShowCameraAccessModal(false);
+                            }}
                             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                             activeOpacity={0.7}
                         >
@@ -703,7 +711,13 @@ const ThreadScreen = ({ navigation }) => {
                                             <Text style={[styles.qrCameraPlaceholderHint, { color: theme.colors.secondaryText }]}>{t('scanQrToFollow')}</Text>
                                             <TouchableOpacity
                                                 style={[styles.qrCameraPermissionButton, { backgroundColor: theme.colors.primary }]}
-                                                onPress={async () => { await requestPermission(); }}
+                                                onPress={async () => {
+                                                    if (permission && !permission.granted && permission.canAskAgain === false) {
+                                                        setShowCameraAccessModal(true);
+                                                        return;
+                                                    }
+                                                    await requestPermission();
+                                                }}
                                                 activeOpacity={0.8}
                                             >
                                                 <Text style={styles.qrActionButtonText}>{t('cameraPermissionButton')}</Text>
@@ -781,6 +795,34 @@ const ThreadScreen = ({ navigation }) => {
                                 </>
                             )}
                         </View>
+                        {showCameraAccessModal ? (
+                            <View style={styles.cameraAccessOverlay}>
+                                <View style={[styles.cameraAccessCard, { backgroundColor: theme.colors.card }]}>
+                                    <Text style={[styles.cameraAccessMessage, { color: theme.colors.text }]}>
+                                        {t('cameraAccessOffMessage')}
+                                    </Text>
+                                    <TouchableOpacity
+                                        style={[styles.cameraAccessPrimaryButton, { backgroundColor: theme.colors.primary }]}
+                                        onPress={() => {
+                                            setShowCameraAccessModal(false);
+                                            Linking.openSettings();
+                                        }}
+                                        activeOpacity={0.8}
+                                    >
+                                        <Text style={styles.cameraAccessPrimaryButtonText}>{t('openSettings')}</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.cameraAccessCloseButton}
+                                        onPress={() => setShowCameraAccessModal(false)}
+                                        activeOpacity={0.8}
+                                    >
+                                        <Text style={[styles.cameraAccessCloseButtonText, { color: theme.colors.secondaryText }]}>
+                                            {t('close')}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        ) : null}
                     </View>
                 </SafeAreaView>
             </Modal>
@@ -995,6 +1037,50 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    cameraAccessOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 32,
+        zIndex: 20,
+    },
+    cameraAccessCard: {
+        width: '100%',
+        maxWidth: 320,
+        borderRadius: 16,
+        paddingHorizontal: 24,
+        paddingTop: 28,
+        paddingBottom: 20,
+        alignItems: 'stretch',
+    },
+    cameraAccessMessage: {
+        fontSize: 15,
+        lineHeight: 22,
+        textAlign: 'center',
+        marginBottom: 24,
+    },
+    cameraAccessPrimaryButton: {
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 12,
+    },
+    cameraAccessPrimaryButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    cameraAccessCloseButton: {
+        paddingVertical: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    cameraAccessCloseButtonText: {
+        fontSize: 15,
+        fontWeight: '500',
     },
     qrCameraWrap: { width: '100%', maxWidth: 320, alignSelf: 'center', height: 320, borderRadius: 12, overflow: 'hidden', position: 'relative', marginTop: 8, backgroundColor: '#000' },
     qrCameraView: { width: '100%', height: '100%' },

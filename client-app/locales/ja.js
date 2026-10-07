@@ -54,7 +54,9 @@ export default {
     scanQrToFollow: 'QRコードをスキャンしてフレンド申請',
     permissionRequired: '許可が必要です',
     photoLibraryAccess: 'フォトライブラリへのアクセス',
-    cameraPermissionButton: 'カメラの許可',
+    cameraPermissionButton: '次へ',
+    cameraAccessOffMessage: 'カメラへのアクセスがオフになっています。QRコードの読み取りを行うには、カメラへのアクセスをオンにしてください。',
+    openSettings: '設定を開く',
     settings: '設定',
     detail: '詳細',
     
