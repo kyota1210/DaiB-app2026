@@ -1,5 +1,5 @@
 import React, { useContext, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, Modal, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AppImage from '../components/AppImage';
 import ScreenHeader from '../components/ScreenHeader';
@@ -26,6 +26,7 @@ const ProfileEditScreen = ({ navigation }) => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showPhotoAccessModal, setShowPhotoAccessModal] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
@@ -37,11 +38,19 @@ const ProfileEditScreen = ({ navigation }) => {
 
     const handlePickImage = async () => {
         try {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-            if (status !== 'granted') {
-                Alert.alert(t('permissionRequired'), t('photoLibraryAccess'));
-                return;
+            let permission = await ImagePicker.getMediaLibraryPermissionsAsync();
+            if (!permission.granted) {
+                if (permission.canAskAgain === false) {
+                    setShowPhotoAccessModal(true);
+                    return;
+                }
+                permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                if (!permission.granted) {
+                    if (permission.canAskAgain === false) {
+                        setShowPhotoAccessModal(true);
+                    }
+                    return;
+                }
             }
 
             const result = await ImagePicker.launchImageLibraryAsync({
@@ -192,6 +201,40 @@ const ProfileEditScreen = ({ navigation }) => {
                     navigation.goBack();
                 }}
             />
+
+            <Modal
+                visible={showPhotoAccessModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowPhotoAccessModal(false)}
+            >
+                <View style={styles.photoAccessOverlay}>
+                    <View style={[styles.photoAccessCard, { backgroundColor: theme.colors.card }]}>
+                        <Text style={[styles.photoAccessMessage, { color: theme.colors.text }]}>
+                            {t('photoAccessOffMessage')}
+                        </Text>
+                        <TouchableOpacity
+                            style={[styles.photoAccessPrimaryButton, { backgroundColor: theme.colors.primary }]}
+                            onPress={() => {
+                                setShowPhotoAccessModal(false);
+                                Linking.openSettings();
+                            }}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.photoAccessPrimaryButtonText}>{t('openSettings')}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.photoAccessCloseButton}
+                            onPress={() => setShowPhotoAccessModal(false)}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={[styles.photoAccessCloseButtonText, { color: theme.colors.secondaryText }]}>
+                                {t('close')}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         
             </ContentColumn>
         </SafeAreaView>
@@ -285,6 +328,49 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         fontSize: 16,
         borderWidth: 1,
+    },
+    photoAccessOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 32,
+    },
+    photoAccessCard: {
+        width: '100%',
+        maxWidth: 320,
+        borderRadius: 16,
+        paddingHorizontal: 24,
+        paddingTop: 28,
+        paddingBottom: 20,
+        alignItems: 'stretch',
+    },
+    photoAccessMessage: {
+        fontSize: 15,
+        lineHeight: 22,
+        textAlign: 'center',
+        marginBottom: 24,
+    },
+    photoAccessPrimaryButton: {
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 12,
+    },
+    photoAccessPrimaryButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    photoAccessCloseButton: {
+        paddingVertical: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    photoAccessCloseButtonText: {
+        fontSize: 15,
+        fontWeight: '500',
     },
 });
 

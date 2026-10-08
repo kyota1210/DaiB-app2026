@@ -56,6 +56,7 @@ export default {
     photoLibraryAccess: 'フォトライブラリへのアクセス',
     cameraPermissionButton: '次へ',
     cameraAccessOffMessage: 'カメラへのアクセスがオフになっています。QRコードの読み取りを行うには、カメラへのアクセスをオンにしてください。',
+    photoAccessOffMessage: '写真へのアクセスがオフになっています。写真を選択するには、写真へのアクセスをオンにしてください。',
     openSettings: '設定を開く',
     settings: '設定',
     detail: '詳細',

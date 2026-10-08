@@ -590,7 +590,8 @@ export default function RecordDetailScreen({ route, navigation }) {
                     getItemLayout={getPagerItemLayout}
                 />
             )}
-            </ContentColumn>            {/* リアクションユーザーポップアップ */}
+            </ContentColumn>
+            {/* リアクションユーザーポップアップ */}
             <Modal
                 visible={!!selectedReactionUser}
                 transparent={true}

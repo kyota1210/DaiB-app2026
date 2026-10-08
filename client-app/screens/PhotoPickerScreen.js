@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView as RNScrollView, TextInput, Platform, Modal, KeyboardAvoidingView, ActivityIndicator, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView as RNScrollView, TextInput, Platform, Modal, KeyboardAvoidingView, ActivityIndicator, Keyboard, TouchableWithoutFeedback, Linking } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -67,6 +67,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [showPhotoAccessModal, setShowPhotoAccessModal] = useState(false);
     
     // キーボード管理
     const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -76,8 +77,19 @@ export default function PhotoPickerScreen({ navigation, route }) {
     const titleInputRef = useRef(null);
     const captionInputRef = useRef(null);
     const screenMountedRef = useRef(true);
+    const isLeavingRef = useRef(false);
 
     const closeVisibilitySheet = useCallback(() => setVisibilitySheetOpen(false), []);
+
+    const safeGoBack = useCallback(() => {
+        if (isLeavingRef.current) return;
+        if (navigation.canGoBack()) {
+            isLeavingRef.current = true;
+            navigation.goBack();
+            return;
+        }
+        navigation.navigate('Main');
+    }, [navigation]);
     
     const { createRecord, updateRecord, fetchCurrentMonthPostCount } = useRecordsApi();
     const { categories, loadCategories, loadingCategories, loadRecords } = useRecordsAndCategories();
@@ -141,10 +153,19 @@ export default function PhotoPickerScreen({ navigation, route }) {
 
     // 画像を選択
     const pickImage = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-            Alert.alert(t('permissionError'), t('cameraRollPermission'));
-            return;
+        let permission = await ImagePicker.getMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+            if (permission.canAskAgain === false) {
+                setShowPhotoAccessModal(true);
+                return;
+            }
+            permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (!permission.granted) {
+                if (permission.canAskAgain === false) {
+                    setShowPhotoAccessModal(true);
+                }
+                return;
+            }
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -153,13 +174,12 @@ export default function PhotoPickerScreen({ navigation, route }) {
             quality: 0.85,
         });
 
-        // 新規作成で最初の写真選択を×で閉じた場合はホームに戻る
-        if (result.canceled && !isEditMode && !selectedImage) {
-            navigation.goBack();
+        // キャンセル時は画面に留まり、空状態から再選択できるようにする
+        if (result.canceled) {
             return;
         }
 
-        if (!result.canceled && result.assets && result.assets[0]) {
+        if (result.assets && result.assets[0]) {
             const asset = result.assets[0];
             setSelectedImage(asset.uri);
             setIsNewImageSelected(true);
@@ -241,8 +261,9 @@ export default function PhotoPickerScreen({ navigation, route }) {
                 await loadRecords('all', { reset: true });
                 setShowSuccessModal(true);
                 setTimeout(() => {
+                    if (!screenMountedRef.current) return;
                     setShowSuccessModal(false);
-                    navigation.goBack();
+                    safeGoBack();
                 }, 2000);
             } else {
                 await createRecord(recordData);
@@ -251,7 +272,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
                 setTimeout(() => {
                     if (!screenMountedRef.current) return;
                     setShowSuccessModal(false);
-                    if (navigation.canGoBack()) navigation.goBack();
+                    safeGoBack();
                 }, 1500);
             }
         } catch (error) {
@@ -320,7 +341,7 @@ export default function PhotoPickerScreen({ navigation, route }) {
                         backgroundColor: theme.colors.background,
                         borderBottomColor: theme.colors.border 
                     }]}>
-                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
+                        <TouchableOpacity onPress={safeGoBack} style={styles.closeButton}>
                             <Ionicons name="close" size={28} color={theme.colors.text} />
                         </TouchableOpacity>
                         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
@@ -604,16 +625,54 @@ export default function PhotoPickerScreen({ navigation, route }) {
                                 </View>
                             </>
                         ) : (
-                            <View style={styles.noImageContainer}>
+                            <TouchableOpacity
+                                style={styles.noImageContainer}
+                                onPress={pickImage}
+                                activeOpacity={0.7}
+                            >
                                 <Ionicons name="image-outline" size={80} color={theme.colors.inactive} />
                                 <Text style={[styles.noImageText, { color: theme.colors.secondaryText }]}>
-                                    写真を読み込んでいます...
+                                    {t('tapToSelectPhoto')}
                                 </Text>
-                            </View>
+                            </TouchableOpacity>
                         )}
                     </ScrollView>
                 </KeyboardAvoidingView>
                 </ContentColumn>
+
+                <Modal
+                    visible={showPhotoAccessModal}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setShowPhotoAccessModal(false)}
+                >
+                    <View style={styles.photoAccessOverlay}>
+                        <View style={[styles.photoAccessCard, { backgroundColor: theme.colors.card }]}>
+                            <Text style={[styles.photoAccessMessage, { color: theme.colors.text }]}>
+                                {t('photoAccessOffMessage')}
+                            </Text>
+                            <TouchableOpacity
+                                style={[styles.photoAccessPrimaryButton, { backgroundColor: theme.colors.primary }]}
+                                onPress={() => {
+                                    setShowPhotoAccessModal(false);
+                                    Linking.openSettings();
+                                }}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.photoAccessPrimaryButtonText}>{t('openSettings')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.photoAccessCloseButton}
+                                onPress={() => setShowPhotoAccessModal(false)}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={[styles.photoAccessCloseButtonText, { color: theme.colors.secondaryText }]}>
+                                    {t('close')}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
 
                 {/* 成功モーダル（シンプル表示） */}
                 <Modal
@@ -1004,5 +1063,48 @@ const styles = StyleSheet.create({
     noImageText: {
         marginTop: 16,
         fontSize: 16,
+    },
+    photoAccessOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 32,
+    },
+    photoAccessCard: {
+        width: '100%',
+        maxWidth: 320,
+        borderRadius: 16,
+        paddingHorizontal: 24,
+        paddingTop: 28,
+        paddingBottom: 20,
+        alignItems: 'stretch',
+    },
+    photoAccessMessage: {
+        fontSize: 15,
+        lineHeight: 22,
+        textAlign: 'center',
+        marginBottom: 24,
+    },
+    photoAccessPrimaryButton: {
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 12,
+    },
+    photoAccessPrimaryButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    photoAccessCloseButton: {
+        paddingVertical: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    photoAccessCloseButtonText: {
+        fontSize: 15,
+        fontWeight: '500',
     },
 });

@@ -56,6 +56,7 @@ export default {
     photoLibraryAccess: 'Photo library access',
     cameraPermissionButton: 'Next',
     cameraAccessOffMessage: 'Camera access is turned off. To scan QR codes, please turn on camera access.',
+    photoAccessOffMessage: 'Photo access is turned off. To select a photo, please turn on photo access.',
     openSettings: 'Open Settings',
     settings: 'Settings',
     detail: 'Detail',
